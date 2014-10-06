@@ -1,0 +1,60 @@
+{
+    "name": "vdom",
+    "version": "0.0.1",
+    "description": "ITSA vdom",
+    "author": [
+        {
+            "name": "Marco Asbreuk",
+            "email": "marco@itsasbreuk.nl"
+        }
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/itsa/vdom"
+    },
+    "bugs": {
+        "url": "https://github.com/itsa/vdom/issues"
+    },
+    "keywords": [
+        "itsa",
+        "vdom",
+        "virtual dom"
+    ],
+    "main": "vdom.js",
+    "engines": {
+        "node": "*"
+    },
+    "devDependencies": {
+        "chai": "^1.9.1",
+        "istanbul": "^0.3.0",
+        "jshint": "^2.5.5",
+        "mocha": "^1.21.4"
+    },
+    "scripts": {
+        "pretest": "jshint  ./lib/*.js",
+        "test": "mocha tests/*.js  && istanbul cover $(which _mocha) -- tests/*.js",
+        "lint": "jshint ./lib/*.js"
+    },
+    "homepage": "http://itsa.github.io",
+    "maintainers": [
+        {
+            "name": "Marco Asbreuk",
+            "email": "marco@itsasbreuk.nl"
+        }
+    ],
+    "testling": {
+        "harness": "mocha",
+        "files": "tests/*.js",
+        "browsers": [
+            "ie/6..latest",
+            "chrome/22..latest",
+            "firefox/16..latest",
+            "safari/latest",
+            "opera/11.0..latest",
+            "iphone/6",
+            "ipad/6",
+            "android-browser/latest"
+        ]
+    },
+    "license": "New BSD"
+}
