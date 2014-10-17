@@ -1,4 +1,6 @@
 /*global describe, it */
+/*jshint unused:false */
+
 "use strict";
 var expect = require('chai').expect,
     should = require('chai').should();
