@@ -1,3 +1,5 @@
+"use strict";
+
 module.exports = function (window) {
     var DOCUMENT = window.document;
     if (DOCUMENT.doctype.name==='html') {
