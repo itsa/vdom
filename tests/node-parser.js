@@ -94,7 +94,8 @@
     describe('DOM-node to vnode parser', function () {
 
         it('Single node', function () {
-            var vnode = domNodeToVNode(node1, VElementClass);
+            var vnode = domNodeToVNode(node1, VElementClass),
+                childvnode;
 
             expect(vnode.nodeType).to.be.eql(1);
             expect(vnode.tag).to.be.eql('DIV');
@@ -107,16 +108,18 @@
             expect(vnode.attrs['data-x']).to.be.eql('somedata');
             expect(vnode.text===undefined).to.be.true;
             expect(vnode.vChildNodes.length).to.be.eql(1);
+            expect(vnode.vParent===undefined).to.be.true;
 
             // now examine the vChildNode:
-            vnode = vnode.vChildNodes[0];
-            expect(vnode.nodeType).to.be.eql(3);
-            expect(vnode.tag===undefined).to.be.true;
-            expect(vnode.isVoid===undefined).to.be.true;
-            expect(vnode.id===undefined).to.be.true;
-            expect(vnode.attrs===undefined).to.be.true;
-            expect(vnode.text).to.be.eql('the innercontent');
-            expect(vnode.vChildNodes===undefined).to.be.true;
+            childvnode = vnode.vChildNodes[0];
+            expect(childvnode.nodeType).to.be.eql(3);
+            expect(childvnode.tag===undefined).to.be.true;
+            expect(childvnode.isVoid===undefined).to.be.true;
+            expect(childvnode.id===undefined).to.be.true;
+            expect(childvnode.attrs===undefined).to.be.true;
+            expect(childvnode.text).to.be.eql('the innercontent');
+            expect(childvnode.vChildNodes===undefined).to.be.true;
+            expect(childvnode.vParent).to.be.eql(vnode);
         });
 
         it('Node with many childNodes', function () {
@@ -134,6 +137,7 @@
             expect(vnode.attrs['data-x']).to.be.eql('somedata');
             expect(vnode.text===undefined).to.be.true;
             expect(vnode.vChildNodes.length).to.be.eql(6);
+            expect(vnode.vParent===undefined).to.be.true;
 
                 // now examine the vChildNodes:
                 childvnode = vnode.vChildNodes[0];
@@ -147,6 +151,7 @@
                 expect(childvnode.attrs['data-x']===undefined).to.be.true;
                 expect(childvnode.text===undefined).to.be.true;
                 expect(childvnode.vChildNodes===undefined).to.be.true;
+                expect(childvnode.vParent).to.be.eql(vnode);
 
                 childvnode = vnode.vChildNodes[1];
                 expect(childvnode.nodeType).to.be.eql(3);
@@ -156,6 +161,7 @@
                 expect(childvnode.attrs===undefined).to.be.true;
                 expect(childvnode.text).to.be.eql('just a textnode');
                 expect(childvnode.vChildNodes===undefined).to.be.true;
+                expect(childvnode.vParent).to.be.eql(vnode);
 
                 childvnode = vnode.vChildNodes[2];
                 expect(childvnode.nodeType).to.be.eql(8);
@@ -165,6 +171,7 @@
                 expect(childvnode.attrs===undefined).to.be.true;
                 expect(childvnode.text).to.be.eql('just a commentnode');
                 expect(childvnode.vChildNodes===undefined).to.be.true;
+                expect(childvnode.vParent).to.be.eql(vnode);
 
                 childvnode = vnode.vChildNodes[3];
                 expect(childvnode.nodeType).to.be.eql(3);
@@ -174,6 +181,7 @@
                 expect(childvnode.attrs===undefined).to.be.true;
                 expect(childvnode.text).to.be.eql('just a second textnode');
                 expect(childvnode.vChildNodes===undefined).to.be.true;
+                expect(childvnode.vParent).to.be.eql(vnode);
 
                 childvnode = vnode.vChildNodes[4];
                 expect(childvnode.nodeType).to.be.eql(1);
@@ -185,6 +193,7 @@
                 expect(childvnode.attrs['data-x']===undefined).to.be.true;
                 expect(childvnode.text===undefined).to.be.true;
                 expect(childvnode.vChildNodes.length).to.be.eql(1);
+                expect(childvnode.vParent).to.be.eql(vnode);
 
                     child_childvnode = childvnode.vChildNodes[0];
                     expect(child_childvnode.nodeType).to.be.eql(1);
@@ -196,6 +205,7 @@
                     expect(child_childvnode.attrs['data-x']===undefined).to.be.true;
                     expect(child_childvnode.text===undefined).to.be.true;
                     expect(child_childvnode.vChildNodes.length).to.be.eql(3);
+                    expect(child_childvnode.vParent).to.be.eql(childvnode);
 
                         child_child_childvnode = child_childvnode.vChildNodes[0];
                         expect(child_child_childvnode.nodeType).to.be.eql(1);
@@ -207,6 +217,7 @@
                         expect(child_child_childvnode.attrs['data-x']===undefined).to.be.true;
                         expect(child_child_childvnode.text===undefined).to.be.true;
                         expect(child_child_childvnode.vChildNodes.length).to.be.eql(1);
+                        expect(child_child_childvnode.vParent).to.be.eql(child_childvnode);
 
                             child_child_child_childvnode = child_child_childvnode.vChildNodes[0];
                             expect(child_child_child_childvnode.nodeType).to.be.eql(3);
@@ -216,6 +227,7 @@
                             expect(child_child_child_childvnode.attrs===undefined).to.be.true;
                             expect(child_child_child_childvnode.text).to.be.eql('first');
                             expect(child_child_child_childvnode.vChildNodes===undefined).to.be.true;
+                            expect(child_child_child_childvnode.vParent).to.be.eql(child_child_childvnode);
 
                         child_child_childvnode = child_childvnode.vChildNodes[1];
                         expect(child_child_childvnode.nodeType).to.be.eql(1);
@@ -227,6 +239,7 @@
                         expect(child_child_childvnode.attrs['data-x']===undefined).to.be.true;
                         expect(child_child_childvnode.text===undefined).to.be.true;
                         expect(child_child_childvnode.vChildNodes.length).to.be.eql(1);
+                        expect(child_child_childvnode.vParent).to.be.eql(child_childvnode);
 
                             child_child_child_childvnode = child_child_childvnode.vChildNodes[0];
                             expect(child_child_child_childvnode.nodeType).to.be.eql(3);
@@ -236,6 +249,7 @@
                             expect(child_child_child_childvnode.attrs===undefined).to.be.true;
                             expect(child_child_child_childvnode.text).to.be.eql('second');
                             expect(child_child_child_childvnode.vChildNodes===undefined).to.be.true;
+                            expect(child_child_child_childvnode.vParent).to.be.eql(child_child_childvnode);
 
                         child_child_childvnode = child_childvnode.vChildNodes[2];
                         expect(child_child_childvnode.nodeType).to.be.eql(1);
@@ -247,6 +261,7 @@
                         expect(child_child_childvnode.attrs['data-x']===undefined).to.be.true;
                         expect(child_child_childvnode.text===undefined).to.be.true;
                         expect(child_child_childvnode.vChildNodes.length).to.be.eql(0);
+                        expect(child_child_childvnode.vParent).to.be.eql(child_childvnode);
 
                 childvnode = vnode.vChildNodes[5];
                 expect(childvnode.nodeType).to.be.eql(1);
@@ -258,6 +273,7 @@
                 expect(childvnode.attrs['data-x']===undefined).to.be.true;
                 expect(childvnode.text===undefined).to.be.true;
                 expect(childvnode.vChildNodes.length).to.be.eql(2);
+                expect(childvnode.vParent).to.be.eql(vnode);
 
                     child_childvnode = childvnode.vChildNodes[0];
                     expect(child_childvnode.nodeType).to.be.eql(1);
@@ -269,6 +285,7 @@
                     expect(child_childvnode.attrs['data-x']===undefined).to.be.true;
                     expect(child_childvnode.text===undefined).to.be.true;
                     expect(child_child_childvnode.vChildNodes.length).to.be.eql(0);
+                    expect(child_childvnode.vParent).to.be.eql(childvnode);
 
                     child_childvnode = childvnode.vChildNodes[1];
                     expect(child_childvnode.nodeType).to.be.eql(3);
@@ -278,6 +295,7 @@
                     expect(child_childvnode.attrs===undefined).to.be.true;
                     expect(child_childvnode.text).to.be.eql('some text');
                     expect(child_childvnode.vChildNodes===undefined).to.be.true;
+                    expect(child_childvnode.vParent).to.be.eql(childvnode);
 
         });
 
