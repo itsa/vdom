@@ -1,0 +1,28 @@
+.el-notrans {
+    -webkit-transition: none !important;
+    -moz-transition: none !important;
+    -ms-transition: none !important;
+    -o-transition: top 0s ease-out, left 0s ease-out !important; /* opera doesn't support none */
+    transition: none !important;
+}
+
+.el-invisible {
+    visibility: hidden !important;
+}
+
+.el-hidden {
+    visibility: hidden !important;
+    position: absolute !important;
+    left: -9999px;
+    top: -9999px;
+}
+
+.el-block {
+    display: block !important;
+}
+
+.el-borderbox {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}

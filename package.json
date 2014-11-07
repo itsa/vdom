@@ -26,7 +26,8 @@
     },
     "dependencies": {
         "polyfill": "itsa/polyfill",
-        "js-ext": "itsa/js-ext"
+        "js-ext": "itsa/js-ext",
+        "window-ext": "window-ext"
     },
     "devDependencies": {
         "chai": "^1.9.1",

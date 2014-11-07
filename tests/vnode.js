@@ -1,8 +1,10 @@
-/*global describe, it */
+/*global describe, it, before, beforeEach */
 /*jshint unused:false */
 (function (window) {
 
     "use strict";
+
+    require("../vdom.js")(window);
 
     var expect = require('chai').expect,
         should = require('chai').should(),
@@ -14,7 +16,8 @@
         nodesMap = NS.nodesMap,
         node1, node2, node3, node4, node5, node6, node7, node6_1, node7_1, node7_2, node6_1_1, node6_1_2, node6_1_3, node6_1_1_1, node6_1_2_1,
         vnode, vnodeB, nodeB, nodeB2, nodeB3, nodeB4, nodeB5, nodeB6,
-        bodyNode, divnode1, divnode2, buttonnode;
+        bodyNode, divnode1, divnode2, buttonnode,
+        nodeRoot, nodeS1, nodeS2, nodeS3, nodeSub, vnodeS;
 
 // node1 looks like this:
 /*
@@ -672,6 +675,72 @@
         });
 
     });
+
+    //======================================================================================
+
+    describe('vnode setters', function () {
+        // nodeRoot looks like this:
+        /*
+        <div>
+            <div></div>
+            <div>
+                <div></div>
+            </div>
+            <div></div>
+        </div>
+        */
+/*
+        beforeEach(function() {
+            nodeRoot = DOCUMENT.createElement('div');
+
+            nodeS1 = DOCUMENT.createElement('div');
+            nodeRoot.appendChild(nodeS1);
+
+            nodeS2 = DOCUMENT.createElement('div');
+            nodeRoot.appendChild(nodeS2);
+
+            nodeS3 = DOCUMENT.createElement('div');
+            nodeRoot.appendChild(nodeS3);
+
+            nodeSub = DOCUMENT.createElement('div');
+            nodeS2.appendChild(nodeSub);
+
+            vnodeS = domNodeToVNode(nodeRoot, VElementClass);
+        });
+
+        it('innerHTML test 1', function () {
+            var subVNode = vnodeS.vChildNodes[1];
+            subVNode.innerHTML = '<ul class="purple cyan">'+
+                                    '<li>first</li>'+
+                                    '<li>second</li>'+
+                                    '<li>third</li>'+
+                                 '</ul>';
+            // expect(vnodeS.outerHTML).to.be.eql('<DIV><DIV></DIV><UL class="purple cyan"><LI>first</LI><LI>second</LI><LI>third</LI></UL><DIV></DIV></DIV>');
+        });
+
+        it('innerHTML test 2', function () {
+            // divnode1.matchesSelector('#fakebody .class1a').should.be.true;
+        });
+
+        it('innerHTML test 3', function () {
+            // divnode1.matchesSelector('#fakebody .class1a').should.be.true;
+        });
+
+        it('nodeValue', function () {
+            // divnode1.matchesSelector('#fakebody .class1a').should.be.true;
+        });
+
+        it('outerHTML', function () {
+            // divnode1.matchesSelector('#fakebody .class1a').should.be.true;
+        });
+
+        it('textContent', function () {
+            // divnode1.matchesSelector('#fakebody .class1a').should.be.true;
+        });
+*/
+    });
+
+    //======================================================================================
 
     describe('matchesSelector', function () {
 
