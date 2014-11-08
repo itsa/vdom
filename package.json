@@ -27,6 +27,7 @@
     "dependencies": {
         "polyfill": "itsa/polyfill",
         "js-ext": "itsa/js-ext",
+        "utils": "itsa/utils",
         "window-ext": "window-ext"
     },
     "devDependencies": {
