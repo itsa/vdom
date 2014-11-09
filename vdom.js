@@ -1,8 +1,7 @@
 "use strict";
 
 module.exports = function (window) {
-    var DOCUMENT = window.document,
-        VElementClass;
+    var DOCUMENT = window.document;
     if (DOCUMENT.doctype.name==='html') {
         require('./lib/extend-document.js')(window);
         require('./lib/extend-element.js')(window);
