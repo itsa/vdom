@@ -10,7 +10,6 @@
         should = require('chai').should(),
         DOCUMENT = window.document,
         domNodeToVNode = require("../lib/node-parser.js")(window),
-        VElementClass = require('../lib/v-element.js')(window),
         NS = require('../lib/vdom-ns.js')(window),
         nodeids = NS.nodeids,
         nodesMap = NS.nodesMap,
@@ -21,7 +20,7 @@
 
 // node1 looks like this:
 /*
-<div id="divone" class="red blue" disabled data-x="somedata">
+<div id="divone" class="red blue" data-x="somedata">
     <img id="imgone" alt="http://google.com/img1.jpg" class="yellow">
     just a textnode
     <!--just a commentnode-->
@@ -43,7 +42,6 @@
     node1 = DOCUMENT.createElement('div');
     node1.id = 'divone';
     node1.className = 'red blue';
-    node1.setAttribute('disabled', '');
     node1.setAttribute('data-x', 'somedata');
 
     node2 = DOCUMENT.createElement('img');
@@ -88,7 +86,7 @@
         node7.appendChild(node7_2);
     node1.appendChild(node7);
 
-    vnode = domNodeToVNode(node1, VElementClass);
+    vnode = domNodeToVNode(node1);
 
 
     nodeB = DOCUMENT.createElement('div');
@@ -103,80 +101,14 @@
     nodeB6 = DOCUMENT.createTextNode('just a third textnode');
     nodeB.appendChild(nodeB6);
 
-    vnodeB = domNodeToVNode(nodeB, VElementClass);
+    vnodeB = domNodeToVNode(nodeB);
 
     //===============================================================
 
     describe('Properties vnode', function () {
 
         it('attrs', function () {
-            expect(vnode.attrs).to.be.eql({id: 'divone', 'class': 'red blue', disabled: '', 'data-x': 'somedata'});
-        });
-
-        it('childNodes', function () {
-            var lastVChildNode;
-            expect(vnode.childNodes.length).to.be.eql(6);
-                expect(vnode.childNodes[0].nodeType).to.be.eql(1);
-                expect(vnode.childNodes[0].id).to.be.eql('imgone');
-                expect(vnode.childNodes[1].nodeType).to.be.eql(3);
-                expect(vnode.childNodes[1].nodeValue).to.be.eql('just a textnode');
-                expect(vnode.childNodes[2].nodeType).to.be.eql(8);
-                expect(vnode.childNodes[2].nodeValue).to.be.eql('just a commentnode');
-                expect(vnode.childNodes[3].nodeType).to.be.eql(3);
-                expect(vnode.childNodes[3].nodeValue).to.be.eql('just a second textnode');
-                expect(vnode.childNodes[4].nodeType).to.be.eql(1);
-                expect(vnode.childNodes[4].tagName).to.be.eql('DIV');
-                expect(vnode.childNodes[5].nodeType).to.be.eql(1);
-                expect(vnode.childNodes[5].tagName).to.be.eql('DIV');
-                    expect(vnode.childNodes[5].childNodes[0].childNodes.length).to.be.eql(0);
-
-            lastVChildNode = vnode.vChildNodes[5];
-
-            vnode.vChildNodes.length = 5;
-            // because we don't run extend-element in these test, we need to invoke the next statement ourself:
-            vnode._generateChildNodes();
-
-            expect(vnode.childNodes.length).to.be.eql(5);
-
-            vnode.vChildNodes.push(lastVChildNode);
-
-            // because we don't run extend-element in these test, we need to invoke the next statement ourself:
-            vnode._generateChildNodes();
-
-            expect(vnode.childNodes.length).to.be.eql(6);
-                expect(vnode.childNodes[5].tagName).to.be.eql('DIV');
-                    expect(vnode.childNodes[5].childNodes[0].childNodes.length).to.be.eql(0);
-        });
-
-        it('children', function () {
-            var lastVChildNode;
-            expect(vnode.children.length).to.be.eql(3);
-                expect(vnode.children[0].nodeType).to.be.eql(1);
-                expect(vnode.children[0].id).to.be.eql('imgone');
-                expect(vnode.children[1].nodeType).to.be.eql(1);
-                expect(vnode.children[1].tagName).to.be.eql('DIV');
-                expect(vnode.children[2].nodeType).to.be.eql(1);
-                expect(vnode.children[2].tagName).to.be.eql('DIV');
-
-            lastVChildNode = vnode.vChildNodes[5];
-
-            vnode.vChildNodes.length = 5;
-
-            // because we don't run extend-element in these test, we need to invoke the next 2 statements ourself:
-            vnode._vChildren = null;
-            vnode._generateChildren();
-
-            expect(vnode.children.length).to.be.eql(2);
-
-            vnode.vChildNodes.push(lastVChildNode);
-
-            // because we don't run extend-element in these test, we need to invoke the next 2 statements ourself:
-            vnode._vChildren = null;
-            vnode._generateChildren();
-
-            expect(vnode.children.length).to.be.eql(3);
-                expect(vnode.children[2].tagName).to.be.eql('DIV');
-                    expect(vnode.children[2].childNodes[0].childNodes.length).to.be.eql(0);
+            expect(vnode.attrs).to.be.eql({id: 'divone', 'class': 'red blue', 'data-x': 'somedata'});
         });
 
         it('classNames', function () {
@@ -291,7 +223,7 @@
         });
 
         it('outerHTML', function () {
-            expect(vnode.outerHTML).to.be.eql('<DIV id="divone" class="red blue" disabled="" data-x="somedata">'+
+            expect(vnode.outerHTML).to.be.eql('<DIV id="divone" class="red blue" data-x="somedata">'+
                                               '<IMG id="imgone" alt="http://google.com/img1.jpg" class="yellow">'+
                                               'just a textnode'+
                                               '<!--just a commentnode-->'+
@@ -407,22 +339,22 @@
                 expect(vnode.vChildren[2].tag).to.be.eql('DIV');
         });
 
-        it('vElement', function () {
-            expect(vnode.vElement.domNode).to.be.eql(node1);
-                expect(vnode.vChildNodes[0].vElement.domNode).to.be.eql(node2);
-                expect(vnode.vChildNodes[1].vElement.domNode).to.be.eql(node3);
-                expect(vnode.vChildNodes[2].vElement.domNode).to.be.eql(node4);
-                expect(vnode.vChildNodes[3].vElement.domNode).to.be.eql(node5);
-                expect(vnode.vChildNodes[4].vElement.domNode).to.be.eql(node6);
-                    expect(vnode.vChildNodes[4].vChildNodes[0].vElement.domNode).to.be.eql(node6_1);
-                        expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[0].vElement.domNode).to.be.eql(node6_1_1);
-                            expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[0].vChildNodes[0].vElement.domNode).to.be.eql(node6_1_1_1);
-                        expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[1].vElement.domNode).to.be.eql(node6_1_2);
-                            expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[1].vChildNodes[0].vElement.domNode).to.be.eql(node6_1_2_1);
-                        expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[2].vElement.domNode).to.be.eql(node6_1_3);
-                expect(vnode.vChildNodes[5].vElement.domNode).to.be.eql(node7);
-                    expect(vnode.vChildNodes[5].vChildNodes[0].vElement.domNode).to.be.eql(node7_1);
-                    expect(vnode.vChildNodes[5].vChildNodes[1].vElement.domNode).to.be.eql(node7_2);
+        it('domNode', function () {
+            expect(vnode.domNode).to.be.eql(node1);
+                expect(vnode.vChildNodes[0].domNode).to.be.eql(node2);
+                expect(vnode.vChildNodes[1].domNode).to.be.eql(node3);
+                expect(vnode.vChildNodes[2].domNode).to.be.eql(node4);
+                expect(vnode.vChildNodes[3].domNode).to.be.eql(node5);
+                expect(vnode.vChildNodes[4].domNode).to.be.eql(node6);
+                    expect(vnode.vChildNodes[4].vChildNodes[0].domNode).to.be.eql(node6_1);
+                        expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[0].domNode).to.be.eql(node6_1_1);
+                            expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[0].vChildNodes[0].domNode).to.be.eql(node6_1_1_1);
+                        expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[1].domNode).to.be.eql(node6_1_2);
+                            expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[1].vChildNodes[0].domNode).to.be.eql(node6_1_2_1);
+                        expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[2].domNode).to.be.eql(node6_1_3);
+                expect(vnode.vChildNodes[5].domNode).to.be.eql(node7);
+                    expect(vnode.vChildNodes[5].vChildNodes[0].domNode).to.be.eql(node7_1);
+                    expect(vnode.vChildNodes[5].vChildNodes[1].domNode).to.be.eql(node7_2);
         });
 
         it('vFirst', function () {
@@ -660,18 +592,14 @@
         });
 
         it('store', function () {
-            var domNode = vnode.vElement.domNode;
-            expect(nodesMap.get(domNode)).to.be.eql(vnode);
-            expect(nodeids[vnode.id]).to.be.eql(vnode.vElement);
+            var domNode = vnode.domNode;
+            expect(nodeids[vnode.id]).to.be.eql(vnode.domNode);
 
-            nodesMap.delete(domNode);
             delete nodeids[vnode.id];
-            expect(nodesMap.has(domNode)).to.be.false;
             expect(nodeids[vnode.id]===undefined).to.be.true;
 
             vnode.store();
-            expect(nodesMap.get(domNode)).to.be.eql(vnode);
-            expect(nodeids[vnode.id]).to.be.eql(vnode.vElement);
+            expect(nodeids[vnode.id]).to.be.eql(vnode.domNode);
         });
 
     });
@@ -689,7 +617,7 @@
             <div></div>
         </div>
         */
-/*
+
         beforeEach(function() {
             nodeRoot = DOCUMENT.createElement('div');
 
@@ -705,25 +633,40 @@
             nodeSub = DOCUMENT.createElement('div');
             nodeS2.appendChild(nodeSub);
 
-            vnodeS = domNodeToVNode(nodeRoot, VElementClass);
+            vnodeS = domNodeToVNode(nodeRoot);
         });
 
         it('innerHTML test 1', function () {
-            var subVNode = vnodeS.vChildNodes[1];
-            subVNode.innerHTML = '<ul class="purple cyan">'+
+            nodeRoot.vnode.innerHTML = '<ul class="purple cyan">'+
                                     '<li>first</li>'+
-                                    '<li>second</li>'+
+                                    '<li class="grey">second</li>'+
                                     '<li>third</li>'+
                                  '</ul>';
-            // expect(vnodeS.outerHTML).to.be.eql('<DIV><DIV></DIV><UL class="purple cyan"><LI>first</LI><LI>second</LI><LI>third</LI></UL><DIV></DIV></DIV>');
+            expect(nodeRoot.vnode.vChildren[0].vChildren.length).to.be.eql(3);
+            expect(nodeRoot.innerHTML.toLowerCase()).to.be.eql(nodeRoot.vnode.innerHTML.toLowerCase());
+            expect(vnodeS.outerHTML).to.be.eql('<DIV><UL class="purple cyan"><LI>first</LI><LI class="grey">second</LI><LI>third</LI></UL></DIV>');
         });
 
         it('innerHTML test 2', function () {
-            // divnode1.matchesSelector('#fakebody .class1a').should.be.true;
+            nodeS2.vnode.innerHTML = '<ul class="purple cyan">'+
+                                    '<li>first</li>'+
+                                    '<li class="grey">second</li>'+
+                                    '<li>third</li>'+
+                                 '</ul>';
+            expect(nodeS2.vnode.vChildren[0].vChildren.length).to.be.eql(3);
+            expect(nodeS2.innerHTML.toLowerCase()).to.be.eql(nodeS2.vnode.innerHTML.toLowerCase());
+            expect(vnodeS.outerHTML).to.be.eql('<DIV><DIV></DIV><DIV><UL class="purple cyan"><LI>first</LI><LI class="grey">second</LI><LI>third</LI></UL></DIV><DIV></DIV></DIV>');
         });
 
         it('innerHTML test 3', function () {
-            // divnode1.matchesSelector('#fakebody .class1a').should.be.true;
+            nodeSub.vnode.innerHTML = '<ul class="purple cyan">'+
+                                    '<li>first</li>'+
+                                    '<li class="grey">second</li>'+
+                                    '<li>third</li>'+
+                                 '</ul>';
+            expect(nodeSub.vnode.vChildren[0].vChildren.length).to.be.eql(3);
+            expect(nodeSub.innerHTML.toLowerCase()).to.be.eql(nodeSub.vnode.innerHTML.toLowerCase());
+            expect(vnodeS.outerHTML).to.be.eql('<DIV><DIV></DIV><DIV><DIV><UL class="purple cyan"><LI>first</LI><LI class="grey">second</LI><LI>third</LI></UL></DIV></DIV><DIV></DIV></DIV>');
         });
 
         it('nodeValue', function () {
@@ -737,7 +680,7 @@
         it('textContent', function () {
             // divnode1.matchesSelector('#fakebody .class1a').should.be.true;
         });
-*/
+
     });
 
     //======================================================================================

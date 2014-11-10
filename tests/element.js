@@ -4,8 +4,8 @@
 
     "use strict";
 
-    // require("../vdom.js")(window);
-    require('../lib/extend-element.js')(window);
+    require("../vdom.js")(window);
+    // require('../lib/extend-element.js')(window);
     // require('../lib/extend-document.js')(window);
 
     var expect = require('chai').expect,

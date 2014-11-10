@@ -8,7 +8,6 @@
         should = require('chai').should(),
         DOCUMENT = window.document,
         domNodeToVNode = require("../lib/node-parser.js")(window),
-        VElementClass = require('../lib/v-element.js')(window),
         node1, node2, innernode, innernode2, innernode3, innernode4;
 
 // node1 looks like this:
@@ -94,7 +93,7 @@
     describe('DOM-node to vnode parser', function () {
 
         it('Single node', function () {
-            var vnode = domNodeToVNode(node1, VElementClass),
+            var vnode = domNodeToVNode(node1),
                 childvnode;
 
             expect(vnode.nodeType).to.be.eql(1);
@@ -123,7 +122,7 @@
         });
 
         it('Node with many childNodes', function () {
-            var vnode = domNodeToVNode(node2, VElementClass),
+            var vnode = domNodeToVNode(node2),
                 childvnode, child_childvnode, child_child_childvnode, child_child_child_childvnode;
 
             expect(vnode.nodeType).to.be.eql(1);
