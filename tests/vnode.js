@@ -15,7 +15,7 @@
         nodesMap = NS.nodesMap,
         node1, node2, node3, node4, node5, node6, node7, node6_1, node7_1, node7_2, node6_1_1, node6_1_2, node6_1_3, node6_1_1_1, node6_1_2_1,
         vnode, vnodeB, nodeB, nodeB2, nodeB3, nodeB4, nodeB5, nodeB6,
-        bodyNode, divnode1, divnode2, buttonnode,
+        bodyNode, divnode1, divnode2, buttonnode, buttonnode2, buttonnode3, buttonnode4,
         nodeRoot, nodeS1, nodeS2, nodeS3, nodeSub, vnodeS;
 
 // node1 looks like this:
@@ -104,7 +104,7 @@
     vnodeB = domNodeToVNode(nodeB);
 
     //===============================================================
-
+/*
     describe('Properties vnode', function () {
 
         it('attrs', function () {
@@ -141,37 +141,37 @@
         });
 
         it('innerHTML', function () {
-            expect(vnode.innerHTML).to.be.eql('<IMG id="imgone" alt="http://google.com/img1.jpg" class="yellow">'+
+            expect(vnode.innerHTML).to.be.eql('<img id="imgone" alt="http://google.com/img1.jpg" class="yellow">'+
                                               'just a textnode'+
                                               '<!--just a commentnode-->'+
                                               'just a second textnode'+
-                                              '<DIV>'+
-                                              '<UL>'+
-                                              '<LI id="li1">first</LI>'+
-                                              '<LI id="li2">second</LI>'+
-                                              '<LI id="li3"></LI>'+
-                                              '</UL>'+
-                                              '</DIV>'+
-                                              '<DIV>'+
-                                                  '<DIV></DIV>'+
+                                              '<div>'+
+                                              '<ul>'+
+                                              '<li id="li1">first</li>'+
+                                              '<li id="li2">second</li>'+
+                                              '<li id="li3"></li>'+
+                                              '</ul>'+
+                                              '</div>'+
+                                              '<div>'+
+                                                  '<div></div>'+
                                                   'some text'+
-                                              '</DIV>');
+                                              '</div>');
             expect(vnode.vChildNodes[0].innerHTML).to.be.eql('');
             expect(vnode.vChildNodes[1].innerHTML===undefined).to.be.true;
             expect(vnode.vChildNodes[2].innerHTML===undefined).to.be.true;
             expect(vnode.vChildNodes[3].innerHTML===undefined).to.be.true;
-            expect(vnode.vChildNodes[4].innerHTML).to.be.eql('<UL>'+
-                                                              '<LI id="li1">first</LI>'+
-                                                              '<LI id="li2">second</LI>'+
-                                                              '<LI id="li3"></LI>'+
-                                                              '</UL>');
-                expect(vnode.vChildNodes[4].vChildNodes[0].innerHTML).to.be.eql('<LI id="li1">first</LI>'+
-                                                                                  '<LI id="li2">second</LI>'+
-                                                                                  '<LI id="li3"></LI>');
+            expect(vnode.vChildNodes[4].innerHTML).to.be.eql('<ul>'+
+                                                              '<li id="li1">first</li>'+
+                                                              '<li id="li2">second</li>'+
+                                                              '<li id="li3"></li>'+
+                                                              '</ul>');
+                expect(vnode.vChildNodes[4].vChildNodes[0].innerHTML).to.be.eql('<li id="li1">first</li>'+
+                                                                                  '<li id="li2">second</li>'+
+                                                                                  '<li id="li3"></li>');
                     expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[0].innerHTML).to.be.eql('first');
                     expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[1].innerHTML).to.be.eql('second');
                     expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[2].innerHTML).to.be.eql('');
-            expect(vnode.vChildNodes[5].innerHTML).to.be.eql('<DIV></DIV>some text');
+            expect(vnode.vChildNodes[5].innerHTML).to.be.eql('<div></div>some text');
         });
 
         it('isVoid', function () {
@@ -223,43 +223,43 @@
         });
 
         it('outerHTML', function () {
-            expect(vnode.outerHTML).to.be.eql('<DIV id="divone" class="red blue" data-x="somedata">'+
-                                              '<IMG id="imgone" alt="http://google.com/img1.jpg" class="yellow">'+
+            expect(vnode.outerHTML).to.be.eql('<div id="divone" class="red blue" data-x="somedata">'+
+                                              '<img id="imgone" alt="http://google.com/img1.jpg" class="yellow">'+
                                               'just a textnode'+
                                               '<!--just a commentnode-->'+
                                               'just a second textnode'+
-                                              '<DIV>'+
-                                              '<UL>'+
-                                              '<LI id="li1">first</LI>'+
-                                              '<LI id="li2">second</LI>'+
-                                              '<LI id="li3"></LI>'+
-                                              '</UL>'+
-                                              '</DIV>'+
-                                              '<DIV>'+
-                                                  '<DIV></DIV>'+
+                                              '<div>'+
+                                              '<ul>'+
+                                              '<li id="li1">first</li>'+
+                                              '<li id="li2">second</li>'+
+                                              '<li id="li3"></li>'+
+                                              '</ul>'+
+                                              '</div>'+
+                                              '<div>'+
+                                                  '<div></div>'+
                                                   'some text'+
-                                              '</DIV>'+
-                                              '</DIV>');
-            expect(vnode.vChildNodes[0].outerHTML).to.be.eql('<IMG id="imgone" alt="http://google.com/img1.jpg" class="yellow">');
+                                              '</div>'+
+                                              '</div>');
+            expect(vnode.vChildNodes[0].outerHTML).to.be.eql('<img id="imgone" alt="http://google.com/img1.jpg" class="yellow">');
             expect(vnode.vChildNodes[1].outerHTML===undefined).to.be.true;
             expect(vnode.vChildNodes[2].outerHTML===undefined).to.be.true;
             expect(vnode.vChildNodes[3].outerHTML===undefined).to.be.true;
-            expect(vnode.vChildNodes[4].outerHTML).to.be.eql('<DIV>'+
-                                                              '<UL>'+
-                                                              '<LI id="li1">first</LI>'+
-                                                              '<LI id="li2">second</LI>'+
-                                                              '<LI id="li3"></LI>'+
-                                                              '</UL>'+
-                                                              '</DIV>');
-                expect(vnode.vChildNodes[4].vChildNodes[0].outerHTML).to.be.eql('<UL>'+
-                                                                                  '<LI id="li1">first</LI>'+
-                                                                                  '<LI id="li2">second</LI>'+
-                                                                                  '<LI id="li3"></LI>'+
-                                                                                  '</UL>');
-                    expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[0].outerHTML).to.be.eql('<LI id="li1">first</LI>');
-                    expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[1].outerHTML).to.be.eql('<LI id="li2">second</LI>');
-                    expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[2].outerHTML).to.be.eql('<LI id="li3"></LI>');
-            expect(vnode.vChildNodes[5].outerHTML).to.be.eql('<DIV><DIV></DIV>some text</DIV>');
+            expect(vnode.vChildNodes[4].outerHTML).to.be.eql('<div>'+
+                                                              '<ul>'+
+                                                              '<li id="li1">first</li>'+
+                                                              '<li id="li2">second</li>'+
+                                                              '<li id="li3"></li>'+
+                                                              '</ul>'+
+                                                              '</div>');
+                expect(vnode.vChildNodes[4].vChildNodes[0].outerHTML).to.be.eql('<ul>'+
+                                                                                  '<li id="li1">first</li>'+
+                                                                                  '<li id="li2">second</li>'+
+                                                                                  '<li id="li3"></li>'+
+                                                                                  '</ul>');
+                    expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[0].outerHTML).to.be.eql('<li id="li1">first</li>');
+                    expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[1].outerHTML).to.be.eql('<li id="li2">second</li>');
+                    expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[2].outerHTML).to.be.eql('<li id="li3"></li>');
+            expect(vnode.vChildNodes[5].outerHTML).to.be.eql('<div><div></div>some text</div>');
         });
 
         it('tag', function () {
@@ -591,14 +591,14 @@
             expect(vnode.vChildNodes[4].vChildNodes[0].lastOfVChildren('li')).to.be.eql(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[2]);
         });
 
-        it('store', function () {
+        it('storeId', function () {
             var domNode = vnode.domNode;
             expect(nodeids[vnode.id]).to.be.eql(vnode.domNode);
 
             delete nodeids[vnode.id];
             expect(nodeids[vnode.id]===undefined).to.be.true;
 
-            vnode.store();
+            vnode.storeId();
             expect(nodeids[vnode.id]).to.be.eql(vnode.domNode);
         });
 
@@ -607,30 +607,36 @@
     //======================================================================================
 
     describe('vnode setters', function () {
+*/
         // nodeRoot looks like this:
         /*
-        <div>
-            <div></div>
-            <div>
-                <div></div>
+        <div class="blueroot">
+            <div class="blues1"></div>
+            <div class="blues2">
+                <div class="bluesub"></div>
             </div>
             <div></div>
         </div>
         */
-
+/*
         beforeEach(function() {
             nodeRoot = DOCUMENT.createElement('div');
+            nodeRoot.className = 'blueroot';
 
             nodeS1 = DOCUMENT.createElement('div');
+            nodeS1.className = 'blues1';
             nodeRoot.appendChild(nodeS1);
 
             nodeS2 = DOCUMENT.createElement('div');
+            nodeS2.className = 'blues2';
             nodeRoot.appendChild(nodeS2);
 
             nodeS3 = DOCUMENT.createElement('div');
+            nodeS3.className = 'blues3';
             nodeRoot.appendChild(nodeS3);
 
             nodeSub = DOCUMENT.createElement('div');
+            nodeSub.className = 'bluesub';
             nodeS2.appendChild(nodeSub);
 
             vnodeS = domNodeToVNode(nodeRoot);
@@ -643,8 +649,8 @@
                                     '<li>third</li>'+
                                  '</ul>';
             expect(nodeRoot.vnode.vChildren[0].vChildren.length).to.be.eql(3);
-            expect(nodeRoot.innerHTML.toLowerCase()).to.be.eql(nodeRoot.vnode.innerHTML.toLowerCase());
-            expect(vnodeS.outerHTML).to.be.eql('<DIV><UL class="purple cyan"><LI>first</LI><LI class="grey">second</LI><LI>third</LI></UL></DIV>');
+            expect(nodeRoot.innerHTML).to.be.eql(nodeRoot.vnode.innerHTML);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><ul class="purple cyan"><li>first</li><li class="grey">second</li><li>third</li></ul></div>');
         });
 
         it('innerHTML test 2', function () {
@@ -654,8 +660,8 @@
                                     '<li>third</li>'+
                                  '</ul>';
             expect(nodeS2.vnode.vChildren[0].vChildren.length).to.be.eql(3);
-            expect(nodeS2.innerHTML.toLowerCase()).to.be.eql(nodeS2.vnode.innerHTML.toLowerCase());
-            expect(vnodeS.outerHTML).to.be.eql('<DIV><DIV></DIV><DIV><UL class="purple cyan"><LI>first</LI><LI class="grey">second</LI><LI>third</LI></UL></DIV><DIV></DIV></DIV>');
+            expect(nodeS2.innerHTML).to.be.eql(nodeS2.vnode.innerHTML);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2"><ul class="purple cyan"><li>first</li><li class="grey">second</li><li>third</li></ul></div><div class="blues3"></div></div>');
         });
 
         it('innerHTML test 3', function () {
@@ -665,27 +671,139 @@
                                     '<li>third</li>'+
                                  '</ul>';
             expect(nodeSub.vnode.vChildren[0].vChildren.length).to.be.eql(3);
-            expect(nodeSub.innerHTML.toLowerCase()).to.be.eql(nodeSub.vnode.innerHTML.toLowerCase());
-            expect(vnodeS.outerHTML).to.be.eql('<DIV><DIV></DIV><DIV><DIV><UL class="purple cyan"><LI>first</LI><LI class="grey">second</LI><LI>third</LI></UL></DIV></DIV><DIV></DIV></DIV>');
+            expect(nodeSub.innerHTML).to.be.eql(nodeSub.vnode.innerHTML);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2"><div class="bluesub"><ul class="purple cyan"><li>first</li><li class="grey">second</li><li>third</li></ul></div></div><div class="blues3"></div></div>');
+        });
+
+        it('innerHTML test 4', function () {
+            nodeSub.vnode.innerHTML = 'first';
+            expect(nodeSub.vnode.vChildren.length).to.be.eql(0);
+            expect(nodeSub.innerHTML).to.be.eql(nodeSub.vnode.innerHTML);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2"><div class="bluesub">first</div></div><div class="blues3"></div></div>');
+        });
+
+        it('innerHTML test 5', function () {
+            nodeSub.vnode.innerHTML = 'before <input type="text" disabled> after';
+            expect(nodeSub.vnode.vChildNodes.length).to.be.eql(3);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2"><div class="bluesub">before <input type="text" disabled=""> after</div></div><div class="blues3"></div></div>');
         });
 
         it('nodeValue', function () {
-            // divnode1.matchesSelector('#fakebody .class1a').should.be.true;
+            expect(nodeS1.vnode.nodeValue===null).to.be.true;
+            nodeS1.vnode.innerHTML = 'ITSA';
+            expect(nodeS1.vnode.nodeValue===null).to.be.true;
+            expect(nodeS1.childNodes[0].vnode.nodeValue).to.be.eql('ITSA');
+            nodeS1.childNodes[0].vnode.nodeValue = 'Modules';
+            expect(nodeS1.childNodes[0].vnode.nodeValue).to.be.eql('Modules');
+            expect(nodeS1.innerHTML).to.be.eql('Modules');
         });
 
-        it('outerHTML', function () {
-            // divnode1.matchesSelector('#fakebody .class1a').should.be.true;
+        it('outerHTML test 1', function () {
+            nodeS2.vnode.outerHTML = '<ul class="purple cyan">'+
+                                    '<li>first</li>'+
+                                    '<li class="grey">second</li>'+
+                                    '<li>third</li>'+
+                                 '</ul>';
+            var newNodeS2 = nodeRoot.children[1];
+            expect(newNodeS2.vnode.vChildren.length).to.be.eql(3);
+            expect(newNodeS2.outerHTML).to.be.eql(newNodeS2.vnode.outerHTML);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><ul class="purple cyan"><li>first</li><li class="grey">second</li><li>third</li></ul><div class="blues3"></div></div>');
         });
 
-        it('textContent', function () {
-            // divnode1.matchesSelector('#fakebody .class1a').should.be.true;
+        it('outerHTML test 2', function () {
+            nodeSub.vnode.outerHTML = '<ul class="purple cyan">'+
+                                    '<li>first</li>'+
+                                    '<li class="grey">second</li>'+
+                                    '<li>third</li>'+
+                                 '</ul>';
+            var newNodeSub = nodeS2.children[0];
+            expect(newNodeSub.vnode.vChildren.length).to.be.eql(3);
+            expect(newNodeSub.outerHTML).to.be.eql(newNodeSub.vnode.outerHTML);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2"><ul class="purple cyan"><li>first</li><li class="grey">second</li><li>third</li></ul></div><div class="blues3"></div></div>');
+        });
+
+        it('outerHTML test 3', function () {
+            nodeSub.vnode.outerHTML = 'first';
+            var newNodeSub = nodeS2.childNodes[0];
+            expect(newNodeSub.vnode.vChildren===undefined).to.betrue;
+            expect(newNodeSub.outerHTML).to.be.eql(newNodeSub.vnode.outerHTML);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2">first</div><div class="blues3"></div></div>');
+        });
+
+        it('outerHTML test 4', function () {
+            nodeSub.vnode.outerHTML = 'before <input type="text" disabled> after';
+            expect(nodeS2.vnode.vChildNodes.length).to.be.eql(3);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2">before <input type="text" disabled=""> after</div><div class="blues3"></div></div>');
+        });
+
+        it('textContent test 1', function () {
+            nodeRoot.vnode.textContent = '<ul class="purple cyan">'+
+                                    '<li>first</li>'+
+                                    '<li class="grey">second</li>'+
+                                    '<li>third</li>'+
+                                 '</ul>';
+            expect(nodeRoot.vnode.vChildNodes.length).to.be.eql(1);
+            expect(nodeRoot.textContent).to.be.eql(nodeRoot.vnode.textContent);
+            expect(nodeRoot.innerHTML).to.be.eql(nodeRoot.vnode.innerHTML);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot">&lt;ul class="purple cyan"&gt;&lt;li&gt;first&lt;/li&gt;&lt;li class="grey"&gt;second&lt;/li&gt;&lt;li&gt;third&lt;/li&gt;&lt;/ul&gt;</div>');
+        });
+
+        it('textContent test 2', function () {
+            nodeS2.vnode.textContent = '<ul class="purple cyan">'+
+                                    '<li>first</li>'+
+                                    '<li class="grey">second</li>'+
+                                    '<li>third</li>'+
+                                 '</ul>';
+            expect(nodeS2.vnode.vChildNodes.length).to.be.eql(1);
+            expect(nodeS2.textContent).to.be.eql(nodeS2.vnode.textContent);
+            expect(nodeS2.innerHTML).to.be.eql(nodeS2.vnode.innerHTML);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2">&lt;ul class="purple cyan"&gt;&lt;li&gt;first&lt;/li&gt;&lt;li class="grey"&gt;second&lt;/li&gt;&lt;li&gt;third&lt;/li&gt;&lt;/ul&gt;</div><div class="blues3"></div></div>');
+        });
+
+        it('textContent test 3', function () {
+            nodeSub.vnode.textContent = '<ul class="purple cyan">'+
+                                    '<li>first</li>'+
+                                    '<li class="grey">second</li>'+
+                                    '<li>third</li>'+
+                                 '</ul>';
+            expect(nodeSub.vnode.vChildNodes.length).to.be.eql(1);
+            expect(nodeSub.textContent).to.be.eql(nodeSub.vnode.textContent);
+            expect(nodeSub.innerHTML).to.be.eql(nodeSub.vnode.innerHTML);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2"><div class="bluesub">&lt;ul class="purple cyan"&gt;&lt;li&gt;first&lt;/li&gt;&lt;li class="grey"&gt;second&lt;/li&gt;&lt;li&gt;third&lt;/li&gt;&lt;/ul&gt;</div></div><div class="blues3"></div></div>');
+        });
+
+        it('textContent test 4', function () {
+            nodeSub.vnode.textContent = 'first';
+            expect(nodeSub.vnode.vChildNodes.length).to.be.eql(1);
+            expect(nodeSub.textContent).to.be.eql(nodeSub.vnode.textContent);
+            expect(nodeSub.innerHTML).to.be.eql(nodeSub.vnode.innerHTML);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2"><div class="bluesub">first</div></div><div class="blues3"></div></div>');
+        });
+
+        it('textContent test 4', function () {
+            nodeSub.vnode.textContent = 'before <input type="text" disabled> after';
+            expect(nodeSub.vnode.vChildNodes.length).to.be.eql(1);
+            expect(nodeSub.textContent).to.be.eql(nodeSub.vnode.textContent);
+            expect(nodeSub.innerHTML).to.be.eql(nodeSub.vnode.innerHTML);
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2"><div class="bluesub">before &lt;input type="text" disabled&gt; after</div></div><div class="blues3"></div></div>');
         });
 
     });
-
+*/
     //======================================================================================
 
     describe('matchesSelector', function () {
+
+        // bodyNode looks like this:
+        /*
+        <div id="fakebody">
+            <div id="div1" class="class1a class1b"></div>
+            <div id="div2" class="class2a class2b">
+                <button id="button3" class="class3a class3b"></button>
+            </div>
+        </div>
+        */
+
 
         before(function() {
             bodyNode = DOCUMENT.createElement('div');
@@ -706,248 +824,613 @@
             divnode2.appendChild(buttonnode);
             divnode1.appendChild(divnode2);
             bodyNode.appendChild(divnode1);
+
+            domNodeToVNode(bodyNode);
+        });
+/*
+        it('divnode1 --> "#fakebody *"', function () {
+            bodyNode.vnode.matchesSelector('#fakebody *').should.be.false;
+            divnode1.vnode.matchesSelector('#fakebody *').should.be.true;
+            divnode2.vnode.matchesSelector('#fakebody *').should.be.true;
+            buttonnode.vnode.matchesSelector('#fakebody *').should.be.true;
+        });
+
+        it('divnode1 --> "#div2 *"', function () {
+            bodyNode.vnode.matchesSelector('#div2 *').should.be.false;
+            divnode1.vnode.matchesSelector('#div2 *').should.be.false;
+            divnode2.vnode.matchesSelector('#div2 *').should.be.false;
+            buttonnode.vnode.matchesSelector('#div2 *').should.be.true;
+        });
+
+        it('divnode1 --> "#fakebody div"', function () {
+            bodyNode.vnode.matchesSelector('#fakebody div').should.be.false;
+            divnode1.vnode.matchesSelector('#fakebody div').should.be.true;
+            divnode2.vnode.matchesSelector('#fakebody div').should.be.true;
+            buttonnode.vnode.matchesSelector('#fakebody div').should.be.false;
         });
 
         it('divnode1 --> "#fakebody .class1a"', function () {
-            divnode1.matchesSelector('#fakebody .class1a').should.be.true;
+            divnode1.vnode.matchesSelector('#fakebody .class1a').should.be.true;
         });
 
         it('divnode1 --> "div"', function () {
-            divnode1.matchesSelector('div').should.be.true;
+            divnode1.vnode.matchesSelector('div').should.be.true;
         });
 
         it('bodyNode --> "#fakebody"', function () {
-            bodyNode.matchesSelector('#fakebody').should.be.true;
+            bodyNode.vnode.matchesSelector('#fakebody').should.be.true;
         });
 
         it('bodyNode --> "#div1"', function () {
-            bodyNode.matchesSelector('#div1').should.be.false;
+            bodyNode.vnode.matchesSelector('#div1').should.be.false;
         });
 
         it('divnode1 --> "#div1"', function () {
-            divnode1.matchesSelector('#div1').should.be.true;
+            divnode1.vnode.matchesSelector('#div1').should.be.true;
         });
 
         it('divnode1 --> "#div1.class1a"', function () {
-            divnode1.matchesSelector('#div1.class1a').should.be.true;
+            divnode1.vnode.matchesSelector('#div1.class1a').should.be.true;
         });
 
         it('divnode1 --> "#div1.noclass"', function () {
-            divnode1.matchesSelector('#div1.noclass').should.be.false;
+            divnode1.vnode.matchesSelector('#div1.noclass').should.be.false;
         });
 
         it('divnode1 --> "#div1.class1a.class1b"', function () {
-            divnode1.matchesSelector('#div1.class1a.class1b').should.be.true;
+            divnode1.vnode.matchesSelector('#div1.class1a.class1b').should.be.true;
         });
 
         it('divnode1 --> "#div1 .class1a"', function () {
-            divnode1.matchesSelector('#div1 .class1a').should.be.false;
+            divnode1.vnode.matchesSelector('#div1 .class1a').should.be.false;
         });
 
         it('divnode1 --> "#div1 .class2a"', function () {
-            divnode1.matchesSelector('#div1 .class2a').should.be.false;
+            divnode1.vnode.matchesSelector('#div1 .class2a').should.be.false;
         });
 
         it('divnode1 --> "#div1 #div2"', function () {
-            divnode1.matchesSelector('#div1 #div2').should.be.false;
+            divnode1.vnode.matchesSelector('#div1 #div2').should.be.false;
         });
 
         it('divnode2 --> "#div1 div"', function () {
-            divnode2.matchesSelector('#div1 div').should.be.true;
+            divnode2.vnode.matchesSelector('#div1 div').should.be.true;
         });
 
         it('divnode2 --> "#div1 #div2"', function () {
-            divnode2.matchesSelector('#div1 #div2').should.be.true;
+            divnode2.vnode.matchesSelector('#div1 #div2').should.be.true;
         });
 
         it('divnode2 --> "#div1 #div2.class2a"', function () {
-            divnode2.matchesSelector('#div1 #div2.class2a').should.be.true;
+            divnode2.vnode.matchesSelector('#div1 #div2.class2a').should.be.true;
         });
 
         it('divnode2 --> "#div1 div.class2a"', function () {
-            divnode2.matchesSelector('#div1 div.class2a').should.be.true;
+            divnode2.vnode.matchesSelector('#div1 div.class2a').should.be.true;
         });
 
         it('divnode2 --> "#div1 #div2.noclass"', function () {
-            divnode2.matchesSelector('#div1 #div2.noclass').should.be.false;
+            divnode2.vnode.matchesSelector('#div1 #div2.noclass').should.be.false;
         });
 
         it('divnode2 --> "#div1 #div2.class2a.class2b"', function () {
-            divnode2.matchesSelector('#div1 #div2.class2a.class2b').should.be.true;
+            divnode2.vnode.matchesSelector('#div1 #div2.class2a.class2b').should.be.true;
         });
 
         it('divnode2 --> "#div1 div.class2a.class2b"', function () {
-            divnode2.matchesSelector('#div1 div.class2a.class2b').should.be.true;
+            divnode2.vnode.matchesSelector('#div1 div.class2a.class2b').should.be.true;
         });
 
         it('divnode2 --> "#div1 #div2.class2a.noclass"', function () {
-            divnode2.matchesSelector('#div1 #div2.class2a.noclass').should.be.false;
+            divnode2.vnode.matchesSelector('#div1 #div2.class2a.noclass').should.be.false;
         });
 
         it('divnode2 --> "#div1 #div2 .class2a"', function () {
-            divnode2.matchesSelector('#div1 #div2 .class2a').should.be.false;
+            divnode2.vnode.matchesSelector('#div1 #div2 .class2a').should.be.false;
         });
 
         it('divnode2 --> "#div1 #div2 .class3a"', function () {
-            divnode2.matchesSelector('#div1 #div2 .class3a').should.be.false;
+            divnode2.vnode.matchesSelector('#div1 #div2 .class3a').should.be.false;
         });
 
         it('divnode2 --> "#div1 #div2 #button3"', function () {
-            divnode2.matchesSelector('#div1 #div2 #button3').should.be.false;
+            divnode2.vnode.matchesSelector('#div1 #div2 #button3').should.be.false;
         });
 
         it('divnode2 --> "#div1#div2"', function () {
-            divnode2.matchesSelector('#div1#div2').should.be.false;
+            divnode2.vnode.matchesSelector('#div1#div2').should.be.false;
         });
 
         it('divnode2 --> "#div1#div2.class2a"', function () {
-            divnode2.matchesSelector('#div1#div2.class2a').should.be.false;
+            divnode2.vnode.matchesSelector('#div1#div2.class2a').should.be.false;
         });
 
         it('divnode2 --> "#div1#div2.class2aclass2b"', function () {
-            divnode2.matchesSelector('#div1#div2.class2aclass2b').should.be.false;
+            divnode2.vnode.matchesSelector('#div1#div2.class2aclass2b').should.be.false;
         });
 
         it('divnode2 --> "#div1#div2 .class2a"', function () {
-            divnode2.matchesSelector('#div1#div2 .class2a').should.be.false;
+            divnode2.vnode.matchesSelector('#div1#div2 .class2a').should.be.false;
         });
 
         it('divnode2 --> "#div1#div2 .class3a"', function () {
-            divnode2.matchesSelector('#div1#div2 .class3a').should.be.false;
+            divnode2.vnode.matchesSelector('#div1#div2 .class3a').should.be.false;
         });
 
         it('divnode2 --> "#div1#div2 #button3"', function () {
-            divnode2.matchesSelector('#div1#div2 #button3').should.be.false;
+            divnode2.vnode.matchesSelector('#div1#div2 #button3').should.be.false;
         });
 
         it('buttonnode --> "#div1 #button3"', function () {
-            buttonnode.matchesSelector('#div1 #button3').should.be.true;
+            buttonnode.vnode.matchesSelector('#div1 #button3').should.be.true;
         });
 
         it('buttonnode --> "#div1 #button3.class3a"', function () {
-            buttonnode.matchesSelector('#div1 #button3.class3a').should.be.true;
+            buttonnode.vnode.matchesSelector('#div1 #button3.class3a').should.be.true;
         });
 
         it('buttonnode --> "#div1 #button3.class3a.class3b"', function () {
-            buttonnode.matchesSelector('#div1 #button3.class3a.class3b').should.be.true;
+            buttonnode.vnode.matchesSelector('#div1 #button3.class3a.class3b').should.be.true;
         });
 
         it('buttonnode --> "#div1 #button3.class3a .class3b"', function () {
-            buttonnode.matchesSelector('#div1 #button3.class3a .class3b').should.be.false;
+            buttonnode.vnode.matchesSelector('#div1 #button3.class3a .class3b').should.be.false;
         });
 
         it('buttonnode --> "#div1 #div2 #button3"', function () {
-            buttonnode.matchesSelector('#div1 #div2 #button3').should.be.true;
+            buttonnode.vnode.matchesSelector('#div1 #div2 #button3').should.be.true;
         });
 
         it('buttonnode --> "#div1 #div2 button"', function () {
-            buttonnode.matchesSelector('#div1 #div2 button').should.be.true;
+            buttonnode.vnode.matchesSelector('#div1 #div2 button').should.be.true;
         });
 
         it('buttonnode --> ".class1a button"', function () {
-            buttonnode.matchesSelector('.class1a button').should.be.true;
+            buttonnode.vnode.matchesSelector('.class1a button').should.be.true;
         });
 
         it('buttonnode --> "#div1 #div2 #button3.class3a"', function () {
-            buttonnode.matchesSelector('#div1 #div2 #button3.class3a').should.be.true;
+            buttonnode.vnode.matchesSelector('#div1 #div2 #button3.class3a').should.be.true;
         });
 
         it('buttonnode --> "#div1 #div2 #button3.class3a.class3b"', function () {
-            buttonnode.matchesSelector('#div1 #div2 #button3.class3a.class3b').should.be.true;
+            buttonnode.vnode.matchesSelector('#div1 #div2 #button3.class3a.class3b').should.be.true;
         });
 
         it('buttonnode --> "#div1 #div2 button#button3.class3a.class3b"', function () {
-            buttonnode.matchesSelector('#div1 #div2 button#button3.class3a.class3b').should.be.true;
+            buttonnode.vnode.matchesSelector('#div1 #div2 button#button3.class3a.class3b').should.be.true;
         });
 
         it('buttonnode --> "#div1 #div2 button.class3a.class3b"', function () {
-            buttonnode.matchesSelector('#div1 #div2 button.class3a.class3b').should.be.true;
+            buttonnode.vnode.matchesSelector('#div1 #div2 button.class3a.class3b').should.be.true;
         });
 
         it('buttonnode --> "#div1 #div2 #button3.class3a .class3b"', function () {
-            buttonnode.matchesSelector('#div1 #div2 #button3.class3a .class3b').should.be.false;
+            buttonnode.vnode.matchesSelector('#div1 #div2 #button3.class3a .class3b').should.be.false;
         });
 
         it('buttonnode --> "#div1 #div2 #button3.class3a .class3b"', function () {
-            buttonnode.matchesSelector('#div1 #div2 #button3.class3a .class3b').should.be.false;
+            buttonnode.vnode.matchesSelector('#div1 #div2 #button3.class3a .class3b').should.be.false;
         });
 
         it('divnode1 --> ".class1a"', function () {
-            divnode1.matchesSelector('.class1a').should.be.true;
+            divnode1.vnode.matchesSelector('.class1a').should.be.true;
         });
 
         it('divnode1 --> ".class1a.class1b"', function () {
-            divnode1.matchesSelector('.class1a.class1b').should.be.true;
+            divnode1.vnode.matchesSelector('.class1a.class1b').should.be.true;
         });
 
         it('divnode1 --> ".class2a"', function () {
-            divnode1.matchesSelector('.class2a').should.be.false;
+            divnode1.vnode.matchesSelector('.class2a').should.be.false;
         });
 
         it('divnode2 --> ".class1a .class2a"', function () {
-            divnode2.matchesSelector('.class1a .class2a').should.be.true;
+            divnode2.vnode.matchesSelector('.class1a .class2a').should.be.true;
         });
 
         it('divnode2 --> ".class1a .class2a.class2b"', function () {
-            divnode2.matchesSelector('.class1a .class2a.class2b').should.be.true;
+            divnode2.vnode.matchesSelector('.class1a .class2a.class2b').should.be.true;
         });
 
         it('divnode2 --> ".class1a .class2a.noclass"', function () {
-            divnode2.matchesSelector('.class1a .class2a.noclass').should.be.false;
+            divnode2.vnode.matchesSelector('.class1a .class2a.noclass').should.be.false;
         });
 
         it('divnode2 --> ".class1a.class1b .class2a.class2b"', function () {
-            divnode2.matchesSelector('.class1a.class1b .class2a.class2b').should.be.true;
+            divnode2.vnode.matchesSelector('.class1a.class1b .class2a.class2b').should.be.true;
         });
 
         it('divnode2 --> ".noclass.class1b .class2a.class2b"', function () {
-            divnode2.matchesSelector('.noclass.class1b .class2a.class2b').should.be.false;
+            divnode2.vnode.matchesSelector('.noclass.class1b .class2a.class2b').should.be.false;
         });
 
         it('divnode2 --> ".class1a .class2a .class3a"', function () {
-            divnode2.matchesSelector('.class1a .class2a .class3a').should.be.false;
+            divnode2.vnode.matchesSelector('.class1a .class2a .class3a').should.be.false;
         });
 
         it('divnode2 --> ".class1a .class2a.class2b .class3a"', function () {
-            divnode2.matchesSelector('.class1a .class2a.class2b .class3a').should.be.false;
+            divnode2.vnode.matchesSelector('.class1a .class2a.class2b .class3a').should.be.false;
         });
 
         it('divnode2 --> ".class1a.class1b .class2a.class2b .class3a"', function () {
-            divnode2.matchesSelector('.class1a.class1b .class2a.class2b .class3a').should.be.false;
+            divnode2.vnode.matchesSelector('.class1a.class1b .class2a.class2b .class3a').should.be.false;
         });
 
         it('buttonnode --> ".class1a #div2 .class3a"', function () {
-            buttonnode.matchesSelector('.class1a #div2 .class3a').should.be.true;
+            buttonnode.vnode.matchesSelector('.class1a #div2 .class3a').should.be.true;
         });
 
         it('buttonnode --> ".class1a #div2.class2b .class3a"', function () {
-            buttonnode.matchesSelector('.class1a #div2.class2b .class3a').should.be.true;
+            buttonnode.vnode.matchesSelector('.class1a #div2.class2b .class3a').should.be.true;
         });
 
         it('buttonnode --> ".class1a #div2.class2a.class2b .class3a"', function () {
-            buttonnode.matchesSelector('.class1a #div2.class2a.class2b .class3a').should.be.true;
+            buttonnode.vnode.matchesSelector('.class1a #div2.class2a.class2b .class3a').should.be.true;
         });
 
         it('buttonnode --> ".noclass #div2.class2a.class2b .class3a"', function () {
-            buttonnode.matchesSelector('.noclass #div2.class2a.class2b .class3a').should.be.false;
+            buttonnode.vnode.matchesSelector('.noclass #div2.class2a.class2b .class3a').should.be.false;
         });
 
         it('buttonnode --> ".class1a #div2.noclass.class2b .class3a"', function () {
-            buttonnode.matchesSelector('.class1a #div2.noclass.class2b .class3a').should.be.false;
+            buttonnode.vnode.matchesSelector('.class1a #div2.noclass.class2b .class3a').should.be.false;
         });
 
         it('buttonnode --> ".class1a #div2.class2a.class2b .noclass"', function () {
-            buttonnode.matchesSelector('.class1a #div2.class2a.class2b .noclass').should.be.false;
+            buttonnode.vnode.matchesSelector('.class1a #div2.class2a.class2b .noclass').should.be.false;
         });
 
         it('buttonnode --> ".class1a.class1b #div2.class2a .class3a"', function () {
-            buttonnode.matchesSelector('.class1a.class1b #div2.class2a .class3a').should.be.true;
+            buttonnode.vnode.matchesSelector('.class1a.class1b #div2.class2a .class3a').should.be.true;
         });
 
         it('buttonnode --> ".class1a.class1b #div2.class2a.class2b .class3a"', function () {
-            buttonnode.matchesSelector('.class1a.class1b #div2.class2a.class2b .class3a').should.be.true;
+            buttonnode.vnode.matchesSelector('.class1a.class1b #div2.class2a.class2b .class3a').should.be.true;
+        });
+*/
+    });
+
+    //======================================================================================
+
+    describe('matchesSelector complex attributes', function () {
+
+        // bodyNode looks like this:
+        /*
+        <div id="fakebody">
+            <div id="div1" data-x="some data" class="red"></div>
+            <div id="div2" data-x="also some data">
+                <button id="button1" data-x="data extended"></button>
+                <button id="button2" data-x="data|extended"></button>
+            </div>
+        </div>
+        */
+
+        before(function() {
+            bodyNode = DOCUMENT.createElement('div');
+            bodyNode.id = 'fakebody';
+
+            divnode1 = DOCUMENT.createElement('div');
+            divnode1.id = 'div1';
+            divnode1.setAttribute('data-x', 'some   data');
+            divnode1.className = 'red';
+
+            divnode2 = DOCUMENT.createElement('div');
+            divnode2.id = 'div2';
+            divnode2.setAttribute('data-x', 'also some   data');
+
+            buttonnode = DOCUMENT.createElement('button');
+            buttonnode.id = 'button3';
+            buttonnode.setAttribute('data-x', 'data extended');
+
+            buttonnode2 = DOCUMENT.createElement('button');
+            buttonnode2.id = 'button3';
+            buttonnode2.setAttribute('data-x', 'data|extended');
+
+            divnode2.appendChild(buttonnode);
+            divnode2.appendChild(buttonnode2);
+            bodyNode.appendChild(divnode1);
+            bodyNode.appendChild(divnode2);
+
+            domNodeToVNode(bodyNode);
         });
 
+        it('[data-x="some   data"]"', function () {
+            bodyNode.vnode.matchesSelector('#div1[data-x="some   data"]').should.be.false;
+            divnode1.vnode.matchesSelector('#div1[data-x="some   data"]').should.be.true;
+            divnode1.vnode.matchesSelector('#div1[data-x="some   data"].red').should.be.true;
+            divnode2.vnode.matchesSelector('#div1[data-x="some   data"]').should.be.false;
+            buttonnode.vnode.matchesSelector('#div1[data-x="some   data"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('#div1[data-x="some   data"]').should.be.false;
+        });
+
+        it('[data-x^=]"', function () {
+            bodyNode.vnode.matchesSelector('[data-x^="some"]').should.be.false;
+            divnode1.vnode.matchesSelector('[data-x^="some"]').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x^="som"]').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x^="ome"]').should.be.false;
+            divnode2.vnode.matchesSelector('[data-x^="some"]').should.be.false;
+            buttonnode.vnode.matchesSelector('[data-x^="some"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[data-x^="some"]').should.be.false;
+            divnode1.vnode.matchesSelector('div[data-x^="some"].red').should.be.true;
+            divnode1.vnode.matchesSelector('div#div1[data-x^="some"].red').should.be.true;
+            divnode1.vnode.matchesSelector('#div1[data-x^="some"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x^="some"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x^="some"].blue').should.be.false;
+            divnode1.vnode.matchesSelector('input[data-x^="some"]').should.be.false;
+            divnode1.vnode.matchesSelector('input [data-x^="some"]').should.be.false;
+        });
+
+        it('[data-x$=]"', function () {
+            bodyNode.vnode.matchesSelector('[data-x$="data"]').should.be.false;
+            divnode1.vnode.matchesSelector('[data-x$="data"]').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x$="ata"]').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x$="dat"]').should.be.false;
+            divnode2.vnode.matchesSelector('[data-x$="data"]').should.be.true;
+            buttonnode.vnode.matchesSelector('[data-x$="data"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[data-x$="data"]').should.be.false;
+            divnode1.vnode.matchesSelector('div[data-x$="data"].red').should.be.true;
+            divnode1.vnode.matchesSelector('div#div1[data-x$="data"].red').should.be.true;
+            divnode1.vnode.matchesSelector('#div1[data-x$="data"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x$="data"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x$="data"].blue').should.be.false;
+            divnode1.vnode.matchesSelector('input[data-x$="data"]').should.be.false;
+            divnode1.vnode.matchesSelector('input [data-x$="data"]').should.be.false;
+        });
+
+        it('[data-x*=]"', function () {
+            bodyNode.vnode.matchesSelector('[data-x*="om"]').should.be.false;
+            divnode1.vnode.matchesSelector('[data-x*="om"]').should.be.true;
+            divnode2.vnode.matchesSelector('[data-x*="om"]').should.be.true;
+            buttonnode.vnode.matchesSelector('[data-x*="om"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[data-x*="om"]').should.be.false;
+            divnode1.vnode.matchesSelector('div[data-x*="om"].red').should.be.true;
+            divnode1.vnode.matchesSelector('div#div1[data-x*="om"].red').should.be.true;
+            divnode1.vnode.matchesSelector('#div1[data-x*="om"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x*="om"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x*="om"].blue').should.be.false;
+            divnode1.vnode.matchesSelector('input[data-x*="om"]').should.be.false;
+            divnode1.vnode.matchesSelector('input [data-x*="om"]').should.be.false;
+        });
+
+        it('[data-x~=]"', function () {
+            bodyNode.vnode.matchesSelector('[data-x~="some"]').should.be.false;
+            divnode1.vnode.matchesSelector('[data-x~="some"]').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x~="data"]').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x~="som"]').should.be.false;
+            divnode1.vnode.matchesSelector('[data-x~="ome"]').should.be.false;
+            divnode2.vnode.matchesSelector('[data-x~="some"]').should.be.true;
+            buttonnode.vnode.matchesSelector('[data-x~="some"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[data-x~="some"]').should.be.false;
+            divnode1.vnode.matchesSelector('div[data-x~="some"].red').should.be.true;
+            divnode1.vnode.matchesSelector('div#div1[data-x~="some"].red').should.be.true;
+            divnode1.vnode.matchesSelector('#div1[data-x~="some"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x~="some"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[data-x~="some"].blue').should.be.false;
+            divnode1.vnode.matchesSelector('input[data-x~="some"]').should.be.false;
+            divnode1.vnode.matchesSelector('input [data-x~="some"]').should.be.false;
+        });
+
+        it('[data-x|=]"', function () {
+            bodyNode.vnode.matchesSelector('[data-x|="data"]').should.be.false;
+            divnode1.vnode.matchesSelector('[data-x|="data"]').should.be.false;
+            divnode1.vnode.matchesSelector('[data-x|="data"]').should.be.false;
+            divnode1.vnode.matchesSelector('[data-x|="data"]').should.be.false;
+            divnode2.vnode.matchesSelector('[data-x|="data"]').should.be.false;
+            buttonnode.vnode.matchesSelector('[data-x|="data"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[data-x|="data"]').should.be.true;
+            buttonnode2.vnode.matchesSelector('[data-x|="extended"]').should.be.true;
+            buttonnode2.vnode.matchesSelector('[data-x|="dat"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[data-x|="ata"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[data-x|="extende"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[data-x|="xtended"]').should.be.false;
+            divnode1.vnode.matchesSelector('div[data-x|="data"].red').should.be.false;
+            divnode1.vnode.matchesSelector('div#div1[data-x|="data"].red').should.be.false;
+            divnode1.vnode.matchesSelector('#div1[data-x|="data"].red').should.be.false;
+            divnode1.vnode.matchesSelector('[data-x|="data"].red').should.be.false;
+            divnode1.vnode.matchesSelector('[data-x|="data"].blue').should.be.false;
+            divnode1.vnode.matchesSelector('input[data-x|="data"]').should.be.false;
+            divnode1.vnode.matchesSelector('input [data-x|="data"]').should.be.false;
+        });
+
+    });
+
+    //======================================================================================
+
+    describe('matchesSelector complex relationships', function () {
+
+        // bodyNode looks like this:
+        /*
+        <div id="fakebody">
+            <div id="div1" class="class1"></div>
+            <div id="div2" class="class2">
+                <button id="button1" class="class1"></button>
+                <button id="button2" class="class2"></button>
+                <button id="button3" class="class3"></button>
+            </div>
+            <button id="button4" class="class4"></button>
+        </div>
+        */
+
+        before(function() {
+            bodyNode = DOCUMENT.createElement('div');
+            bodyNode.id = 'fakebody';
+
+            divnode1 = DOCUMENT.createElement('div');
+            divnode1.id = 'div1';
+            divnode1.className = 'class1';
+
+            divnode2 = DOCUMENT.createElement('div');
+            divnode2.id = 'div2';
+            divnode2.className = 'class2';
+
+            buttonnode = DOCUMENT.createElement('button');
+            buttonnode.id = 'button1';
+            buttonnode.className = 'class1';
+
+            buttonnode2 = DOCUMENT.createElement('button');
+            buttonnode2.id = 'button2';
+            buttonnode2.className = 'class2';
+
+            buttonnode3 = DOCUMENT.createElement('button');
+            buttonnode3.id = 'button3';
+            buttonnode3.className = 'class3';
+
+            buttonnode4 = DOCUMENT.createElement('button');
+            buttonnode4.id = 'button4';
+            buttonnode4.className = 'class4';
+
+            divnode2.appendChild(buttonnode);
+            divnode2.appendChild(buttonnode2);
+            divnode2.appendChild(buttonnode3);
+            bodyNode.appendChild(divnode1);
+            bodyNode.appendChild(divnode2);
+            bodyNode.appendChild(buttonnode4);
+
+            domNodeToVNode(bodyNode);
+        });
+
+        it('element > element"', function () {
+            bodyNode.vnode.matchesSelector('#fakebody > button').should.be.false;
+            divnode1.vnode.matchesSelector('#fakebody > button').should.be.false;
+            divnode2.vnode.matchesSelector('#fakebody > button').should.be.false;
+            buttonnode.vnode.matchesSelector('#fakebody > button').should.be.false;
+            buttonnode2.vnode.matchesSelector('#fakebody > button').should.be.false;
+            buttonnode3.vnode.matchesSelector('#fakebody > button').should.be.false;
+            buttonnode4.vnode.matchesSelector('#fakebody > button').should.be.true;
+
+            bodyNode.vnode.matchesSelector('#fakebody> button').should.be.false;
+            divnode1.vnode.matchesSelector('#fakebody> button').should.be.false;
+            divnode2.vnode.matchesSelector('#fakebody> button').should.be.false;
+            buttonnode.vnode.matchesSelector('#fakebody> button').should.be.false;
+            buttonnode2.vnode.matchesSelector('#fakebody> button').should.be.false;
+            buttonnode3.vnode.matchesSelector('#fakebody> button').should.be.false;
+            buttonnode4.vnode.matchesSelector('#fakebody> button').should.be.true;
+
+            bodyNode.vnode.matchesSelector('#fakebody >button').should.be.false;
+            divnode1.vnode.matchesSelector('#fakebody >button').should.be.false;
+            divnode2.vnode.matchesSelector('#fakebody >button').should.be.false;
+            buttonnode.vnode.matchesSelector('#fakebody >button').should.be.false;
+            buttonnode2.vnode.matchesSelector('#fakebody >button').should.be.false;
+            buttonnode3.vnode.matchesSelector('#fakebody >button').should.be.false;
+            buttonnode4.vnode.matchesSelector('#fakebody >button').should.be.true;
+
+            bodyNode.vnode.matchesSelector('#fakebody>button').should.be.false;
+            divnode1.vnode.matchesSelector('#fakebody>button').should.be.false;
+            divnode2.vnode.matchesSelector('#fakebody>button').should.be.false;
+            buttonnode.vnode.matchesSelector('#fakebody>button').should.be.false;
+            buttonnode2.vnode.matchesSelector('#fakebody>button').should.be.false;
+            buttonnode3.vnode.matchesSelector('#fakebody>button').should.be.false;
+            buttonnode4.vnode.matchesSelector('#fakebody>button').should.be.true;
+
+            bodyNode.vnode.matchesSelector('#div2 > button').should.be.false;
+            divnode1.vnode.matchesSelector('#div2 > button').should.be.false;
+            divnode2.vnode.matchesSelector('#div2 > button').should.be.false;
+            buttonnode.vnode.matchesSelector('#div2 > button').should.be.true;
+            buttonnode2.vnode.matchesSelector('#div2 > button').should.be.true;
+            buttonnode3.vnode.matchesSelector('#div2 > button').should.be.true;
+            buttonnode4.vnode.matchesSelector('#div2 > button').should.be.false;
+        });
+
+        it('element + element"', function () {
+            buttonnode2.vnode.matchesSelector('#button1 + #button2').should.be.true;
+            buttonnode3.vnode.matchesSelector('#button1 + #button3').should.be.false;
+            buttonnode4.vnode.matchesSelector('#div2 + #button4').should.be.true;
+            buttonnode.vnode.matchesSelector('#div2 + #button1').should.be.false;
+            bodyNode.vnode.matchesSelector('#button1 + #button2').should.be.false;
+
+            buttonnode2.vnode.matchesSelector('#button1+ #button2').should.be.true;
+            buttonnode3.vnode.matchesSelector('#button1+ #button3').should.be.false;
+            buttonnode4.vnode.matchesSelector('#div2+ #button4').should.be.true;
+            buttonnode.vnode.matchesSelector('#div2+ #button1').should.be.false;
+            bodyNode.vnode.matchesSelector('#button1+ #button2').should.be.false;
+
+            buttonnode2.vnode.matchesSelector('#button1 +#button2').should.be.true;
+            buttonnode3.vnode.matchesSelector('#button1 +#button3').should.be.false;
+            buttonnode4.vnode.matchesSelector('#div2 +#button4').should.be.true;
+            buttonnode.vnode.matchesSelector('#div2 +#button1').should.be.false;
+            bodyNode.vnode.matchesSelector('#button1 +#button2').should.be.false;
+
+            buttonnode2.vnode.matchesSelector('#button1+#button2').should.be.true;
+            buttonnode3.vnode.matchesSelector('#button1+#button3').should.be.false;
+            buttonnode4.vnode.matchesSelector('#div2+#button4').should.be.true;
+            buttonnode.vnode.matchesSelector('#div2+#button1').should.be.false;
+            bodyNode.vnode.matchesSelector('#button1+#button2').should.be.false;
+        });
+
+        it('element ~ element"', function () {
+            buttonnode2.vnode.matchesSelector('#button1 ~ #button2').should.be.true;
+            buttonnode3.vnode.matchesSelector('#button1 ~ #button3').should.be.true;
+            buttonnode4.vnode.matchesSelector('#div2 ~ #button4').should.be.true;
+            buttonnode.vnode.matchesSelector('#div2 ~ #button1').should.be.false;
+            bodyNode.vnode.matchesSelector('#button1 ~ #button2').should.be.false;
+
+            buttonnode2.vnode.matchesSelector('#button1~ #button2').should.be.true;
+            buttonnode3.vnode.matchesSelector('#button1~ #button3').should.be.true;
+            buttonnode4.vnode.matchesSelector('#div2~ #button4').should.be.true;
+            buttonnode.vnode.matchesSelector('#div2~ #button1').should.be.false;
+            bodyNode.vnode.matchesSelector('#button1~ #button2').should.be.false;
+
+            buttonnode2.vnode.matchesSelector('#button1 ~#button2').should.be.true;
+            buttonnode3.vnode.matchesSelector('#button1 ~#button3').should.be.true;
+            buttonnode4.vnode.matchesSelector('#div2 ~#button4').should.be.true;
+            buttonnode.vnode.matchesSelector('#div2 ~#button1').should.be.false;
+            bodyNode.vnode.matchesSelector('#button1 ~#button2').should.be.false;
+
+            buttonnode2.vnode.matchesSelector('#button1~#button2').should.be.true;
+            buttonnode3.vnode.matchesSelector('#button1~#button3').should.be.true;
+            buttonnode4.vnode.matchesSelector('#div2~#button4').should.be.true;
+            buttonnode.vnode.matchesSelector('#div2~#button1').should.be.false;
+            bodyNode.vnode.matchesSelector('#button1~#button2').should.be.false;
+        });
+
+    });
+
+
+    //======================================================================================
+
+    describe('matchesSelector pseudo-selectors', function () {
+
+        // bodyNode looks like this:
+        /*
+        <div id="fakebody">
+            <div id="div1" class="class1a class1b"></div>
+            <div id="div2" class="class2a class2b">
+                <button id="button3" class="class3a class3b"></button>
+            </div>
+        </div>
+        */
+
+        before(function() {
+            bodyNode = DOCUMENT.createElement('div');
+            bodyNode.id = 'fakebody';
+
+            divnode1 = DOCUMENT.createElement('div');
+            divnode1.id = 'div1';
+            divnode1.className = 'class1a class1b';
+
+            divnode2 = DOCUMENT.createElement('div');
+            divnode2.id = 'div2';
+            divnode2.className = 'class2a class2b';
+
+            buttonnode = DOCUMENT.createElement('button');
+            buttonnode.id = 'button3';
+            buttonnode.className = 'class3a class3b';
+
+            divnode2.appendChild(buttonnode);
+            bodyNode.appendChild(divnode1);
+            bodyNode.appendChild(divnode2);
+
+            domNodeToVNode(bodyNode);
+        });
+/*
+        it('divnode1 --> "#fakebody *"', function () {
+            bodyNode.vnode.matchesSelector('#fakebody *').should.be.false;
+            divnode1.vnode.matchesSelector('#fakebody *').should.be.true;
+            divnode2.vnode.matchesSelector('#fakebody *').should.be.true;
+            buttonnode.vnode.matchesSelector('#fakebody *').should.be.true;
+        });
+*/
     });
 
 }(global.window || require('node-win')));

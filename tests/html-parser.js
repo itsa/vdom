@@ -72,6 +72,35 @@
             expect(childvnode.vParent).to.be.eql(vnode);
         });
 
+        it('Single node second test', function () {
+            var vnodes = htmlToVNodes('before <input id="inputid" type="text" disabled> after', vNodeProto),
+                vnode, childvnode;
+
+            expect(vnodes.length).to.be.eql(3);
+
+            vnode = vnodes[0];
+            expect(vnode.nodeType).to.be.eql(3);
+            expect(vnode.text).to.be.eql('before ');
+            expect(vnode.vParent===undefined).to.be.true;
+
+            vnode = vnodes[1];
+            expect(vnode.nodeType).to.be.eql(1);
+            expect(vnode.tag).to.be.eql('INPUT');
+            expect(vnode.isVoid).to.be.true;
+            expect(vnode.id).to.be.eql('inputid');
+            expect(vnode.attrs['class']===undefined).to.be.true;
+            expect(vnode.attrs.disabled).to.be.eql('');
+            expect(vnode.text===undefined).to.be.true;
+            expect(vnode.vChildNodes===undefined).to.be.true;
+            expect(vnode.vParent===undefined).to.be.true;
+
+            vnode = vnodes[2];
+            expect(vnode.nodeType).to.be.eql(3);
+            expect(vnode.text).to.be.eql(' after');
+            expect(vnode.vParent===undefined).to.be.true;
+
+        });
+
         it('Succeeding nodes', function () {
             var vnodes = htmlToVNodes(html2, vNodeProto),
                 vnode, childvnode;
