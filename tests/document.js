@@ -12,12 +12,45 @@
         should = require('chai').should();
 
 
-    describe('Testgroup', function () {
+    describe('Properties', function () {
 
-        it('Your test', function () {
+        it('body', function () {
         });
 
     });
 
+    describe('Methods', function () {
+
+        it('createTreeWalker', function () {
+        });
+
+        it('contains', function () {
+        });
+
+        it('getAll', function () {
+        });
+
+        it('getElement', function () {
+        });
+
+        it('getElementById', function () {
+        });
+
+        it('querySelector', function () {
+        });
+
+        it('querySelectorAll', function () {
+        });
+
+        it('replace', function () {
+        });
+
+        it('test', function () {
+        });
+
+        it('body', function () {
+        });
+
+    });
 
 }(global.window || require('node-win')));
