@@ -411,7 +411,7 @@
         // bodyNode looks like this:
         /*
         <div id="fakebody">
-            <div id="div1" data-x="some data" class="red"></div>
+            <div id="div1" data-x="some data" class="red yellow green"></div>
             <div id="div2" data-x="also some data">
                 <button id="button1" data-x="data extended"></button>
                 <button id="button2" data-x="data|extended"></button>
@@ -426,7 +426,7 @@
             divnode1 = DOCUMENT.createElement('div');
             divnode1.id = 'div1';
             divnode1.setAttribute('data-x', 'some   data');
-            divnode1.className = 'red';
+            divnode1.className = 'red yellow green';
 
             divnode2 = DOCUMENT.createElement('div');
             divnode2.id = 'div2';
@@ -472,6 +472,21 @@
             divnode1.vnode.matchesSelector('[data-x^="some"].blue').should.be.false;
             divnode1.vnode.matchesSelector('input[data-x^="some"]').should.be.false;
             divnode1.vnode.matchesSelector('input [data-x^="some"]').should.be.false;
+
+            bodyNode.vnode.matchesSelector('[class^="re"]').should.be.false;
+            divnode1.vnode.matchesSelector('[class^="re"]').should.be.true;
+            divnode1.vnode.matchesSelector('[class^="ed"]').should.be.false;
+            divnode1.vnode.matchesSelector('[class^="e"]').should.be.false;
+            divnode2.vnode.matchesSelector('[class^="re"]').should.be.false;
+            buttonnode.vnode.matchesSelector('[class^="re"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[class^="re"]').should.be.false;
+            divnode1.vnode.matchesSelector('div[class^="re"].red').should.be.true;
+            divnode1.vnode.matchesSelector('div#div1[class^="re"].red').should.be.true;
+            divnode1.vnode.matchesSelector('#div1[class^="re"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[class^="re"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[class^="re"].blue').should.be.false;
+            divnode1.vnode.matchesSelector('input[class^="re"]').should.be.false;
+            divnode1.vnode.matchesSelector('input [class^="re"]').should.be.false;
         });
 
         it('[data-x$=]"', function () {
@@ -489,6 +504,21 @@
             divnode1.vnode.matchesSelector('[data-x$="data"].blue').should.be.false;
             divnode1.vnode.matchesSelector('input[data-x$="data"]').should.be.false;
             divnode1.vnode.matchesSelector('input [data-x$="data"]').should.be.false;
+
+            bodyNode.vnode.matchesSelector('[class$="een"]').should.be.false;
+            divnode1.vnode.matchesSelector('[class$="een"]').should.be.true;
+            divnode1.vnode.matchesSelector('[class$="green"]').should.be.true;
+            divnode1.vnode.matchesSelector('[class$="gree"]').should.be.false;
+            divnode2.vnode.matchesSelector('[class$="een"]').should.be.false;
+            buttonnode.vnode.matchesSelector('[class$="een"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[class$="een"]').should.be.false;
+            divnode1.vnode.matchesSelector('div[class$="een"].red').should.be.true;
+            divnode1.vnode.matchesSelector('div#div1[class$="een"].red').should.be.true;
+            divnode1.vnode.matchesSelector('#div1[class$="een"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[class$="een"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[class$="een"].blue').should.be.false;
+            divnode1.vnode.matchesSelector('input[class$="een"]').should.be.false;
+            divnode1.vnode.matchesSelector('input [class$="een"]').should.be.false;
         });
 
         it('[data-x*=]"', function () {
@@ -504,6 +534,21 @@
             divnode1.vnode.matchesSelector('[data-x*="om"].blue').should.be.false;
             divnode1.vnode.matchesSelector('input[data-x*="om"]').should.be.false;
             divnode1.vnode.matchesSelector('input [data-x*="om"]').should.be.false;
+
+            bodyNode.vnode.matchesSelector('[class*="ello"]').should.be.false;
+            divnode1.vnode.matchesSelector('[class*="red"]').should.be.true;
+            divnode1.vnode.matchesSelector('[class*="yellow"]').should.be.true;
+            divnode1.vnode.matchesSelector('[class*="green"]').should.be.true;
+            divnode2.vnode.matchesSelector('[class*="ello"]').should.be.false;
+            buttonnode.vnode.matchesSelector('[class*="ello"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[class*="ello"]').should.be.false;
+            divnode1.vnode.matchesSelector('div[class*="ello"].red').should.be.true;
+            divnode1.vnode.matchesSelector('div#div1[class*="ello"].red').should.be.true;
+            divnode1.vnode.matchesSelector('#div1[class*="ello"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[class*="ello"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[class*="ello"].blue').should.be.false;
+            divnode1.vnode.matchesSelector('input[class*="ello"]').should.be.false;
+            divnode1.vnode.matchesSelector('input [class*="ello"]').should.be.false;
         });
 
         it('[data-x~=]"', function () {
@@ -522,6 +567,22 @@
             divnode1.vnode.matchesSelector('[data-x~="some"].blue').should.be.false;
             divnode1.vnode.matchesSelector('input[data-x~="some"]').should.be.false;
             divnode1.vnode.matchesSelector('input [data-x~="some"]').should.be.false;
+
+            bodyNode.vnode.matchesSelector('[class~="yellow"]').should.be.false;
+            divnode1.vnode.matchesSelector('[class~="yellow"]').should.be.true;
+            divnode1.vnode.matchesSelector('[class~="ellow"]').should.be.false;
+            divnode1.vnode.matchesSelector('[class~="ello"]').should.be.false;
+            divnode1.vnode.matchesSelector('[class~="yello"]').should.be.false;
+            divnode2.vnode.matchesSelector('[class~="yellow"]').should.be.false;
+            buttonnode.vnode.matchesSelector('[class~="yellow"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[class~="yellow"]').should.be.false;
+            divnode1.vnode.matchesSelector('div[class~="yellow"].red').should.be.true;
+            divnode1.vnode.matchesSelector('div#div1[class~="yellow"].red').should.be.true;
+            divnode1.vnode.matchesSelector('#div1[class~="yellow"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[class~="yellow"].red').should.be.true;
+            divnode1.vnode.matchesSelector('[class~="yellow"].blue').should.be.false;
+            divnode1.vnode.matchesSelector('input[class~="yellow"]').should.be.false;
+            divnode1.vnode.matchesSelector('input [class~="yellow"]').should.be.false;
         });
 
         it('[data-x|=]"', function () {
@@ -544,6 +605,26 @@
             divnode1.vnode.matchesSelector('[data-x|="data"].blue').should.be.false;
             divnode1.vnode.matchesSelector('input[data-x|="data"]').should.be.false;
             divnode1.vnode.matchesSelector('input [data-x|="data"]').should.be.false;
+
+            bodyNode.vnode.matchesSelector('[class|="data"]').should.be.false;
+            divnode1.vnode.matchesSelector('[class|="data"]').should.be.false;
+            divnode1.vnode.matchesSelector('[class|="data"]').should.be.false;
+            divnode1.vnode.matchesSelector('[class|="data"]').should.be.false;
+            divnode2.vnode.matchesSelector('[class|="data"]').should.be.false;
+            buttonnode.vnode.matchesSelector('[class|="data"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[class|="data"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[class|="extended"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[class|="dat"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[class|="ata"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[class|="extende"]').should.be.false;
+            buttonnode2.vnode.matchesSelector('[class|="xtended"]').should.be.false;
+            divnode1.vnode.matchesSelector('div[class|="data"].red').should.be.false;
+            divnode1.vnode.matchesSelector('div#div1[class|="data"].red').should.be.false;
+            divnode1.vnode.matchesSelector('#div1[class|="data"].red').should.be.false;
+            divnode1.vnode.matchesSelector('[class|="data"].red').should.be.false;
+            divnode1.vnode.matchesSelector('[class|="data"].blue').should.be.false;
+            divnode1.vnode.matchesSelector('input[class|="data"]').should.be.false;
+            divnode1.vnode.matchesSelector('input [class|="data"]').should.be.false;
         });
 
     });
@@ -1040,6 +1121,9 @@
             inputnode1.vnode.matchesSelector(':lang(nl)').should.be.false;
             inputnode2.vnode.matchesSelector(':lang(nl)').should.be.false;
             inputnode3.vnode.matchesSelector(':lang(nl)').should.be.false;
+
+            buttonnode4.vnode.matchesSelector(':lang(n)').should.be.false;
+            buttonnode4.vnode.matchesSelector(':lang(l)').should.be.false;
 
             buttonnode4.vnode.matchesSelector('button:lang(nl)').should.be.true;
             buttonnode4.vnode.matchesSelector('#button4:lang(nl)').should.be.true;

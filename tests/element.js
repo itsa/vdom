@@ -1,4 +1,4 @@
-/*global describe, it */
+/*global describe, it, beforeEach, afterEach */
 /*jshint unused:false */
 (function (window) {
 
@@ -9,15 +9,52 @@
     // require('../lib/extend-document.js')(window);
 
     var expect = require('chai').expect,
-        should = require('chai').should();
+        should = require('chai').should(),
+        node;
 
 
     describe('Properties', function () {
 
-        it('top', function () {
+        // Code to execute before every test.
+        beforeEach(function() {
+            node = window.document.createElement('div');
+            node.id = 'marco';
+            node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
+            window.document.body.appendChild(node);
+            var a  = node.vnode;
+        });
+
+        // Code to execute after every test.
+        afterEach(function() {
+            window.document.body.removeChild(node);
+        });
+
+        it('height', function () {
+            expect(node.height).to.be.eql(75);
+            node.height = 225;
+            expect(node.height).to.be.eql(225);
+            expect(node.getStyle('height')).to.be.eql('225px');
         });
 
         it('left', function() {
+           expect(node.left).to.be.eql(10);
+            node.left = 85;
+            expect(node.left).to.be.eql(85);
+            expect(node.getStyle('left')).to.be.eql('85px');
+        });
+
+        it('top', function () {
+            expect(node.top).to.be.eql(30);
+            node.top = 55;
+            expect(node.top).to.be.eql(55);
+            expect(node.getStyle('top')).to.be.eql('55px');
+        });
+
+        it('width', function() {
+            expect(node.width).to.be.eql(150);
+            node.width = 325;
+            expect(node.width).to.be.eql(325);
+            expect(node.getStyle('width')).to.be.eql('325px');
         });
 
     });
@@ -85,9 +122,6 @@
         it('getElementById', function () {
         });
 
-        it('getHeight', function () {
-        });
-
         it('getId', function () {
         });
 
@@ -113,9 +147,6 @@
         });
 
         it('getValue', function () {
-        });
-
-        it('getWidth', function () {
         });
 
         it('hasAttr', function () {
