@@ -39,14 +39,18 @@
 </div>
 */
 
+    // cautious: DO NOT call 'setAttribute here --> in that case node.vnode is calculated without any childNodes'
+    // these childNodes will be there eventually (appendChild makes the mutationObserver to update), but that will be asynchronious
+    // and in some cases too late!
+
     node1 = DOCUMENT.createElement('div');
     node1.id = 'divone';
     node1.className = 'red blue';
-    node1.setAttribute('data-x', 'somedata');
+    node1._setAttribute('data-x', 'somedata');
 
     node2 = DOCUMENT.createElement('img');
     node2.id = 'imgone';
-    node2.setAttribute('alt', 'http://google.com/img1.jpg');
+    node2._setAttribute('alt', 'http://google.com/img1.jpg');
     node2.className = 'yellow';
     node1.appendChild(node2);
 

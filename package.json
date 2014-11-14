@@ -35,6 +35,7 @@
         "istanbul": "^0.3.0",
         "jshint": "^2.5.5",
         "mocha": "^1.21.4",
+        "js-ext": "itsa/js-ext",
         "node-win": "itsa/node-win"
     },
     "scripts": {
