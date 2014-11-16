@@ -39,18 +39,14 @@
 </div>
 */
 
-    // cautious: DO NOT call 'setAttribute here --> in that case node.vnode is calculated without any childNodes'
-    // these childNodes will be there eventually (appendChild makes the mutationObserver to update), but that will be asynchronious
-    // and in some cases too late!
-
     node1 = DOCUMENT.createElement('div');
     node1.id = 'divone';
     node1.className = 'red blue';
-    node1._setAttribute('data-x', 'somedata');
+    node1.setAttribute('data-x', 'somedata');
 
     node2 = DOCUMENT.createElement('img');
     node2.id = 'imgone';
-    node2._setAttribute('alt', 'http://google.com/img1.jpg');
+    node2.setAttribute('alt', 'http://google.com/img1.jpg');
     node2.className = 'yellow';
     node1.appendChild(node2);
 
@@ -294,6 +290,14 @@
             buttonnode.vnode.matchesSelector('#div1 #button3.class3a .class3b').should.be.false;
         });
 
+        it('buttonnode --> "div1 button.class3a"', function () {
+            buttonnode.vnode.matchesSelector('div button.class3a').should.be.true;
+        });
+
+        it('buttonnode --> "div1 button.class3a.class3b"', function () {
+            buttonnode.vnode.matchesSelector('div button.class3a.class3b').should.be.true;
+        });
+
         it('buttonnode --> "#div1 #div2 #button3"', function () {
             buttonnode.vnode.matchesSelector('#div1 #div2 #button3').should.be.true;
         });
@@ -423,34 +427,26 @@
         </div>
         */
 
-        // cautious: DO NOT call 'setAttribute here --> in that case node.vnode is calculated without any childNodes'
-        // these childNodes will be there eventually (appendChild makes the mutationObserver to update), but that will be asynchronious
-        // and in some cases too late!
-
-        // cautious: DO NOT call 'setAttribute here --> in that case node.vnode is calculated without any childNodes'
-        // these childNodes will be there eventually (appendChild makes the mutationObserver to update), but that will be asynchronious
-        // and in some cases too late!
-
         before(function() {
             bodyNode = DOCUMENT.createElement('div');
             bodyNode.id = 'fakebody';
 
             divnode1 = DOCUMENT.createElement('div');
             divnode1.id = 'div1';
-            divnode1._setAttribute('data-x', 'some   data');
+            divnode1.setAttribute('data-x', 'some   data');
             divnode1.className = 'red yellow green';
 
             divnode2 = DOCUMENT.createElement('div');
             divnode2.id = 'div2';
-            divnode2._setAttribute('data-x', 'also some   data');
+            divnode2.setAttribute('data-x', 'also some   data');
 
             buttonnode = DOCUMENT.createElement('button');
             buttonnode.id = 'button3';
-            buttonnode._setAttribute('data-x', 'data extended');
+            buttonnode.setAttribute('data-x', 'data extended');
 
             buttonnode2 = DOCUMENT.createElement('button');
             buttonnode2.id = 'button3';
-            buttonnode2._setAttribute('data-x', 'data|extended');
+            buttonnode2.setAttribute('data-x', 'data|extended');
 
             divnode2.appendChild(buttonnode);
             divnode2.appendChild(buttonnode2);
@@ -696,7 +692,55 @@
             domNodeToVNode(bodyNode);
         });
 
+        it('> element"', function () {
+            divnode1.vnode.matchesSelector('> button', bodyNode.vnode).should.be.false;
+            divnode1.vnode.matchesSelector('> button', divnode1.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('> button', bodyNode.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('> button', divnode2.vnode).should.be.false;
+
+            buttonnode.vnode.matchesSelector('> button', divnode2.vnode).should.be.true;
+            buttonnode2.vnode.matchesSelector('> button', divnode2.vnode).should.be.true;
+            buttonnode3.vnode.matchesSelector('> button', divnode2.vnode).should.be.true;
+            buttonnode4.vnode.matchesSelector('> button', bodyNode.vnode).should.be.true;
+
+            buttonnode.vnode.matchesSelector('> button', bodyNode.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('> button', bodyNode.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('> button', bodyNode.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('> button', divnode2.vnode).should.be.false;
+
+            divnode1.vnode.matchesSelector('>button', bodyNode.vnode).should.be.false;
+            divnode1.vnode.matchesSelector('>button', divnode1.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('>button', bodyNode.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('>button', divnode2.vnode).should.be.false;
+
+            buttonnode.vnode.matchesSelector('>button', divnode2.vnode).should.be.true;
+            buttonnode2.vnode.matchesSelector('>button', divnode2.vnode).should.be.true;
+            buttonnode3.vnode.matchesSelector('>button', divnode2.vnode).should.be.true;
+            buttonnode4.vnode.matchesSelector('>button', bodyNode.vnode).should.be.true;
+
+            buttonnode.vnode.matchesSelector('>button', bodyNode.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('>button', bodyNode.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('>button', bodyNode.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('>button', divnode2.vnode).should.be.false;
+        });
+
         it('element > element"', function () {
+            bodyNode.vnode.matchesSelector('> button').should.be.false;
+            divnode1.vnode.matchesSelector('> button').should.be.false;
+            divnode2.vnode.matchesSelector('> button').should.be.false;
+            buttonnode.vnode.matchesSelector('> button').should.be.true;
+            buttonnode2.vnode.matchesSelector('> button').should.be.true;
+            buttonnode3.vnode.matchesSelector('> button').should.be.true;
+            buttonnode4.vnode.matchesSelector('> button').should.be.true;
+
+            bodyNode.vnode.matchesSelector('>button').should.be.false;
+            divnode1.vnode.matchesSelector('>button').should.be.false;
+            divnode2.vnode.matchesSelector('>button').should.be.false;
+            buttonnode.vnode.matchesSelector('>button').should.be.true;
+            buttonnode2.vnode.matchesSelector('>button').should.be.true;
+            buttonnode3.vnode.matchesSelector('>button').should.be.true;
+            buttonnode4.vnode.matchesSelector('>button').should.be.true;
+
             bodyNode.vnode.matchesSelector('#fakebody > button').should.be.false;
             divnode1.vnode.matchesSelector('#fakebody > button').should.be.false;
             divnode2.vnode.matchesSelector('#fakebody > button').should.be.false;
@@ -738,6 +782,78 @@
             buttonnode4.vnode.matchesSelector('#div2 > button').should.be.false;
         });
 
+        it('+ element"', function () {
+            divnode1.vnode.matchesSelector('+ button', bodyNode.vnode).should.be.false;
+            divnode1.vnode.matchesSelector('+ button', divnode1.vnode).should.be.false;
+            divnode1.vnode.matchesSelector('+ button', divnode2.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('+ button', bodyNode.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('+ button', divnode1.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('+ button', divnode2.vnode).should.be.false;
+
+            buttonnode.vnode.matchesSelector('+ button', divnode1.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('+ button', divnode2.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('+ button', buttonnode.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('+ button', buttonnode2.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('+ button', buttonnode3.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('+ button', buttonnode4.vnode).should.be.false;
+
+            buttonnode2.vnode.matchesSelector('+ button', divnode1.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('+ button', divnode2.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('+ button', buttonnode.vnode).should.be.true;
+            buttonnode2.vnode.matchesSelector('+ button', buttonnode2.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('+ button', buttonnode3.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('+ button', buttonnode4.vnode).should.be.false;
+
+            buttonnode3.vnode.matchesSelector('+ button', divnode1.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('+ button', divnode2.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('+ button', buttonnode.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('+ button', buttonnode2.vnode).should.be.true;
+            buttonnode3.vnode.matchesSelector('+ button', buttonnode3.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('+ button', buttonnode4.vnode).should.be.false;
+
+            buttonnode4.vnode.matchesSelector('+ button', divnode1.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('+ button', divnode2.vnode).should.be.true;
+            buttonnode4.vnode.matchesSelector('+ button', buttonnode.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('+ button', buttonnode2.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('+ button', buttonnode3.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('+ button', buttonnode4.vnode).should.be.false;
+
+            divnode1.vnode.matchesSelector('+button', bodyNode.vnode).should.be.false;
+            divnode1.vnode.matchesSelector('+button', divnode1.vnode).should.be.false;
+            divnode1.vnode.matchesSelector('+button', divnode2.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('+button', bodyNode.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('+button', divnode1.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('+button', divnode2.vnode).should.be.false;
+
+            buttonnode.vnode.matchesSelector('+button', divnode1.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('+button', divnode2.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('+button', buttonnode.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('+button', buttonnode2.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('+button', buttonnode3.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('+button', buttonnode4.vnode).should.be.false;
+
+            buttonnode2.vnode.matchesSelector('+button', divnode1.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('+button', divnode2.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('+button', buttonnode.vnode).should.be.true;
+            buttonnode2.vnode.matchesSelector('+button', buttonnode2.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('+button', buttonnode3.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('+button', buttonnode4.vnode).should.be.false;
+
+            buttonnode3.vnode.matchesSelector('+button', divnode1.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('+button', divnode2.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('+button', buttonnode.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('+button', buttonnode2.vnode).should.be.true;
+            buttonnode3.vnode.matchesSelector('+button', buttonnode3.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('+button', buttonnode4.vnode).should.be.false;
+
+            buttonnode4.vnode.matchesSelector('+button', divnode1.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('+button', divnode2.vnode).should.be.true;
+            buttonnode4.vnode.matchesSelector('+button', buttonnode.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('+button', buttonnode2.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('+button', buttonnode3.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('+button', buttonnode4.vnode).should.be.false;
+        });
+
         it('element + element"', function () {
             buttonnode2.vnode.matchesSelector('#button1 + #button2').should.be.true;
             buttonnode3.vnode.matchesSelector('#button1 + #button3').should.be.false;
@@ -762,6 +878,78 @@
             buttonnode4.vnode.matchesSelector('#div2+#button4').should.be.true;
             buttonnode.vnode.matchesSelector('#div2+#button1').should.be.false;
             bodyNode.vnode.matchesSelector('#button1+#button2').should.be.false;
+        });
+
+        it('~ element"', function () {
+            divnode1.vnode.matchesSelector('~ button', bodyNode.vnode).should.be.false;
+            divnode1.vnode.matchesSelector('~ button', divnode1.vnode).should.be.false;
+            divnode1.vnode.matchesSelector('~ button', divnode2.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('~ button', bodyNode.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('~ button', divnode1.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('~ button', divnode2.vnode).should.be.false;
+
+            buttonnode.vnode.matchesSelector('~ button', divnode1.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('~ button', divnode2.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('~ button', buttonnode.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('~ button', buttonnode2.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('~ button', buttonnode3.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('~ button', buttonnode4.vnode).should.be.false;
+
+            buttonnode2.vnode.matchesSelector('~ button', divnode1.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('~ button', divnode2.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('~ button', buttonnode.vnode).should.be.true;
+            buttonnode2.vnode.matchesSelector('~ button', buttonnode2.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('~ button', buttonnode3.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('~ button', buttonnode4.vnode).should.be.false;
+
+            buttonnode3.vnode.matchesSelector('~ button', divnode1.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('~ button', divnode2.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('~ button', buttonnode.vnode).should.be.true;
+            buttonnode3.vnode.matchesSelector('~ button', buttonnode2.vnode).should.be.true;
+            buttonnode3.vnode.matchesSelector('~ button', buttonnode3.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('~ button', buttonnode4.vnode).should.be.false;
+
+            buttonnode4.vnode.matchesSelector('~ button', divnode1.vnode).should.be.true;
+            buttonnode4.vnode.matchesSelector('~ button', divnode2.vnode).should.be.true;
+            buttonnode4.vnode.matchesSelector('~ button', buttonnode.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('~ button', buttonnode2.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('~ button', buttonnode3.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('~ button', buttonnode4.vnode).should.be.false;
+
+            divnode1.vnode.matchesSelector('~button', bodyNode.vnode).should.be.false;
+            divnode1.vnode.matchesSelector('~button', divnode1.vnode).should.be.false;
+            divnode1.vnode.matchesSelector('~button', divnode2.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('~button', bodyNode.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('~button', divnode1.vnode).should.be.false;
+            divnode2.vnode.matchesSelector('~button', divnode2.vnode).should.be.false;
+
+            buttonnode.vnode.matchesSelector('~button', divnode1.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('~button', divnode2.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('~button', buttonnode.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('~button', buttonnode2.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('~button', buttonnode3.vnode).should.be.false;
+            buttonnode.vnode.matchesSelector('~button', buttonnode4.vnode).should.be.false;
+
+            buttonnode2.vnode.matchesSelector('~button', divnode1.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('~button', divnode2.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('~button', buttonnode.vnode).should.be.true;
+            buttonnode2.vnode.matchesSelector('~button', buttonnode2.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('~button', buttonnode3.vnode).should.be.false;
+            buttonnode2.vnode.matchesSelector('~button', buttonnode4.vnode).should.be.false;
+
+            buttonnode3.vnode.matchesSelector('~button', divnode1.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('~button', divnode2.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('~button', buttonnode.vnode).should.be.true;
+            buttonnode3.vnode.matchesSelector('~button', buttonnode2.vnode).should.be.true;
+            buttonnode3.vnode.matchesSelector('~button', buttonnode3.vnode).should.be.false;
+            buttonnode3.vnode.matchesSelector('~button', buttonnode4.vnode).should.be.false;
+
+            buttonnode4.vnode.matchesSelector('~button', divnode1.vnode).should.be.true;
+            buttonnode4.vnode.matchesSelector('~button', divnode2.vnode).should.be.true;
+            buttonnode4.vnode.matchesSelector('~button', buttonnode.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('~button', buttonnode2.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('~button', buttonnode3.vnode).should.be.false;
+            buttonnode4.vnode.matchesSelector('~button', buttonnode4.vnode).should.be.false;
         });
 
         it('element ~ element"', function () {
@@ -818,10 +1006,6 @@
         </div>
         */
 
-        // cautious: DO NOT call 'setAttribute here --> in that case node.vnode is calculated without any childNodes'
-        // these childNodes will be there eventually (appendChild makes the mutationObserver to update), but that will be asynchronious
-        // and in some cases too late!
-
         before(function() {
             bodyNode = DOCUMENT.createElement('div');
             bodyNode.id = 'fakebody';
@@ -846,17 +1030,17 @@
             buttonnode2 = DOCUMENT.createElement('button');
             buttonnode2.id = 'button2';
             buttonnode2.className = 'class2';
-            buttonnode2._setAttribute('data-x', 'some   data');
+            buttonnode2.setAttribute('data-x', 'some   data');
 
             buttonnode3 = DOCUMENT.createElement('button');
             buttonnode3.id = 'button3';
             buttonnode3.className = 'class3';
-            buttonnode3._setAttribute('data-x', 'some   extra data');
+            buttonnode3.setAttribute('data-x', 'some   extra data');
 
             buttonnode4 = DOCUMENT.createElement('button');
             buttonnode4.id = 'button4';
             buttonnode4.className = 'class4';
-            buttonnode4._setAttribute('lang', 'nl');
+            buttonnode4.setAttribute('lang', 'nl');
 
             buttonnode5 = DOCUMENT.createElement('button');
             buttonnode5.id = 'button5';
@@ -876,29 +1060,29 @@
 
             inputnode1 = DOCUMENT.createElement('input');
             inputnode1.id = 'input1';
-            inputnode1._setAttribute('checked', true);
-            inputnode1._setAttribute('min', '5');
-            inputnode1._setAttribute('max', '10');
-            inputnode1._setAttribute('value', '8');
-            inputnode1._setAttribute('type', 'number');
+            inputnode1.setAttribute('checked', true);
+            inputnode1.setAttribute('min', '5');
+            inputnode1.setAttribute('max', '10');
+            inputnode1.setAttribute('value', '8');
+            inputnode1.setAttribute('type', 'number');
             inputnode1.value = 8;
 
             inputnode2 = DOCUMENT.createElement('input');
             inputnode2.id = 'input2';
-            inputnode2._setAttribute('required', true);
-            inputnode2._setAttribute('readonly', true);
-            inputnode2._setAttribute('min', '5');
-            inputnode2._setAttribute('max', '10');
-            inputnode2._setAttribute('value', '25');
-            inputnode2._setAttribute('type', 'number');
+            inputnode2.setAttribute('required', true);
+            inputnode2.setAttribute('readonly', true);
+            inputnode2.setAttribute('min', '5');
+            inputnode2.setAttribute('max', '10');
+            inputnode2.setAttribute('value', '25');
+            inputnode2.setAttribute('type', 'number');
             inputnode2.value = 25;
 
             inputnode3 = DOCUMENT.createElement('input');
             inputnode3.id = 'input3';
-            inputnode3._setAttribute('disabled', true);
-            inputnode3._setAttribute('min', '5');
-            inputnode3._setAttribute('max', '10');
-            inputnode3._setAttribute('value', '8');
+            inputnode3.setAttribute('disabled', true);
+            inputnode3.setAttribute('min', '5');
+            inputnode3.setAttribute('max', '10');
+            inputnode3.setAttribute('value', '8');
 
             divnode2.appendChild(buttonnode);
             divnode2.appendChild(divnode3);

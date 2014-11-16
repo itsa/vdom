@@ -5,6 +5,7 @@
     "use strict";
 
     require("js-ext/lib/object.js");
+    require("window-ext");
     require("../vdom.js")(window);
     // require('../lib/extend-element.js')(window);
     // require('../lib/extend-document.js')(window);
@@ -13,7 +14,7 @@
         should = require('chai').should(),
         NS = require('../lib/vdom-ns.js')(window),
         nodeids = NS.nodeids,
-        node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub;
+        node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub, nodeSub3SubText;
 
     describe('Properties', function () {
 
@@ -21,7 +22,7 @@
         beforeEach(function() {
             node = window.document.createElement('div');
             node.id = 'ITSA';
-            node._setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
+            node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
             window.document.body.appendChild(node);
             var a  = node.vnode;
         });
@@ -63,20 +64,31 @@
 
     describe('Methods', function () {
 
+        // bodyNode looks like this:
+        /*
+        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;">
+            <div id="sub1" class="green yellow"></div>
+            <div id="sub2" class="green yellow"></div>
+            <div id="sub3">
+                <div id="sub3sub" class="green yellow"></div>
+                extra text
+            </div>
+        </div>
+        */
+
         // Code to execute before every test.
         beforeEach(function() {
             node = window.document.createElement('div');
             node.id = 'ITSA';
             node.className = 'red blue';
-            // cautious: DO NOT call 'setAttribute here --> in that case node.vnode is calculated without any childNodes'
-            // these childNodes will be there eventually (appendChild makes the mutationObserver to update), but that will be asynchronious
-            // and in some cases too late!
-            node._setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
+            node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
                 nodeSub1 = window.document.createElement('div');
                 nodeSub1.id = 'sub1';
+                nodeSub1.className = 'green yellow';
                 node.appendChild(nodeSub1);
 
                 nodeSub2 = window.document.createElement('div');
+                nodeSub2.className = 'green yellow';
                 nodeSub2.id = 'sub2';
                 node.appendChild(nodeSub2);
 
@@ -85,16 +97,30 @@
                 node.appendChild(nodeSub3);
 
                     nodeSub3Sub = window.document.createElement('div');
+                    nodeSub3Sub.className = 'green yellow';
                     nodeSub3Sub.id = 'sub3sub';
                     nodeSub3.appendChild(nodeSub3Sub);
 
+                    nodeSub3SubText = window.document.createTextNode('extra text');
+                    nodeSub3.appendChild(nodeSub3SubText);
+
             window.document.body.appendChild(node);
-            var a  = node.vnode;
         });
 
         // Code to execute after every test.
         afterEach(function() {
             window.document.body.removeChild(node);
+        });
+
+        it('appendChild', function () {
+            var n1 = window.document.createElement('img'),
+                n2 = window.document.createElement('table');
+            node.appendChild(n1);
+            nodeSub3.appendChild(n2);
+            expect(node.childNodes.length).to.be.eql(4);
+            expect(node.childNodes[3]).to.be.eql(n1);
+            expect(nodeSub3.childNodes.length).to.be.eql(3);
+            expect(nodeSub3.childNodes[2]).to.be.eql(n2);
         });
 
         it('cloneNode', function () {
@@ -103,7 +129,10 @@
             nodeSub1.setData('dummySub', 20);
             nodeSub3Sub.setData('dummySubSub', 30);
             cloned = node.cloneNode(true);
-            expect(cloned.innerHTML).to.eql('<div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div></div>');
+            // because the order of attributes might be randomly generated (behaviour of JS-properties), we check differently:
+            // one time without classes, one time without id's
+            expect(cloned.innerHTML.replace(/ class="green yellow"/g, '')).to.eql('<div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div>');
+            expect(cloned.innerHTML.replace(/ id="\w+"/g, '')).to.eql('<div class="green yellow"></div><div class="green yellow"></div><div><div class="green yellow"></div>extra text</div>');
             expect(cloned.nodeName).to.eql('DIV');
             expect(cloned.id).to.eql('ITSA');
             expect(cloned._getAttribute('style')).to.eql('position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
@@ -204,7 +233,8 @@
             expect(walker.firstChild()).to.be.eql(nodeSub3Sub);
             expect(walker.parentNode()).to.be.eql(nodeSub3);
 
-            expect(walker.lastChild()).to.be.eql(nodeSub3Sub);
+            expect(walker.lastChild()).to.be.eql(nodeSub3SubText);
+            expect(walker.previousNode()).to.be.eql(nodeSub3Sub);
 
             walker.parentNode(); // pointer is set to nodeSub3
 
@@ -238,7 +268,8 @@
             expect(walker.firstChild()).to.be.eql(nodeSub3Sub);
             expect(walker.parentNode()).to.be.eql(nodeSub3);
 
-            expect(walker.lastChild()).to.be.eql(nodeSub3Sub);
+            expect(walker.lastChild()).to.be.eql(nodeSub3SubText);
+            expect(walker.previousNode()).to.be.eql(nodeSub3Sub);
 
             walker.parentNode(); // pointer is set to nodeSub3
 
@@ -247,7 +278,9 @@
             expect(walker.previousSibling()).to.be.eql(nodeSub2);
 
             // now with a nodefiler
-            walker = node.createTreeWalker(null, function(node) {return (node.id==='sub2') || (node.id==='sub3')});
+            walker = node.createTreeWalker(null, function(node) {
+                return (node.id==='sub2') || (node.id==='sub3');
+            });
             nodeSub2.removeInlineStyle('display');
 
             expect(walker.firstChild()).to.be.eql(nodeSub2);
@@ -277,11 +310,11 @@
             nodeSub2.defineInlineStyle('z-index: 15; left: 180px;');
 
             expect(node.getInlineStyle('z-index')).to.be.eql('5');
-            expect(node.getInlineStyle('position')==undefined).to.be.true;
+            expect(node.getInlineStyle('position')===undefined).to.be.true;
             expect(node._getAttribute('style')).to.eql('z-index: 5; left: 80px;');
 
             expect(nodeSub2.getInlineStyle('z-index')).to.be.eql('15');
-            expect(nodeSub2.getInlineStyle('position')==undefined).to.be.true;
+            expect(nodeSub2.getInlineStyle('position')===undefined).to.be.true;
             expect(nodeSub2._getAttribute('style')).to.eql('z-index: 15; left: 180px;');
         });
 
@@ -311,40 +344,244 @@
             expect(nodeSub3.firstOfChildren()).to.be.eql(nodeSub3Sub);
         });
 
-        it('forceIntoNodeView', function () {
+        it('forceIntoNodeView with overflow', function () {
+            var scrollTop;
+            nodeSub3Sub.setInlineStyle('top', '0px').setInlineStyle('position', 'relative').setInlineStyle('height', '50px');
+            nodeSub3.setInlineStyle('height', '100px').setInlineStyle('overflow', 'scroll');
+            scrollTop = nodeSub3.scrollTop;
+            nodeSub3Sub.setInlineStyle('top', '9999px');
+            expect(nodeSub3.scrollTop===scrollTop).to.be.true;
+            nodeSub3Sub.forceIntoNodeView();
+            expect(nodeSub3.scrollTop>scrollTop).to.be.true;
+        });
+
+        it('forceIntoNodeView with overflow-y', function () {
+            var scrollTop;
+            nodeSub3Sub.setInlineStyle('top', '0px').setInlineStyle('position', 'relative').setInlineStyle('height', '50px');
+            nodeSub3.setInlineStyle('height', '100px').setInlineStyle('overflow-y', 'scroll');
+            scrollTop = nodeSub3.scrollTop;
+            nodeSub3Sub.setInlineStyle('top', '9999px');
+            expect(nodeSub3.scrollTop===scrollTop).to.be.true;
+            nodeSub3Sub.forceIntoNodeView();
+            expect(nodeSub3.scrollTop>scrollTop).to.be.true;
         });
 
         it('forceIntoView', function () {
+            var scrollTop;
+            node.setInlineStyle('top', '9999px');
+            scrollTop = window.getScrollTop();
+            expect(window.getScrollTop()===scrollTop).to.be.true;
+            node.forceIntoView();
+            expect(window.getScrollTop()>scrollTop).to.be.true;
         });
 
         it('getAll', function () {
+            var nodelist1 = node.getAll('div'),
+                nodelist2 = node.getAll('> div'),
+                nodelist3 = node.getAll('.green'),
+                nodelist4 = node.getAll('div.green.yellow'),
+                nodelist5 = node.getAll('.red'), // node itself has class `red`, but it shouldn't be part of the selection
+                nodelist6 = node.getAll('#sub3'),
+                nodelist7 = node.getAll('#sub3 div'),
+                nodelist8 = node.getAll('#dummy'),
+                nodelist9 = node.getAll('div div.green');
+
+            expect(nodelist1.length).to.be.eql(4);
+            expect(nodelist1[0]).to.be.eql(nodeSub1);
+            expect(nodelist1[1]).to.be.eql(nodeSub2);
+            expect(nodelist1[2]).to.be.eql(nodeSub3);
+            expect(nodelist1[3]).to.be.eql(nodeSub3Sub);
+
+            expect(nodelist2.length).to.be.eql(3);
+            expect(nodelist2[0]).to.be.eql(nodeSub1);
+            expect(nodelist2[1]).to.be.eql(nodeSub2);
+            expect(nodelist2[2]).to.be.eql(nodeSub3);
+
+            expect(nodelist3.length).to.be.eql(3);
+            expect(nodelist3[0]).to.be.eql(nodeSub1);
+            expect(nodelist3[1]).to.be.eql(nodeSub2);
+            expect(nodelist3[2]).to.be.eql(nodeSub3Sub);
+
+            expect(nodelist4.length).to.be.eql(3);
+            expect(nodelist4[0]).to.be.eql(nodeSub1);
+            expect(nodelist4[1]).to.be.eql(nodeSub2);
+            expect(nodelist4[2]).to.be.eql(nodeSub3Sub);
+
+            expect(nodelist5.length).to.be.eql(0);
+
+            expect(nodelist6.length).to.be.eql(1);
+            expect(nodelist6[0]).to.be.eql(nodeSub3);
+
+            expect(nodelist7.length).to.be.eql(1);
+            expect(nodelist7[0]).to.be.eql(nodeSub3Sub);
+
+            expect(nodelist8.length).to.be.eql(0);
+
+            expect(nodelist9.length).to.be.eql(1);
+            expect(nodelist9[0]).to.be.eql(nodeSub3Sub);
         });
 
         it('getAttr', function () {
+            expect(node.getAttr('id')).to.be.eql('ITSA');
+            expect(node.getAttr('class')).to.be.eql('red blue');
+            expect(node.getAttr('style')).to.be.eql('position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
+
+            expect(nodeSub1.getAttr('id')).to.be.eql('sub1');
+            expect(nodeSub1.getAttr('class')).to.be.eql('green yellow');
+            expect(nodeSub1.getAttr('style')===null).to.be.true;
+
+            expect(nodeSub2.getAttr('id')).to.be.eql('sub2');
+            expect(nodeSub2.getAttr('class')).to.be.eql('green yellow');
+            expect(nodeSub2.getAttr('style')===null).to.be.true;
+
+            expect(nodeSub3.getAttr('id')).to.be.eql('sub3');
+            expect(nodeSub3.getAttr('class')===null).to.be.true;
+            expect(nodeSub3.getAttr('style')===null).to.be.true;
+
+            expect(nodeSub3Sub.getAttr('id')).to.be.eql('sub3sub');
+            expect(nodeSub3Sub.getAttr('class')).to.be.eql('green yellow');
+            expect(nodeSub3Sub.getAttr('style')===null).to.be.true;
+
+            // check if manually set at vnode will return the right value:
+            nodeSub1.vnode.attrs.id = 'dummy';
+            expect(nodeSub1.getAttr('id')).to.be.eql('dummy');
         });
 
         it('getAttrs', function () {
+            expect(node.getAttrs()).to.be.eql(node.vnode.attrs);
+            expect(nodeSub1.getAttrs()).to.be.eql(nodeSub1.vnode.attrs);
+            expect(nodeSub2.getAttrs()).to.be.eql(nodeSub2.vnode.attrs);
+            expect(nodeSub3.getAttrs()).to.be.eql(nodeSub3.vnode.attrs);
+            expect(nodeSub3Sub.getAttrs()).to.be.eql(nodeSub3Sub.vnode.attrs);
         });
 
         it('getAttribute', function () {
+            expect(node.getAttribute('id')).to.be.eql('ITSA');
+            expect(node.getAttribute('class')).to.be.eql('red blue');
+            expect(node.getAttribute('style')).to.be.eql('position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
+
+            expect(nodeSub1.getAttribute('id')).to.be.eql('sub1');
+            expect(nodeSub1.getAttribute('class')).to.be.eql('green yellow');
+            expect(nodeSub1.getAttribute('style')===null).to.be.true;
+
+            expect(nodeSub2.getAttribute('id')).to.be.eql('sub2');
+            expect(nodeSub2.getAttribute('class')).to.be.eql('green yellow');
+            expect(nodeSub2.getAttribute('style')===null).to.be.true;
+
+            expect(nodeSub3.getAttribute('id')).to.be.eql('sub3');
+            expect(nodeSub3.getAttribute('class')===null).to.be.true;
+            expect(nodeSub3.getAttribute('style')===null).to.be.true;
+
+            expect(nodeSub3Sub.getAttribute('id')).to.be.eql('sub3sub');
+            expect(nodeSub3Sub.getAttribute('class')).to.be.eql('green yellow');
+            expect(nodeSub3Sub.getAttribute('style')===null).to.be.true;
+
+            // check if manually set at vnode will return the right value:
+            nodeSub1.vnode.attrs.id = 'dummy';
+            expect(nodeSub1.getAttribute('id')).to.be.eql('dummy');
         });
 
         it('getChildren', function () {
+            var children = node.getChildren();
+            expect(children.length).to.be.eql(3);
+            expect(children[0]).to.be.eql(nodeSub1);
+            expect(children[1]).to.be.eql(nodeSub2);
+            expect(children[2]).to.be.eql(nodeSub3);
         });
 
         it('getClassList', function () {
+            var classlist = node.getClassList();
+            expect(classlist.contains('red')).to.be.true;
+            expect(classlist.contains('blue')).to.be.true;
+            expect(classlist.contains('green')).to.be.false;
+            expect(classlist.contains('yellow')).to.be.false;
+
+            expect(classlist.item(0)).to.be.eql('red');
+            expect(classlist.item(1)).to.be.eql('blue');
+
+            classlist.toggle('red');
+            classlist.toggle('green');
+            expect(classlist.contains('red')).to.be.false;
+            expect(classlist.contains('blue')).to.be.true;
+            expect(classlist.contains('green')).to.be.true;
+            expect(classlist.contains('yellow')).to.be.false;
+            expect(classlist.item(0)).to.be.eql('blue');
+            expect(classlist.item(1)).to.be.eql('green');
+            expect(node.className).to.be.eql('blue green');
+
+            classlist.add('purple');
+            expect(classlist.contains('red')).to.be.false;
+            expect(classlist.contains('blue')).to.be.true;
+            expect(classlist.contains('green')).to.be.true;
+            expect(classlist.contains('yellow')).to.be.false;
+            expect(classlist.contains('purple')).to.be.true;
+            expect(classlist.item(0)).to.be.eql('blue');
+            expect(classlist.item(1)).to.be.eql('green');
+            expect(classlist.item(2)).to.be.eql('purple');
+            expect(node.className).to.be.eql('blue green purple');
+
+            classlist.remove('blue');
+            expect(classlist.contains('red')).to.be.false;
+            expect(classlist.contains('blue')).to.be.false;
+            expect(classlist.contains('green')).to.be.true;
+            expect(classlist.contains('yellow')).to.be.false;
+            expect(classlist.contains('purple')).to.be.true;
+            expect(classlist.item(0)).to.be.eql('green');
+            expect(classlist.item(1)).to.be.eql('purple');
+            expect(node.className).to.be.eql('green purple');
         });
 
         it('getData', function () {
+            expect(node.getData('dummy1')===undefined).to.be.true;
+            node.vnode._data = {dummy1: 10, dummy2: 20};
+            expect(node.getData('dummy1')).to.be.eql(10);
+            expect(node.getData('dummy2')).to.be.eql(20);
         });
 
         it('getElement', function () {
+            expect(node.getElement('div')).to.be.eql(nodeSub1);
+            expect(node.getElement('.green')).to.be.eql(nodeSub1);
+            expect(node.getElement('div.green')).to.be.eql(nodeSub1);
+            expect(node.getElement('div div.green')).to.be.eql(nodeSub3Sub);
+            expect(node.getElement('.purple')===undefined).to.be.true;
+            expect(nodeSub3.getElement('div')).to.be.eql(nodeSub3Sub);
+            expect(node.getElement('#sub1')).to.be.eql(nodeSub1);
+            expect(node.getElement('#sub2')).to.be.eql(nodeSub2);
+            expect(node.getElement('#sub3')).to.be.eql(nodeSub3);
+            expect(node.getElement('#sub3sub')).to.be.eql(nodeSub3Sub);
+            expect(node.getElement('#sub3 div')).to.be.eql(nodeSub3Sub);
         });
 
         it('getElementById', function () {
+            expect(node.getElementById('sub1')).to.be.eql(nodeSub1);
+            expect(node.getElementById('sub2')).to.be.eql(nodeSub2);
+            expect(node.getElementById('sub3')).to.be.eql(nodeSub3);
+            expect(node.getElementById('sub3sub')).to.be.eql(nodeSub3Sub);
+        });
+
+        it('getHTML', function () {
+            // because the order of attributes might be randomly generated (behaviour of JS-properties), we check differently:
+            // one time without classes, one time without id's
+            expect(node.getHTML().replace(/ class="green yellow"/g, '')).to.eql('<div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div>');
+            expect(node.getHTML().replace(/ id="\w+"/g, '')).to.eql('<div class="green yellow"></div><div class="green yellow"></div><div><div class="green yellow"></div>extra text</div>');
+
+            expect(nodeSub1.getHTML()).to.eql('');
+            expect(nodeSub2.getHTML()).to.eql('');
+
+            expect(nodeSub3.getHTML().replace(/ class="green yellow"/g, '')).to.eql('<div id="sub3sub"></div>extra text');
+            expect(nodeSub3.getHTML().replace(/ id="\w+"/g, '')).to.eql('<div class="green yellow"></div>extra text');
+
+            expect(nodeSub3Sub.getHTML()).to.eql('');
         });
 
         it('getId', function () {
+            expect(node.getId()).to.be.eql('ITSA');
+            expect(nodeSub1.getId()).to.be.eql('sub1');
+            expect(nodeSub2.getId()).to.be.eql('sub2');
+            expect(nodeSub3.getId()).to.be.eql('sub3');
+            expect(nodeSub3Sub.getId()).to.be.eql('sub3sub');
+            node.appendChild(window.document.createElement('div'));
+            expect(node.childNodes[3].getId()===undefined).to.be.true;
         });
 
         it('getInlineStyle', function () {
@@ -395,37 +632,168 @@
             window.document.body.removeChild(node3);
         });
 
-        it('getInnerHTML', function () {
-        });
-
         it('getOuterHTML', function () {
+            // because the order of attributes might be randomly generated (behaviour of JS-properties), we check differently:
+            // one time without classes, one time without id's
+            expect(node.getOuterHTML()
+                   .replace(/ style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;"/g, '')
+                   .replace(/ class="red blue"/g, '')
+                   .replace(/ class="green yellow"/g, ''))
+                   .to.eql('<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>');
+            expect(node.getOuterHTML()
+                   .replace(/ style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;"/g, '')
+                   .replace(/ id="\w+"/g, ''))
+                   .to.eql('<div class="red blue"><div class="green yellow"></div><div class="green yellow"></div><div><div class="green yellow"></div>extra text</div></div>');
+            expect(node.getOuterHTML()
+                   .replace(/ class="red blue"/g, '')
+                   .replace(/ id="\w+"/g, ''))
+                   .to.eql('<div style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;">'+
+                    '<div class="green yellow"></div><div class="green yellow"></div><div><div class="green yellow"></div>extra text</div></div>');
+
+            expect(nodeSub1.getOuterHTML().replace(/ class="green yellow"/g, '')).to.eql('<div id="sub1"></div>');
+            expect(nodeSub1.getOuterHTML().replace(/ id="\w+"/g, '')).to.eql('<div class="green yellow"></div>');
+
+            expect(nodeSub2.getOuterHTML().replace(/ class="green yellow"/g, '')).to.eql('<div id="sub2"></div>');
+            expect(nodeSub2.getOuterHTML().replace(/ id="\w+"/g, '')).to.eql('<div class="green yellow"></div>');
+
+            expect(nodeSub3.getOuterHTML().replace(/ class="green yellow"/g, '')).to.eql('<div id="sub3"><div id="sub3sub"></div>extra text</div>');
+            expect(nodeSub3.getOuterHTML().replace(/ id="\w+"/g, '')).to.eql('<div><div class="green yellow"></div>extra text</div>');
+
+            expect(nodeSub3Sub.getOuterHTML().replace(/ class="green yellow"/g, '')).to.eql('<div id="sub3sub"></div>');
+            expect(nodeSub3Sub.getOuterHTML().replace(/ id="\w+"/g, '')).to.eql('<div class="green yellow"></div>');
         });
 
         it('getParent', function () {
+            expect(node.getParent()).to.be.eql(window.document.body);
+            expect(nodeSub1.getParent()).to.be.eql(node);
+            expect(nodeSub2.getParent()).to.be.eql(node);
+            expect(nodeSub3.getParent()).to.be.eql(node);
+            expect(nodeSub3Sub.getParent()).to.be.eql(nodeSub3);
         });
 
         it('getStyle', function () {
+            expect(node.getStyle('left')).to.be.eql('10px');
+            expect(node.getStyle('display')).to.be.eql('block');
         });
 
         it('getTagName', function () {
+            expect(node.getTagName()).to.be.eql('DIV');
+            node.appendChild(window.document.createElement('img'));
+            expect(node.childNodes[3].getTagName()).to.be.eql('IMG');
         });
 
         it('getText', function () {
+            expect(node.getText()).to.eql('extra text');
+            expect(nodeSub1.getText()).to.eql('');
+            expect(nodeSub3.getText()).to.eql('extra text');
+            expect(nodeSub3Sub.getText()).to.eql('');
         });
 
         it('getValue', function () {
+            /*
+            <div>
+                <input id="item1" type="text" value="3">
+                <div id="item2">some content</div>
+                <div id="item3">some <b>content</b></div>
+                <select id="item4">
+                    <option value="option1">the content of option1</option>
+                    <option value="option2" selected>the content of option2</option>
+                    <option value="option3">the content of option3</option>
+                </select>
+            </div>
+            */
+            var cont, item1, item2, item3, item4, option;
+            cont = window.document.createElement('div');
+            cont.setAttribute('style', 'position:absolute; left:-9999px; top: -9999px;');
+
+            item1 = window.document.createElement('input');
+            item1.id = 'item1';
+            item1.setAttribute('type', 'text');
+            item1.setAttribute('value', '3');
+
+            item2 = window.document.createElement('input');
+            item2.id = 'item2';
+            item2.appendChild(window.document.createTextNode('some content'));
+
+            item3 = window.document.createElement('input');
+            item3.id = 'item3';
+            item3.appendChild(window.document.createTextNode('some '));
+            item3.appendChild(window.document.createElement('b'));
+            item3.childNodes[1].appendChild(window.document.createTextNode('content'));
+
+            item4 = window.document.createElement('select');
+            item4.id = 'item1';
+
+                option = window.document.createElement('option');
+                option.value = 'option1';
+                option.appendChild(window.document.createTextNode('the content of option1'));
+                item4.appendChild(option);
+
+                option = window.document.createElement('option');
+                option.value = 'option2';
+                option.setAttribute('selected', true);
+                option.appendChild(window.document.createTextNode('the content of option2'));
+                item4.appendChild(option);
+
+                option = window.document.createElement('option');
+                option.value = 'option3';
+                option.appendChild(window.document.createTextNode('the content of option3'));
+                item4.appendChild(option);
+
+            cont.appendChild(item1);
+            cont.appendChild(item2);
+            cont.appendChild(item3);
+            cont.appendChild(item4);
+
+            window.document.body.appendChild(cont);
+
+            expect(item1.getValue()).to.be.eql('3');
+            item1.value = '5';
+            expect(item1.getValue()).to.be.eql('5');
+            expect(item1.getAttribute('value')).to.be.eql('3');
+
+            expect(item2.getValue()).to.be.eql('');
+            item2.setAttribute('contenteditable', true);
+            expect(item2.getValue()).to.be.eql('some content');
+
+            expect(item3.getValue()).to.be.eql('');
+            item3.setAttribute('contenteditable', true);
+            expect(item3.getValue()).to.be.eql('some <b>content</b>');
+
+            expect(item4.getValue()).to.be.eql('option2');
+            item4.selectedIndex = 0;
+            expect(item4.getValue()).to.be.eql('option1');
+
+            window.document.body.removeChild(cont);
         });
 
         it('hasAttr', function () {
+            expect(node.hasAttr('id')).to.be.true;
+            expect(node.hasAttr('class')).to.be.true;
+            expect(node.hasAttr('style')).to.be.true;
+            expect(node.hasAttr('src')).to.be.false;
         });
 
         it('hasAttribute', function () {
+            expect(node.hasAttribute('id')).to.be.true;
+            expect(node.hasAttribute('class')).to.be.true;
+            expect(node.hasAttribute('style')).to.be.true;
+            expect(node.hasAttribute('src')).to.be.false;
         });
 
         it('hasAttributes', function () {
+            node.appendChild(window.document.createElement('div'));
+            expect(node.hasAttributes()).to.be.true;
+            expect(nodeSub1.hasAttributes()).to.be.true;
+            expect(node.childNodes[3].hasAttributes()).to.be.false;
         });
 
         it('hasChildren', function () {
+            expect(node.hasChildren()).to.be.true;
+            expect(nodeSub1.hasChildren()).to.be.false;
+            expect(nodeSub2.hasChildren()).to.be.false;
+            expect(nodeSub3.hasChildren()).to.be.true;
+            expect(nodeSub3Sub.hasChildren()).to.be.false;
         });
 
         it('hasClass', function () {
@@ -435,18 +803,92 @@
         });
 
         it('hasData', function () {
+            expect(node.hasData('dummy')).to.be.false;
+            expect(nodeSub1.hasData('dummy')).to.be.false;
+            expect(nodeSub2.hasData('dummy')).to.be.false;
+            expect(nodeSub3.hasData('dummy')).to.be.false;
+            expect(nodeSub3Sub.hasData('dummy')).to.be.false;
+
+            nodeSub3.vnode._data = {dummy: 10};
+            expect(node.hasData('dummy')).to.be.false;
+            expect(nodeSub1.hasData('dummy')).to.be.false;
+            expect(nodeSub2.hasData('dummy')).to.be.false;
+            expect(nodeSub3.hasData('dummy')).to.be.true;
+            expect(nodeSub3Sub.hasData('dummy')).to.be.false;
         });
 
         it('hasFocus', function () {
+            var inputNode = window.document.createElement('input')
+            node.appendChild(inputNode);
+            expect(node.hasFocus()).to.be.false;
+            expect(nodeSub1.hasFocus()).to.be.false;
+            expect(nodeSub2.hasFocus()).to.be.false;
+            expect(nodeSub3.hasFocus()).to.be.false;
+            expect(nodeSub3Sub.hasFocus()).to.be.false;
+            expect(inputNode.hasFocus()).to.be.false;
+
+            inputNode.focus();
+            expect(node.hasFocus()).to.be.false;
+            expect(nodeSub1.hasFocus()).to.be.false;
+            expect(nodeSub2.hasFocus()).to.be.false;
+            expect(nodeSub3.hasFocus()).to.be.false;
+            expect(nodeSub3Sub.hasFocus()).to.be.false;
+            expect(inputNode.hasFocus()).to.be.true;
         });
 
         it('inside', function () {
+            expect(node.inside(node)).to.be.false;
+            expect(nodeSub1.inside(node)).to.be.eql(node);
+            expect(nodeSub2.inside(node)).to.be.eql(node);
+            expect(nodeSub3.inside(node)).to.be.eql(node);
+            expect(nodeSub3Sub.inside(node)).to.be.eql(node);
+
+            expect(nodeSub3Sub.inside(nodeSub1)).to.be.false;
+
+            expect(nodeSub3Sub.inside('div')).to.be.eql(nodeSub3);
+            expect(nodeSub3Sub.inside('.green')).to.be.false;
+            expect(nodeSub3Sub.inside('.red')).to.be.eql(node);
+            expect(nodeSub3Sub.inside('#ITSA')).to.be.eql(node);
         });
 
         it('insidePos', function () {
+            expect(node.insidePos(10, 30)).to.be.true;
+            expect(node.insidePos(160, 30)).to.be.true;
+            expect(node.insidePos(160, 105)).to.be.true;
+            expect(node.insidePos(10, 105)).to.be.true;
+
+            expect(node.insidePos(9, 30)).to.be.false;
+            expect(node.insidePos(9, 29)).to.be.false;
+            expect(node.insidePos(10, 29)).to.be.false;
+
+            expect(node.insidePos(160, 29)).to.be.false;
+            expect(node.insidePos(161, 29)).to.be.false;
+            expect(node.insidePos(161, 30)).to.be.false;
+
+            expect(node.insidePos(161, 105)).to.be.false;
+            expect(node.insidePos(161, 106)).to.be.false;
+            expect(node.insidePos(160, 106)).to.be.false;
+
+            expect(node.insidePos(10, 106)).to.be.false;
+            expect(node.insidePos(9, 106)).to.be.false;
+            expect(node.insidePos(9, 105)).to.be.false;
+        });
+
+        it('insertBefore', function () {
+            var n1 = window.document.createElement('img'),
+                n2 = window.document.createElement('table');
+            node.insertBefore(n1, nodeSub3);
+            nodeSub3.insertBefore(n2, nodeSub3Sub);
+            expect(node.childNodes.length).to.be.eql(4);
+            expect(node.childNodes[2]).to.be.eql(n1);
+            expect(nodeSub3.childNodes.length).to.be.eql(3);
+            expect(nodeSub3.childNodes[0]).to.be.eql(n2);
         });
 
         it('last', function () {
+            expect(nodeSub1.last()).to.be.eql(nodeSub3);
+            expect(nodeSub2.last()).to.be.eql(nodeSub3);
+            expect(nodeSub3.last()).to.be.eql(nodeSub3);
         });
 
         it('lastOfChildren', function () {
@@ -456,11 +898,77 @@
         });
 
         it('matches', function () {
+            expect(node.matches('#ITSA')).to.be.true;
+            expect(node.matches('#ITSA.red')).to.be.true;
+            expect(node.matches('#ITSA.red.blue')).to.be.true;
+            expect(node.matches('.red')).to.be.true;
+            expect(node.matches('.red.blue')).to.be.true;
+            expect(node.matches('.green')).to.be.false;
+            expect(node.matches('div#ITSA')).to.be.true;
+            expect(node.matches('div#ITSA.red')).to.be.true;
+            expect(node.matches('div#ITSA.red.blue')).to.be.true;
+            expect(node.matches('div.red')).to.be.true;
+            expect(node.matches('div.red.blue')).to.be.true;
+            expect(node.matches('div.green')).to.be.false;
+
+            expect(nodeSub1.matches('div')).to.be.true;
+            expect(nodeSub1.matches('div div')).to.be.true;
+            expect(nodeSub1.matches('div div.green')).to.be.true;
+            expect(nodeSub1.matches('div div.green.yellow')).to.be.true;
+            expect(nodeSub1.matches('div div.red')).to.be.false;
+            expect(nodeSub1.matches('div #sub1.green.yellow')).to.be.true;
+            expect(nodeSub1.matches('div div#sub1.green.yellow')).to.be.true;
+            expect(nodeSub1.matches('#ITSA #sub1.green.yellow')).to.be.true;
+            expect(nodeSub1.matches('#ITSA div.green.yellow')).to.be.true;
+            expect(nodeSub1.matches('#ITSA div#sub1.green.yellow')).to.be.true;
+            expect(nodeSub1.matches('div#ITSA #sub1.green.yellow')).to.be.true;
+            expect(nodeSub1.matches('div#ITSA div#sub1.green.yellow')).to.be.true;
+            expect(nodeSub1.matches('div#ITSA div.green.yellow')).to.be.true;
+
+            expect(nodeSub1.matches('body div#ITSA div.green.yellow')).to.be.true;
         });
 
         it('matchesSelector', function () {
+            expect(node.matchesSelector('#ITSA')).to.be.true;
+            expect(node.matchesSelector('#ITSA.red')).to.be.true;
+            expect(node.matchesSelector('#ITSA.red.blue')).to.be.true;
+            expect(node.matchesSelector('.red')).to.be.true;
+            expect(node.matchesSelector('.red.blue')).to.be.true;
+            expect(node.matchesSelector('.green')).to.be.false;
+            expect(node.matchesSelector('div#ITSA')).to.be.true;
+            expect(node.matchesSelector('div#ITSA.red')).to.be.true;
+            expect(node.matchesSelector('div#ITSA.red.blue')).to.be.true;
+            expect(node.matchesSelector('div.red')).to.be.true;
+            expect(node.matchesSelector('div.red.blue')).to.be.true;
+            expect(node.matchesSelector('div.green')).to.be.false;
+
+            expect(nodeSub1.matchesSelector('div')).to.be.true;
+            expect(nodeSub1.matchesSelector('div div')).to.be.true;
+            expect(nodeSub1.matchesSelector('div div.green')).to.be.true;
+            expect(nodeSub1.matchesSelector('div div.green.yellow')).to.be.true;
+            expect(nodeSub1.matchesSelector('div div.red')).to.be.false;
+            expect(nodeSub1.matchesSelector('div #sub1.green.yellow')).to.be.true;
+            expect(nodeSub1.matchesSelector('div div#sub1.green.yellow')).to.be.true;
+            expect(nodeSub1.matchesSelector('#ITSA #sub1.green.yellow')).to.be.true;
+            expect(nodeSub1.matchesSelector('#ITSA div.green.yellow')).to.be.true;
+            expect(nodeSub1.matchesSelector('#ITSA div#sub1.green.yellow')).to.be.true;
+            expect(nodeSub1.matchesSelector('div#ITSA #sub1.green.yellow')).to.be.true;
+            expect(nodeSub1.matchesSelector('div#ITSA div#sub1.green.yellow')).to.be.true;
+            expect(nodeSub1.matchesSelector('div#ITSA div.green.yellow')).to.be.true;
+
+            expect(nodeSub1.matchesSelector('body div#ITSA div.green.yellow')).to.be.true;
         });
 
+        /*
+        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;">
+            <div id="sub1" class="green yellow"></div>
+            <div id="sub2" class="green yellow"></div>
+            <div id="sub3">
+                <div id="sub3sub" class="green yellow"></div>
+                extra text
+            </div>
+        </div>
+        */
         it('next', function () {
         });
 
@@ -483,6 +991,9 @@
         });
 
         it('removeAttribute', function () {
+        });
+
+        it('removeChild', function () {
         });
 
         it('removeClass', function () {
@@ -573,7 +1084,8 @@
             expect(styles.indexOf('width: 150px')!==-1).to.be.true;
 
             node2 = window.document.createElement('div');
-            node2.setAttribute('style', '{color: #F00; position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;} :before {color: #00F; font-weight: bold; font-style: italic;}');
+            node2.setAttribute('style', '{color: #F00; position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;}'+
+                ' :before {color: #00F; font-weight: bold; font-style: italic;}');
             window.document.body.appendChild(node2);
 
             expect(node2.getInlineStyle('dummy')===undefined).to.be.true;
@@ -638,6 +1150,9 @@
             expect(beforeStyles.indexOf('dummy')!==-1).to.be.false;
 
             window.document.body.removeChild(node2);
+        });
+
+        it('removeChild', function () {
         });
 
         it('replaceClass', function () {
@@ -811,10 +1326,7 @@
             node = window.document.createElement('div');
             node.id = 'ITSA';
             node.className = 'red blue';
-            // cautious: DO NOT call 'setAttribute here --> in that case node.vnode is calculated without any childNodes'
-            // these childNodes will be there eventually (appendChild makes the mutationObserver to update), but that will be asynchronious
-            // and in some cases too late!
-            node._setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
+            node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
                 nodeSub1 = window.document.createElement('div');
                 nodeSub1.id = 'sub1';
                 node.appendChild(nodeSub1);
@@ -846,8 +1358,8 @@
         it('append Element with element-ref', function () {
             var content = window.document.createElement('div');
             content.id = 'newdiv';
-            node.append(content, nodeSub2);
-            expect(node.innerHTML).to.eql('<div id="sub1"><div id="newdiv"></div></div><div id="sub2"></div><div id="sub3"></div>');
+            node.append(content, nodeSub1);
+            expect(node.innerHTML).to.eql('<div id="sub1"></div><div id="newdiv"></div><div id="sub2"></div><div id="sub3"></div>');
             expect(node.childNodes.length).to.be.eql(4);
         });
 
@@ -889,10 +1401,7 @@
             node = window.document.createElement('div');
             node.id = 'ITSA';
             node.className = 'red blue';
-            // cautious: DO NOT call 'setAttribute here --> in that case node.vnode is calculated without any childNodes'
-            // these childNodes will be there eventually (appendChild makes the mutationObserver to update), but that will be asynchronious
-            // and in some cases too late!
-            node._setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
+            node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
                 nodeSub1 = window.document.createElement('div');
                 nodeSub1.id = 'sub1';
                 node.appendChild(nodeSub1);
@@ -957,10 +1466,7 @@
             node = window.document.createElement('div');
             node.id = 'ITSA';
             node.className = 'red blue';
-            // cautious: DO NOT call 'setAttribute here --> in that case node.vnode is calculated without any childNodes'
-            // these childNodes will be there eventually (appendChild makes the mutationObserver to update), but that will be asynchronious
-            // and in some cases too late!
-            node._setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
+            node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
                 nodeSub1 = window.document.createElement('div');
                 nodeSub1.id = 'sub1';
                 node.appendChild(nodeSub1);
