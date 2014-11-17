@@ -1742,6 +1742,29 @@
             </div>
         </div>
         */
+
+        it('append TextNode', function () {
+            var textNode = window.document.createTextNode(' new ');
+            container.append(textNode);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth new ');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth new ');
+            expect(container.childNodes.length).to.be.eql(7);
+            expect(container.vnode.vChildNodes.length).to.be.eql(7);
+            expect(container.childNodes[5].id).to.be.eql('ITSA-cont-sub3');
+            expect(container.vnode.vChildNodes[5].id).to.be.eql('ITSA-cont-sub3');
+        });
+
+        it('append TextNode with element-ref', function () {
+            var textNode = window.document.createTextNode(' new ');
+            container.append(textNode, false, containerSub2);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div> new third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div> new third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.childNodes.length).to.be.eql(7);
+            expect(container.vnode.vChildNodes.length).to.be.eql(7);
+            expect(container.childNodes[5].id).to.be.eql('ITSA-cont-sub3');
+            expect(container.vnode.vChildNodes[5].id).to.be.eql('ITSA-cont-sub3');
+        });
+
         it('append Element', function () {
             container.append(node);
             expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth'+
@@ -1960,6 +1983,28 @@
             </div>
         </div>
         */
+        it('prepend TextNode', function () {
+            var textNode = window.document.createTextNode(' new ');
+            container.prepend(textNode);
+            expect(container.innerHTML).to.eql(' new first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql(' new first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.childNodes.length).to.be.eql(7);
+            expect(container.vnode.vChildNodes.length).to.be.eql(7);
+            expect(container.childNodes[1].id).to.be.eql('ITSA-cont-sub1');
+            expect(container.vnode.vChildNodes[1].id).to.be.eql('ITSA-cont-sub1');
+        });
+
+        it('prepend TextNode with element-ref', function () {
+            var textNode = window.document.createTextNode(' new ');
+            container.prepend(textNode, false, containerSub2);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second new <div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second new <div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.childNodes.length).to.be.eql(7);
+            expect(container.vnode.vChildNodes.length).to.be.eql(7);
+            expect(container.childNodes[3].id).to.be.eql('ITSA-cont-sub2');
+            expect(container.vnode.vChildNodes[3].id).to.be.eql('ITSA-cont-sub2');
+        });
+
         it('prepend Element', function () {
             container.prepend(node);
             expect(container.innerHTML).to.eql('<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>'+
@@ -2170,6 +2215,16 @@
             </div>
         </div>
         */
+        it('replace TextNode', function () {
+            var textNode = window.document.createTextNode(' new ');
+            containerSub2.replace(textNode);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second new third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second new third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.childNodes.length).to.be.eql(5);
+            expect(container.vnode.vChildNodes.length).to.be.eql(5);
+            expect(container.childNodes[3]).to.be.eql(containerSub3);
+        });
+
         it('replace Element', function () {
             containerSub2.replace(node);
             expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>third<div id="ITSA-cont-sub3"></div>fourth');
