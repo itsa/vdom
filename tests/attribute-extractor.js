@@ -6,7 +6,7 @@
 
     var expect = require('chai').expect,
         should = require('chai').should(),
-        extractor = require('../lib/attribute-extractor.js');
+        extractor = require('../partials/attribute-extractor.js');
 
 
     describe('extractClass', function () {

@@ -22,11 +22,11 @@ require('polyfill/lib/window.console.js');
 require('polyfill/lib/weakmap.js');
 require('polyfill/lib/mutationobserver.js'); // needs weakmap
 
-var ElementArray = require('./element-array.js');
 
 module.exports = function (window) {
 
     var NAME = '[extend-element]: ',
+        ElementArray = require('./element-array.js')(window),
         domNodeToVNode = require('./node-parser.js')(window),
         htmlToVNodes = require('./html-parser.js')(window),
         vNodeProto = require('./vnode.js')(window),
@@ -252,7 +252,6 @@ module.exports = function (window) {
             }
         };
 
-    require('./nodelist.js')(window);
     require('window-ext')(window);
 
     Object.defineProperties(treeWalkerProto, {
@@ -358,7 +357,7 @@ module.exports = function (window) {
         };
 
         /**
-         * Adds a node to the end of the list of children of a specified parent node.
+         * Adds a node to the end of the list of childNodes of a specified parent node.
          *
          * @method appendChild
          * @param content {Element|ElementArray|String} content to append
@@ -1295,7 +1294,7 @@ module.exports = function (window) {
                 thisvnode = this.vnode,
                 inspectChildren = function(vnode) {
                     var vChildren = vnode.vChildren,
-                        len = vChildren.length,
+                        len = vChildren ? vChildren.length : 0,
                         i, vChildNode;
                     for (i=0; (i<len) && !found; i++) {
                         vChildNode = vChildren[i];
@@ -1330,7 +1329,7 @@ module.exports = function (window) {
                 thisvnode = this.vnode,
                 inspectChildren = function(vnode) {
                     var vChildren = vnode.vChildren,
-                        len = vChildren.length,
+                        len = vChildren ? vChildren.length : 0,
                         i, vChildNode;
                     for (i=0; i<len; i++) {
                         vChildNode = vChildren[i];
@@ -1407,6 +1406,17 @@ module.exports = function (window) {
             this.vnode._removeAttr(attributeName);
         };
 
+        /**
+        * Removes the Element's child-Node from the DOM.
+        *
+        * @method removeChild
+        * @param domNode {Node} the child-Node to remove
+        */
+        ElementPrototype._removeChild = ElementPrototype.removeChild;
+        ElementPrototype.removeChild = function(domNode) {
+            this.vnode._removeChild(domNode.vnode);
+        };
+
        /**
         * Removes a className from the Element.
         *
@@ -1474,18 +1484,6 @@ module.exports = function (window) {
             return instance;
         };
 
-        /**
-        * Removes the Element's child-Element from the DOM.
-        *
-        * @method removeChild
-        * @param childVElement {Element} the child-Element to remove
-        * @since 0.0.1
-        */
-        ElementPrototype._removeChild = ElementPrototype.removeChild;
-        ElementPrototype.removeChild = function(domNode) {
-            this.vnode._removeChild(domNode.vnode);
-        };
-
        /**
         * Replaces the Element with a new Element.
         *
@@ -1501,7 +1499,7 @@ module.exports = function (window) {
                 previousVNode = vnode.vPrevious,
                 vParent = vnode.vParent,
                 createdElement;
-            createdElement = vParent.domNode.append(newElement, escape, previousVNode.domNode);
+            createdElement = previousVNode ? vParent.domNode.append(newElement, escape, previousVNode.domNode) : vParent.domNode.prepend(newElement, escape);
             instance.setClass(HIDDEN);
             instance.remove();
             return createdElement;
@@ -2040,27 +2038,55 @@ module.exports = function (window) {
 
                 var node = mutation.target,
                     vnode = node.vnode,
+                    type = mutation.type,
                     attribute = mutation.attributeName,
                     addedChildNodes = mutation.addedNodes,
                     removedChildNodes = mutation.removedNodes,
-                    i, len, childDomNode, childVNode, index;
+                    i, len, childDomNode, childVNode, index, vchildnode;
                 if (vnode && !vnode._nosync) {
-                    if (attribute) {
+                    if (type==='attributes') {
                         vnode.reloadAttr(attribute);
+                    }
+                    else if (type==='characterData') {
+                        vnode.text = node.nodeValue;
                     }
                     else {
                         // remove the childNodes that are no longer there:
                         len = removedChildNodes.length;
                         for (i=len-1; i>=0; i--) {
                             childVNode = removedChildNodes[i].vnode;
-                            childVNode && childVNode._remove();
+                            childVNode && childVNode._destroy();
                         }
                        // add the new childNodes:
                         len = addedChildNodes.length;
                         for (i=0; i<len; i++) {
                             childDomNode = addedChildNodes[i];
+                            // find its index in the true DOM:
                             index = node.childNodes.indexOf(childDomNode);
-                            domNodeToVNode(childDomNode)._moveToParent(vnode, index);
+                            // create the vnode:
+                            vchildnode = domNodeToVNode(childDomNode);
+//======================================================================================================
+// TODO: remove this block of code: we shouldn;t be needing it
+// that is: when the alert never rises (which I expect it doesn't)
+
+
+// prevent double definitions (for whatever reason):
+// check if there is a vChild with the same domNode and remove it:
+var vChildNodes = vnode.vChildNodes;
+var len2 = vChildNodes.length;
+var j;
+for (j=0; j<len2; j++) {
+    var checkChildVNode = vChildNodes[j];
+    if (checkChildVNode.domNode===node) {
+        checkChildVNode._destroy();
+        alert('double deleted');
+        break;
+    }
+}
+// END OF removable block
+//======================================================================================================
+                            // add the vnode:
+                            vchildnode._moveToParent(vnode, index);
                         }
                     }
                 }

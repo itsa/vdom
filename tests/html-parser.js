@@ -6,8 +6,8 @@
 
     var expect = require('chai').expect,
         should = require('chai').should(),
-        htmlToVNodes = require("../lib/html-parser.js")(window),
-        vNodeProto = require("../lib/vnode.js")(window),
+        htmlToVNodes = require("../partials/html-parser.js")(window),
+        vNodeProto = require("../partials/vnode.js")(window),
         html1 = '<div id="divone" class="red blue" disabled data-x="somedata">the innercontent</div>',
         html2 = '<div id="divone" class="red blue" disabled data-x="somedata1"></div>'+
                 '<div id="divtwo" class="green yellow" disabled data-x="somedata2">'+

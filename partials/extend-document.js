@@ -40,7 +40,7 @@ module.exports = function (window) {
      * @return {TreeWalker}
      */
     DOCUMENT.createTreeWalker = function(root, whatToShow, filter) {
-        return DOCUMENT.documentElement.createTreeWalker(whatToShow, filter);
+        return root.createTreeWalker(whatToShow, filter);
     };
 
     /**

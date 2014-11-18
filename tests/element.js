@@ -7,13 +7,14 @@
     require("js-ext/lib/object.js");
     require("window-ext");
     require("../vdom.js")(window);
-    // require('../lib/extend-element.js')(window);
-    // require('../lib/extend-document.js')(window);
+    // require('../partials/extend-element.js')(window);
+    // require('../partials/extend-document.js')(window);
 
     var expect = require('chai').expect,
         should = require('chai').should(),
-        NS = require('../lib/vdom-ns.js')(window),
+        NS = require('../partials/vdom-ns.js')(window),
         nodeids = NS.nodeids,
+        async = require('utils/lib/timers.js').async,
         node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub, nodeSub3SubText, container, containerSub1, containerSub2, containerSub3;
 
     describe('Properties', function () {
@@ -598,13 +599,13 @@
 
             expect(nodeSub1.getElement('~ div')).to.be.eql(nodeSub2);
             expect(nodeSub2.getElement('~ div')).to.be.eql(nodeSub3);
-            expect(nodeSub3.getElement('~ div')===undefined).to.be.true
+            expect(nodeSub3.getElement('~ div')===undefined).to.be.true;
 
             expect(nodeSub1.getElement('+ div')).to.be.eql(nodeSub2);
             expect(nodeSub2.getElement('+ div')).to.be.eql(nodeSub3);
-            expect(nodeSub3.getElement('+ div')===undefined).to.be.true
+            expect(nodeSub3.getElement('+ div')===undefined).to.be.true;
 
-            expect(nodeSub1.getElement('> div')===undefined).to.be.true
+            expect(nodeSub1.getElement('> div')===undefined).to.be.true;
             expect(nodeSub3.getElement('> div')).to.be.eql(nodeSub3Sub);
 
             expect(node.getElement(':not(.green)')).to.be.eql(nodeSub3);
@@ -876,7 +877,7 @@
         });
 
         it('hasFocus', function () {
-            var inputNode = window.document.createElement('input')
+            var inputNode = window.document.createElement('input');
             node.appendChild(inputNode);
             expect(node.hasFocus()).to.be.false;
             expect(nodeSub1.hasFocus()).to.be.false;
@@ -1078,7 +1079,7 @@
         });
 
         it('remove', function () {
-            expect(nodeids['sub2']).to.be.eql(nodeSub2);
+            expect(nodeids.sub2).to.be.eql(nodeSub2);
             nodeSub2.remove();
             expect(node.childNodes.length).to.be.eql(2);
             expect(node.vnode.vChildNodes.length).to.be.eql(2);
@@ -1086,7 +1087,7 @@
             expect(node.childNodes[1]).to.be.eql(nodeSub3);
             expect(node.vnode.vChildNodes[0].domNode).to.be.eql(nodeSub1);
             expect(node.vnode.vChildNodes[1].domNode).to.be.eql(nodeSub3);
-            expect(nodeids['sub2']===undefined).to.be.true;
+            expect(nodeids.sub2===undefined).to.be.true;
         });
 
         it('removeAttr', function () {
@@ -1108,7 +1109,7 @@
         });
 
         it('removeChild', function () {
-            expect(nodeids['sub2']).to.be.eql(nodeSub2);
+            expect(nodeids.sub2).to.be.eql(nodeSub2);
             node.removeChild(nodeSub2);
             expect(node.childNodes.length).to.be.eql(2);
             expect(node.vnode.vChildNodes.length).to.be.eql(2);
@@ -1116,7 +1117,7 @@
             expect(node.childNodes[1]).to.be.eql(nodeSub3);
             expect(node.vnode.vChildNodes[0].domNode).to.be.eql(nodeSub1);
             expect(node.vnode.vChildNodes[1].domNode).to.be.eql(nodeSub3);
-            expect(nodeids['sub2']===undefined).to.be.true;
+            expect(nodeids.sub2===undefined).to.be.true;
         });
 
         it('removeClass', function () {
@@ -1383,14 +1384,14 @@
             expect(node.id).to.be.eql('ITSA');
             expect(node.vnode.id).to.be.eql('ITSA');
             expect(node.vnode.attrs.id).to.be.eql('ITSA');
-            expect(nodeids['ITSA']).to.be.eql(node);
-            expect(nodeids['ITSA2']===undefined).to.be.true;
+            expect(nodeids.ITSA).to.be.eql(node);
+            expect(nodeids.ITSA2===undefined).to.be.true;
             node.setId('ITSA2');
             expect(node.id).to.be.eql('ITSA2');
             expect(node.vnode.id).to.be.eql('ITSA2');
             expect(node.vnode.attrs.id).to.be.eql('ITSA2');
-            expect(nodeids['ITSA']===undefined).to.be.true;
-            expect(nodeids['ITSA2']).to.be.eql(node);
+            expect(nodeids.ITSA===undefined).to.be.true;
+            expect(nodeids.ITSA2).to.be.eql(node);
         });
 
         it('setInlineStyle', function () {
@@ -1509,12 +1510,12 @@
         });
 
         it('setText', function () {
-            expect(nodeids['sub3']).to.be.eql(nodeSub3);
-            expect(nodeids['sub3sub']).to.be.eql(nodeSub3Sub);
+            expect(nodeids.sub3).to.be.eql(nodeSub3);
+            expect(nodeids.sub3sub).to.be.eql(nodeSub3Sub);
             nodeSub3.setText('ok <b>here we go</b>');
             expect(nodeSub3.outerHTML).to.be.eql('<div id="sub3">ok &lt;b&gt;here we go&lt;/b&gt;</div>');
-            expect(nodeids['sub3']).to.be.eql(nodeSub3);
-            expect(nodeids['sub3sub']===undefined).to.be.true;
+            expect(nodeids.sub3).to.be.eql(nodeSub3);
+            expect(nodeids.sub3sub===undefined).to.be.true;
         });
 
         it('setValue', function () {
@@ -2303,15 +2304,33 @@
             expect(container.childNodes[3]).to.be.eql(containerSub3);
         });
 
+        it('replace Examine replaced node', function () {
+            var newNode = nodeSub3.replace('<input>');
+            expect(newNode.outerHTML).to.be.eql('<input>');
+            expect(newNode.getOuterHTML()).to.be.eql('<input>');
+            expect(node.childNodes.indexOf(newNode)).to.be.eql(2);
+            expect(node.vnode.vChildNodes.indexOf(newNode.vnode)).to.be.eql(2);
+        });
+
+        it('replace Examine replaced first node', function () {
+            var newNode = nodeSub1.replace('<input>');
+            expect(node.childNodes[0]).to.be.eql(newNode);
+            expect(node.vnode.vChildNodes[0]).to.be.eql(newNode.vnode);
+            expect(node.childNodes[1]).to.be.eql(nodeSub2);
+            expect(node.vnode.vChildNodes[1]).to.be.eql(nodeSub2.vnode);
+        });
+
     });
 
     describe('Mutation Observer', function () {
-
         // Code to execute before every test.
         beforeEach(function() {
             node = window.document.createElement('div');
             node.id = 'ITSA';
             node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
+            node.appendChild(window.document.createElement('div'));
+            node.appendChild(window.document.createTextNode('some content'));
+            node.appendChild(window.document.createComment('some comment'));
             window.document.body.appendChild(node);
         });
 
@@ -2320,40 +2339,140 @@
             window.document.body.removeChild(node);
         });
 
-        it('processing new attribute', function () {
+        it('processing new attribute', function (done) {
+            // need to async --> because that will make node._nosync return to `false`.
+            async(function() {
+                node._setAttribute('data-x', '10');
+            }, 0);
+            setTimeout(function() {
+                expect(node.getAttr('data-x')).to.be.eql('10');
+                done();
+            }, 500);
         });
 
-        it('processing attribute-change', function () {
+        it('processing attribute-change', function (done) {
+            // need to async --> because that will make node._nosync return to `false`.
+            async(function() {
+                node._setAttribute('id', 'ITSA1');
+            }, 0);
+            setTimeout(function() {
+                expect(node.id).to.be.eql('ITSA1');
+                expect(node.vnode.id).to.be.eql('ITSA1');
+                expect(node.vnode.attrs.id).to.be.eql('ITSA1');
+                expect(nodeids.ITSA===undefined).to.be.true;
+                expect(nodeids.ITSA1).to.be.eql(node);
+                done();
+            }, 500);
         });
 
-        it('processing removed attribute', function () {
+        it('processing removed attribute', function (done) {
+            // need to async --> because that will make node._nosync return to `false`.
+            async(function() {
+                node._removeAttribute('id');
+            }, 0);
+            setTimeout(function() {
+                expect(node.id).to.be.eql('');
+                expect(node.vnode.id===undefined).to.be.true;
+                expect(node.vnode.attrs.id===undefined).to.be.true;
+                expect(nodeids.ITSA===undefined).to.be.true;
+                done();
+            }, 500);
         });
 
-        it('processing new Element', function () {
+        it('processing new Element', function (done) {
+            // need to async --> because that will make node._nosync return to `false`.
+            async(function() {
+                node._appendChild(window.document.createElement('div'));
+            }, 0);
+            setTimeout(function() {
+                expect(node.childNodes.length).to.be.eql(4);
+                expect(node.vnode.vChildNodes.length).to.be.eql(4);
+                done();
+            }, 500);
         });
 
-        it('processing Element-change', function () {
+        it('processing removed Element', function (done) {
+            // need to async --> because that will make node._nosync return to `false`.
+            async(function() {
+                node._removeChild(node.childNodes[0]);
+            }, 0);
+            setTimeout(function() {
+                expect(node.childNodes.length).to.be.eql(2);
+                expect(node.vnode.vChildNodes.length).to.be.eql(2);
+                done();
+            }, 500);
         });
 
-        it('processing removed Element', function () {
+        it('processing new TextNode', function (done) {
+            // need to async --> because that will make node._nosync return to `false`.
+            async(function() {
+                node._appendChild(window.document.createTextNode('new content'));
+            }, 0);
+            setTimeout(function() {
+                expect(node.childNodes.length).to.be.eql(4);
+                expect(node.vnode.vChildNodes.length).to.be.eql(4);
+                done();
+            }, 500);
         });
 
-        it('processing new TextNode', function () {
+        it('processing TextNode-change', function (done) {
+            // need to async --> because that will make node._nosync return to `false`.
+            async(function() {
+                node.childNodes[1].nodeValue = 'itsa new content';
+            }, 0);
+            setTimeout(function() {
+                expect(node.childNodes[1].nodeValue).to.be.eql('itsa new content');
+                expect(node.vnode.vChildNodes[1].text).to.be.eql('itsa new content');
+                done();
+            }, 500);
         });
 
-        it('processing TextNode-change', function () {
+        it('processing removed TextNode', function (done) {
+            // need to async --> because that will make node._nosync return to `false`.
+            async(function() {
+                node._removeChild(node.childNodes[1]);
+            }, 0);
+            setTimeout(function() {
+                expect(node.childNodes.length).to.be.eql(2);
+                expect(node.vnode.vChildNodes.length).to.be.eql(2);
+                done();
+            }, 500);
         });
 
-        it('processing removed TextNode', function () {
+        it('processing new CommentNode', function (done) {
+            // need to async --> because that will make node._nosync return to `false`.
+            async(function() {
+                node._appendChild(window.document.createComment('new comment'));
+            }, 0);
+            setTimeout(function() {
+                expect(node.childNodes.length).to.be.eql(4);
+                expect(node.vnode.vChildNodes.length).to.be.eql(4);
+                done();
+            }, 500);
         });
 
-        it('processing new CommentNode', function () {
+        it('processing CommentNode-change', function (done) {
+            // need to async --> because that will make node._nosync return to `false`.
+            async(function() {
+                node.childNodes[2].nodeValue = 'itsa new comment';
+            }, 0);
+            setTimeout(function() {
+                expect(node.childNodes[2].nodeValue).to.be.eql('itsa new comment');
+                expect(node.vnode.vChildNodes[2].text).to.be.eql('itsa new comment');
+                done();
+            }, 500);
         });
 
-        it('processing CommentNode-change', function () {
-        });
-
-        it('processing removed CommentNode', function () {
+        it('processing removed CommentNode', function (done) {
+            // need to async --> because that will make node._nosync return to `false`.
+            async(function() {
+                node._removeChild(node.childNodes[2]);
+            }, 0);
+            setTimeout(function() {
+                expect(node.childNodes.length).to.be.eql(2);
+                expect(node.vnode.vChildNodes.length).to.be.eql(2);
+                done();
+            }, 500);
         });
 
     });

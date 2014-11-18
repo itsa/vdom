@@ -7,7 +7,7 @@
     var expect = require('chai').expect,
         should = require('chai').should(),
         DOCUMENT = window.document,
-        domNodeToVNode = require("../lib/node-parser.js")(window),
+        domNodeToVNode = require("../partials/node-parser.js")(window),
         node1, node2, innernode, innernode2, innernode3, innernode4;
 
 // node1 looks like this:

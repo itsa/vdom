@@ -24,6 +24,9 @@
     "engines": {
         "node": "*"
     },
+    "directories": {
+        "partials": "./partials"
+    },
     "dependencies": {
         "polyfill": "itsa/polyfill",
         "js-ext": "itsa/js-ext",
@@ -36,6 +39,7 @@
         "jshint": "^2.5.5",
         "mocha": "^1.21.4",
         "js-ext": "itsa/js-ext",
+        "utils": "itsa/utils",
         "window-ext": "itsa/window-ext",
         "node-win": "itsa/node-win"
     },
