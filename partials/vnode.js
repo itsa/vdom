@@ -25,6 +25,19 @@ require('js-ext/lib/string.js');
 
 module.exports = function (window) {
 
+    if (!window._ITSAmodules) {
+        Object.defineProperty(window, '_ITSAmodules', {
+            configurable: false,
+            enumerable: false,
+            writable: false,
+            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {} its members
+        });
+    }
+
+    if (window._ITSAmodules.VNode) {
+        return window._ITSAmodules.VNode; // VNODE was already created
+    }
+
     var NS = require('./vdom-ns.js')(window),
         extractor = require('./attribute-extractor.js'),
         DOCUMENT = window.document,
@@ -446,7 +459,7 @@ module.exports = function (window) {
                     }
                     // if character===']' then we have an attribute without a value-definition
                     if (!vnode.attrs[attributeName] || ((character===']') && (vnode.attrs[attributeName]!==''))) {
-                        return false;
+                        return !!vnode.attrs[attributeName];
                     }
                     // now we read the value of the attribute
                     // however, it could be that the selector has a special `detailed` identifier set (defined by: ATTR_DETAIL_SPECIFIERS)
@@ -795,7 +808,7 @@ module.exports = function (window) {
         return list;
     };
 
-    vNodeProto = {
+    vNodeProto = window._ITSAmodules.VNode = {
        /**
         * Check whether the vnode's domNode is equal, or contains the specified Element.
         *
@@ -1152,10 +1165,9 @@ module.exports = function (window) {
             parentVNode.vChildNodes || (parentVNode.vChildNodes=[]);
             (typeof index==='number') ? parentVNode.vChildNodes.insertAt(instance, index) : (parentVNode.vChildNodes[parentVNode.vChildNodes.length]=instance);
             // force to recalculate the vChildren on a next call:
-            if (vParent && (instance.nodeType===1)) {
-                vParent._vChildren = null;
-                parentVNode._vChildren = null;
-            }
+            vParent && (instance.nodeType===1) && (vParent._vChildren = null);
+            // force to recalculate the vChildren on a next call:
+            parentVNode && (instance.nodeType===1) && (parentVNode._vChildren=null);
             return instance;
         },
 
@@ -1174,7 +1186,7 @@ module.exports = function (window) {
                 domNode = instance.domNode,
                 vChildNodes = instance.vChildNodes,
                 i, preChildNode, vChildNode;
-            if (vChildNodes) {
+            if (!instance._unNormalizable && vChildNodes) {
                 for (i=vChildNodes.length-1; i>=0; i--) {
                     vChildNode = vChildNodes[i];
                     preChildNode = vChildNodes[i-1]; // i will get the value `-1` eventually, which leads into undefined preChildNode
@@ -1196,10 +1208,27 @@ module.exports = function (window) {
         },
 
        /**
+        * Makes the vnode `normalizable`. Could be set to `false` when batch-inserting nodes, while `normalizaing` manually at the end.
+        * Afterwards, you should always reset `normalizable` to true.
+        *
+        * @method _normalizable
+        * @param value {Boolean} whether the vnode should be normalisable.
+        * @private
+        * @chainable
+        * @since 0.0.1
+        */
+        _normalizable: function(value) {
+            var instance = this;
+            value ? (delete instance._unNormalizable) : (instance._unNormalizable=true);
+            return instance;
+        },
+
+       /**
         * Prevents MutationObserver from making the dom sync with the vnode.
         * Should be used when manipulating the dom from within the vnode itself (to preventing looping)
         *
         * @method _noSync
+        * @chainable
         * @private
         * @since 0.0.1
         */
@@ -1211,6 +1240,7 @@ module.exports = function (window) {
                     instance._nosync = false;
                 });
             }
+            return instance;
         },
 
        /**
@@ -1293,37 +1323,39 @@ module.exports = function (window) {
             var instance = this,
                 extractStyle, extractClass,
                 attrs = instance.attrs;
-            attrs[attributeName] = value;
-            // in case of STYLE attribute --> special treatment
-            if (attributeName===STYLE) {
-                extractStyle = extractor.extractStyle(value);
-                value = extractStyle.attrStyle;
-                if (value) {
-                    attrs.style = value;
+            if (attrs[attributeName]!==value) {
+                attrs[attributeName] = value;
+                // in case of STYLE attribute --> special treatment
+                if (attributeName===STYLE) {
+                    extractStyle = extractor.extractStyle(value);
+                    value = extractStyle.attrStyle;
+                    if (value) {
+                        attrs.style = value;
+                    }
+                    else {
+                        delete attrs.style;
+                    }
+                    instance.styles = extractStyle.styles;
                 }
-                else {
-                    delete attrs.style;
+                else if (attributeName===CLASS) {
+                    // in case of CLASS attribute --> special treatment
+                    extractClass = extractor.extractClass(value);
+                    value = extractClass.attrClass;
+                    if (value) {
+                        attrs[CLASS] = value;
+                    }
+                    else {
+                        delete attrs[CLASS];
+                    }
+                    instance.classNames = extractClass.classNames;
                 }
-                instance.styles = extractStyle.styles;
+                else if (attributeName===ID) {
+                    instance.id && (delete nodeids[instance.id]);
+                    instance.id = value;
+                    nodeids[value] = instance.domNode;
+                }
+                instance.domNode._setAttribute(attributeName, value);
             }
-            else if (attributeName===CLASS) {
-                // in case of CLASS attribute --> special treatment
-                extractClass = extractor.extractClass(value);
-                value = extractClass.attrClass;
-                if (value) {
-                    attrs[CLASS] = value;
-                }
-                else {
-                    delete attrs[CLASS];
-                }
-                instance.classNames = extractClass.classNames;
-            }
-            else if (attributeName===ID) {
-                instance.id && (delete nodeids[instance.id]);
-                instance.id = value;
-                nodeids[value] = instance.domNode;
-            }
-            instance.domNode._setAttribute(attributeName, value);
             return instance;
         },
 
@@ -1467,22 +1499,17 @@ module.exports = function (window) {
                             break;
 
                         case 5: // oldNodeType==TextNode, newNodeType==TextNode
-                                // case5 and case8 should be treated the same
-                        case 8: // oldNodeType==Comment, newNodeType==TextNode
-                            if (oldChild.text !== newChild.text) {
-                                newChild.domNode.nodeValue = newChild.text;
-                                domNode._replaceChild(newChild.domNode, childDomNode);
-                                oldChild.text = newChild.text;
-                            }
+                                // case5 and case9 should be treated the same
+                        case 9: // oldNodeType==Comment, newNodeType==Comment
+                            (oldChild.text===newChild.text) || (oldChild.domNode.nodeValue = oldChild.text = newChild.text);
+                            newVChildNodes[i] = oldChild;
                             break;
                         case 6: // oldNodeType==TextNode, newNodeType==Comment
-                                // case6 and case9 should be treated the same
-                        case 9: // oldNodeType==Comment, newNodeType==Comment
-                            if (oldChild.text !== newChild.text) {
-                                newChild.domNode.nodeValue = newChild.text;
-                                domNode._replaceChild(newChild.domNode, childDomNode);
-                                oldChild.text = newChild.text;
-                            }
+                                // case6 and case8 should be treated the same
+                        case 8: // oldNodeType==Comment, newNodeType==TextNode
+                            newChild.domNode.nodeValue = newChild.text;
+                            domNode._replaceChild(newChild.domNode, childDomNode);
+                            newChild.vParent = oldChild.vParent;
                     }
                     if ((nodeswitch===2) || (nodeswitch===5) || (nodeswitch===8)) {
                         needNormalize = true;

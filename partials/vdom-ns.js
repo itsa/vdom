@@ -29,7 +29,11 @@ module.exports = function (window) {
         });
     }
 
-    NS = window._ITSAmodules.VDOM || (window._ITSAmodules.VDOM={});
+    if (window._ITSAmodules.VDOM_NS) {
+        return window._ITSAmodules.VDOM_NS; // VDOM_NS was already created
+    }
+
+    NS = window._ITSAmodules.VDOM_NS = {};
 
     /**
      * Reference to the VElement of document.body (gets its value as soon as it gets refered to)

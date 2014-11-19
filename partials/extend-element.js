@@ -25,12 +25,29 @@ require('polyfill/lib/mutationobserver.js'); // needs weakmap
 
 module.exports = function (window) {
 
+    if (!window._ITSAmodules) {
+        Object.defineProperty(window, '_ITSAmodules', {
+            configurable: false,
+            enumerable: false,
+            writable: false,
+            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {} its members
+        });
+    }
+
+    if (window._ITSAmodules.ExtendElement) {
+        return; // ExtendElement was already created
+    }
+
+    // prevent double definition:
+    window._ITSAmodules.ExtendElement = true;
+
     var NAME = '[extend-element]: ',
         ElementArray = require('./element-array.js')(window),
         domNodeToVNode = require('./node-parser.js')(window),
         htmlToVNodes = require('./html-parser.js')(window),
         vNodeProto = require('./vnode.js')(window),
         NS = require('./vdom-ns.js')(window),
+        TRANSFORM_XY = require('polyfill/extra/transform.js')(window),
         DOCUMENT = window.document,
         nodeids = NS.nodeids,
         arrayIndexOf = Array.prototype.indexOf,
@@ -58,6 +75,8 @@ module.exports = function (window) {
         BORDER_BOTTOM_WIDTH = BORDER+'-bottom-'+WIDTH,
         NUMBER = 'number',
         PX = 'px',
+        REGEXP_TRX = /translateX\((-?\d+)/,
+        REGEXP_TRY = /translateY\((-?\d+)/,
         setupObserver,
         SIBLING_MATCH_CHARACTER = {
             '+': true,
@@ -69,17 +88,22 @@ module.exports = function (window) {
                 vnode, i, bkpAttrs, bkpVChildNodes;
             for (i=0; i<len; i++) {
                 vnode = vnodes[i];
-                // same tag --> only update what is needed
-                bkpAttrs = vnode.attrs;
-                bkpVChildNodes = vnode.vChildNodes;
+                if (vnode.nodeType===1) {
+                    // same tag --> only update what is needed
+                    bkpAttrs = vnode.attrs;
+                    bkpVChildNodes = vnode.vChildNodes;
 
-                // reset, to force creation of inner domNodes:
-                vnode.attrs = {};
-                vnode.vChildNodes = [];
+                    // reset, to force creation of inner domNodes:
+                    vnode.attrs = {};
+                    vnode.vChildNodes = [];
 
-                // next: sync the vnodes:
-                vnode._setAttrs(bkpAttrs);
-                vnode._setChildNodes(bkpVChildNodes);
+                    // next: sync the vnodes:
+                    vnode._setAttrs(bkpAttrs);
+                    vnode._setChildNodes(bkpVChildNodes);
+                }
+                else {
+                    vnode.domNode.nodeValue = vnode.text;
+                }
             }
             return {
                 isFragment: true,
@@ -327,32 +351,33 @@ module.exports = function (window) {
                 vnode = instance.vnode,
                 i, len, item, createdElement, vnodes, vRefElement,
             doAppend = function(oneItem) {
-                escape && (oneItem=DOCUMENT.createTextNode(oneItem.getOuterHTML()));
+                escape && (oneItem.nodeType===1) && (oneItem=DOCUMENT.createTextNode(oneItem.getOuterHTML()));
                 createdElement = refElement ? vnode._insertBefore(oneItem.vnode, refElement.vnode) : vnode._appendChild(oneItem.vnode);
             };
-            vnode._noSync();
+            vnode._noSync()._normalizable(false);
             if (refElement && (vnode.vChildNodes.indexOf(refElement.vnode)!==-1)) {
                 vRefElement = refElement.vnode.vNext;
                 refElement = vRefElement && vRefElement.domNode;
             }
             (typeof content===STRING) && (content=htmlToVFragments(content));
-            if (Array.isArray(content)) {
-                len = content.length;
-                for (i=0; i<len; i++) {
-                    item = content[i];
-                    doAppend(item);
-                }
-            }
-            else if (content.isFragment) {
+            if (content.isFragment) {
                 vnodes = content.vnodes;
                 len = vnodes.length;
                 for (i=0; i<len; i++) {
                     doAppend(vnodes[i].domNode);
                 }
             }
+            else if (Array.isArray(content)) {
+                len = content.length;
+                for (i=0; i<len; i++) {
+                    item = content[i];
+                    doAppend(item);
+                }
+            }
             else {
                 doAppend(content);
             }
+            vnode._normalizable(true)._normalize();
             return createdElement;
         };
 
@@ -1209,27 +1234,19 @@ module.exports = function (window) {
                 vnode = instance.vnode,
                 i, len, item, createdElement, vnodes, vChildNodes, vRefElement,
             doPrepend = function(oneItem) {
-                escape && (oneItem=DOCUMENT.createTextNode(oneItem.getOuterHTML()));
+                escape && (oneItem.nodeType===1) && (oneItem=DOCUMENT.createTextNode(oneItem.getOuterHTML()));
                 createdElement = refElement ? vnode._insertBefore(oneItem.vnode, refElement.vnode) : vnode._appendChild(oneItem.vnode);
                 // CAUTIOUS: when using TextNodes, they might get merged (vnode._normalize does this), which leads into disappearance of refElement:
                 refElement = createdElement;
             };
-            vnode._noSync();
+            vnode._noSync()._normalizable(false);
             if (!refElement) {
                 vChildNodes = vnode.vChildNodes;
                 vRefElement = vChildNodes && vChildNodes[0];
                 refElement = vRefElement && vRefElement.domNode;
             }
             (typeof content===STRING) && (content=htmlToVFragments(content));
-            if (Array.isArray(content)) {
-                len = content.length;
-                // to manage TextNodes which might get merged, we loop downwards:
-                for (i=len-1; i>=0; i--) {
-                    item = content[i];
-                    doPrepend(item);
-                }
-            }
-            else if (content.isFragment) {
+            if (content.isFragment) {
                 vnodes = content.vnodes;
                 len = vnodes.length;
                 // to manage TextNodes which might get merged, we loop downwards:
@@ -1237,9 +1254,18 @@ module.exports = function (window) {
                     doPrepend(vnodes[i].domNode);
                 }
             }
+            else if (Array.isArray(content)) {
+                len = content.length;
+                // to manage TextNodes which might get merged, we loop downwards:
+                for (i=len-1; i>=0; i--) {
+                    item = content[i];
+                    doPrepend(item);
+                }
+            }
             else {
                 doPrepend(content);
             }
+            vnode._normalizable(true)._normalize();
             return createdElement;
         };
 
@@ -1803,17 +1829,18 @@ module.exports = function (window) {
         ElementPrototype.setXY = function(x, y, constrain, notransition) {
             console.log(NAME, 'setXY '+x+','+y);
             var instance = this,
-                position = instance.getStyle(POSITION),
-                dif, match, constrainNode, byExactId, parent, clone,
+                transformXY = arguments[4] && TRANSFORM_XY, // hidden feature: is used by the `drag`-module to get smoother dragging
+                dif, match, constrainNode, byExactId, parent, clone, currentT, extract,
                 containerTop, containerRight, containerLeft, containerBottom, requestedX, requestedY;
 
-            // default position to relative
-            if (position==='static') {
-                instance.setInlineStyle(POSITION, 'relative');
-            }
+            // default position to relative: check first inlinestye because this goes quicker
+            (instance.getInlineStyle(POSITION)==='relative') || (instance.getStyle(POSITION)!=='static') || instance.setInlineStyle(POSITION, 'relative');
             // make sure it has sizes and can be positioned
             instance.setClass(INVISIBLE).setClass(BORDERBOX);
             (instance.getInlineStyle('display')==='none') && instance.setClass(BLOCK);
+            // transformXY need display `block` or `inline-block`
+            transformXY && instance.setInlineStyle('display', BLOCK); // goes through the vdom: won't update when already set
+            constrain || (constrain=instance.getAttr('xy-constrain'));
             if (constrain) {
                 if (constrain==='window') {
                     containerLeft = window.getScrollLeft();
@@ -1877,41 +1904,69 @@ module.exports = function (window) {
             if (typeof x === NUMBER) {
                 // check if there is a transition:
                 if (notransition) {
-                    instance.setClass(INVISIBLE);
-                    instance.setInlineStyle(LEFT, x + PX);
-                    dif = (instance.left-x);
-                    (dif!==0) && (instance.setInlineStyle(LEFT, (x - dif) + PX));
-                    instance.removeClass(INVISIBLE);
+                    if (transformXY) {
+                        dif = (x-instance.left);
+                        currentT = instance.getInlineStyle(transformXY) || '';
+                        if (currentT.indexOf('translateX(')!==-1) {
+                            extract = currentT.match(REGEXP_TRX);
+                            currentT = currentT.replace(REGEXP_TRX, 'translateX('+(parseInt(extract[1], 10) + dif));
+                        }
+                        else {
+                            currentT += ' translateX('+dif+'px)';
+                        }
+                        instance.setInlineStyle(transformXY, currentT);
+                    }
+                    else {
+                        instance.setClass(INVISIBLE);
+                        instance.setInlineStyle(LEFT, x + PX);
+                        dif = (instance.left-x);
+                        (dif!==0) && (instance.setInlineStyle(LEFT, (x - dif) + PX));
+                        instance.removeClass(INVISIBLE);
+                    }
                 }
                 else {
                     // we will clone the node, make it invisible and without transitions and look what its correction should be
                     clone = instance.cloneNode();
                     clone.setClass(NO_TRANS).setClass(INVISIBLE);
-                    parent = instance.parentNode || DOCUMENT.body;
-                    parent._appendChild(clone);
+                    parent = instance.getParent() || DOCUMENT.body;
+                    parent.prepend(clone, null, instance);
                     clone.setInlineStyle(LEFT, x+PX);
                     dif = (clone.left-x);
-                    parent._removeChild(clone);
+                    clone.remove();
                     instance.setInlineStyle(LEFT, (x - dif) + PX);
                 }
             }
             if (typeof y === NUMBER) {
                 if (notransition) {
-                    instance.setClass(INVISIBLE);
-                    instance.setInlineStyle(TOP, y + PX);
-                    dif = (instance.top-y);
-                    (dif!==0) && (instance.setInlineStyle(TOP, (y - dif) + PX));
-                    instance.removeClass(INVISIBLE);
+                    if (transformXY) {
+                        dif = (y-instance.top);
+                        currentT = instance.getInlineStyle(transformXY) || '';
+                        if (currentT.indexOf('translateY(')!==-1) {
+                            extract = currentT.match(REGEXP_TRY);
+                            currentT = currentT.replace(REGEXP_TRY, 'translateY('+(parseInt(extract[1], 10) + dif));
+                        }
+                        else {
+                            currentT += ' translateY('+dif+'px)';
+                        }
+                        instance.setInlineStyle(transformXY, currentT);
+                    }
+                    else {
+                        instance.setClass(INVISIBLE);
+                        instance.setInlineStyle(TOP, y + PX);
+                        dif = (instance.top-y);
+                        (dif!==0) && (instance.setInlineStyle(TOP, (y - dif) + PX));
+                        instance.removeClass(INVISIBLE);
+                    }
                 }
                 else {
                     // we will clone the node, make it invisible and without transitions and look what its correction should be
                     clone = instance.cloneNode();
                     clone.setClass(NO_TRANS).setClass(INVISIBLE);
-                    parent = instance.parentNode || DOCUMENT.body;
-                    parent._appendChild(clone);
+                    parent = instance.getParent() || DOCUMENT.body;
+                    parent.prepend(clone, null, instance);
                     clone.setInlineStyle(TOP, y+PX);
                     dif = (clone.top-y);
-                    parent._removeChild(clone);
+                    clone.remove();
                     instance.setInlineStyle(TOP, (y - dif) + PX);
                 }
             }

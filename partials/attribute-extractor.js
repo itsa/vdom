@@ -9,7 +9,7 @@
  * New BSD License - http://choosealicense.com/licenses/bsd-3-clause/
  *
  * @module vdom
- * @submodule html-parser
+ * @submodule attribute-extractor
  * @since 0.0.1
 */
 

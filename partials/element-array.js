@@ -20,6 +20,19 @@ require('js-ext/lib/object.js');
 
 module.exports = function (window) {
 
+    if (!window._ITSAmodules) {
+        Object.defineProperty(window, '_ITSAmodules', {
+            configurable: false,
+            enumerable: false,
+            writable: false,
+            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {} its members
+        });
+    }
+
+    if (window._ITSAmodules.ElementArray) {
+        return window._ITSAmodules.ElementArray; // ElementArray was already created
+    }
+
     var forEach = function(list, method, args) {
             var len = list.length,
                 i, element;
@@ -32,6 +45,7 @@ module.exports = function (window) {
         NodeListPrototype = window.NodeList.prototype,
         HTMLCollectionPrototype = window.HTMLCollection.prototype,
         arrayMethods = Object.getOwnPropertyNames(Array.prototype),
+        ElementArray,
         ElementArrayMethods = {
            /**
             * For all vElements of the ElementArray:
@@ -61,6 +75,36 @@ module.exports = function (window) {
             */
             defineInlineStyle: function(/* value */) {
                 return forEach(this, 'defineInlineStyle', arguments);
+            },
+
+           /**
+            * For all vElements of the ElementArray:
+            * Checks whether the plugin is plugged in at ALL the HtmlElements of the NodeList/HTMLCollection.
+            * Checks whether all its attributes are set.
+            *
+            * @method isPlugged
+            * @param pluginClass {NodePlugin} The plugin that should be plugged. Needs to be the Class, not an instance!
+            * @return {Boolean} whether the plugin is plugged in
+            * @since 0.0.1
+            */
+            isPlugged: function(NodePluginClass) {
+                return this.every(function(element) {
+                    return element.isPlugged(NodePluginClass);
+                });
+            },
+
+           /**
+            * For all vElements of the ElementArray:
+            * Plugs in the plugin on the HtmlElement, and gives is special behaviour by setting the appropriate attributes.
+            *
+            * @method plug
+            * @param pluginClass {NodePlugin} The plugin that should be plugged. Needs to be the Class, not an instance!
+            * @param options {Object} any options that should be passed through when the class is instantiated.
+            * @chainable
+            * @since 0.0.1
+            */
+            plug: function(/* NodePluginClass, options */) {
+                return forEach(this, 'plug', arguments);
             },
 
            /**
@@ -302,54 +346,18 @@ module.exports = function (window) {
                 return forEach(this, 'toggleClass', arguments);
             },
 
-
-
-       /**
-        * For all vElements of the ElementArray:
-        * Checks whether the plugin is plugged in at ALL the HtmlElements of the NodeList/HTMLCollection.
-        * Checks whether all its attributes are set.
-        *
-        * @method isPlugged
-        * @param pluginClass {NodePlugin} The plugin that should be plugged. Needs to be the Class, not an instance!
-        * @return {Boolean} whether the plugin is plugged in
-        * @since 0.0.1
-        */
-        isPlugged: function(NodePluginClass) {
-            return this.every(function(element) {
-                return element.isPlugged(NodePluginClass);
-            });
-        },
-
-       /**
-        * For all vElements of the ElementArray:
-        * Plugs in the plugin on the HtmlElement, and gives is special behaviour by setting the appropriate attributes.
-        *
-        * @method plug
-        * @param pluginClass {NodePlugin} The plugin that should be plugged. Needs to be the Class, not an instance!
-        * @param options {Object} any options that should be passed through when the class is instantiated.
-        * @chainable
-        * @since 0.0.1
-        */
-        plug: function(/* NodePluginClass, options */) {
-            return forEach(this, 'plug', arguments);
-        },
-
-       /**
-        * For all vElements of the ElementArray:
-        * Unplugs a NodePlugin from the HtmlElement.
-        *
-        * @method unplug
-        * @param pluginClass {NodePlugin} The plugin that should be unplugged. Needs to be the Class, not an instance!
-        * @chainable
-        * @since 0.0.1
-        */
-        unplug: function(/* NodePluginClass */) {
-            return forEach(this, 'unplug', arguments);
-        }
-
-
-
-
+           /**
+            * For all vElements of the ElementArray:
+            * Unplugs a NodePlugin from the HtmlElement.
+            *
+            * @method unplug
+            * @param pluginClass {NodePlugin} The plugin that should be unplugged. Needs to be the Class, not an instance!
+            * @chainable
+            * @since 0.0.1
+            */
+            unplug: function(/* NodePluginClass */) {
+                return forEach(this, 'unplug', arguments);
+            }
         };
 
 
@@ -368,7 +376,7 @@ module.exports = function (window) {
     NodeListPrototype.merge(ElementArrayMethods);
     HTMLCollectionPrototype.merge(ElementArrayMethods);
 
-    return {
+    ElementArray = window._ITSAmodules.ElementArray = {
         // unfortunatly, Object.create(Array.prototype) or Object.create([]) don't work as expected -->
         // the bracket-notation isn't fucntional anymore:
         // see http://www.bennadel.com/blog/2292-extending-javascript-arrays-while-keeping-native-bracket-notation-functionality.htm
@@ -378,4 +386,6 @@ module.exports = function (window) {
             return newArray;
         }
     };
+
+    return ElementArray;
 };

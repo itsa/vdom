@@ -15,6 +15,19 @@
 
 module.exports = function (window) {
 
+    if (!window._ITSAmodules) {
+        Object.defineProperty(window, '_ITSAmodules', {
+            configurable: false,
+            enumerable: false,
+            writable: false,
+            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {} its members
+        });
+    }
+
+    if (window._ITSAmodules.HtmlParser) {
+        return window._ITSAmodules.HtmlParser; // HtmlParser was already created
+    }
+
     var NS = require('./vdom-ns.js')(window),
         extractor = require('./attribute-extractor.js'),
         DOCUMENT = window.document,
@@ -93,7 +106,7 @@ module.exports = function (window) {
          * @return {Array} array with `vnodes`
          * @since 0.0.1
          */
-        htmlToVNodes = function(htmlString, vNodeProto) {
+        htmlToVNodes = window._ITSAmodules.HtmlParser = function(htmlString, vNodeProto) {
             var i = 0,
                 len = htmlString.length,
                 vnodes = [],

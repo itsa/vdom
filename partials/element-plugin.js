@@ -18,7 +18,21 @@
 require('js-ext/lib/function.js');
 
 module.exports = function (window) {
-    var NodePlugin, NodeConstrain;
+
+    if (!window._ITSAmodules) {
+        Object.defineProperty(window, '_ITSAmodules', {
+            configurable: false,
+            enumerable: false,
+            writable: false,
+            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {} its members
+        });
+    }
+
+    if (window._ITSAmodules.ElementPlugin) {
+        return window._ITSAmodules.ElementPlugin; // ElementPlugin was already created
+    }
+
+    var NodePlugin, NodeConstrain, ElementPlugin;
 
     // also extend window.Element:
     window.Element && (function(ElementPrototype) {
@@ -95,9 +109,10 @@ module.exports = function (window) {
         }
     );
 
-    return {
+    ElementPlugin = window._ITSAmodules.ElementPlugin = {
         NodePlugin: NodePlugin,
         NodeConstrain: NodeConstrain
     };
 
+    return ElementPlugin;
 };

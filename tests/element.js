@@ -1514,8 +1514,15 @@
             expect(nodeids.sub3sub).to.be.eql(nodeSub3Sub);
             nodeSub3.setText('ok <b>here we go</b>');
             expect(nodeSub3.outerHTML).to.be.eql('<div id="sub3">ok &lt;b&gt;here we go&lt;/b&gt;</div>');
+            expect(nodeSub3.vnode.vChildNodes.length).to.be.eql(1);
             expect(nodeids.sub3).to.be.eql(nodeSub3);
             expect(nodeids.sub3sub===undefined).to.be.true;
+            nodeSub3.setText('');
+            expect(nodeSub3.outerHTML).to.be.eql('<div id="sub3"></div>');
+            expect(nodeSub3.vnode.vChildNodes.length).to.be.eql(0);
+            nodeSub3.setText('ok <b>here we go</b>');
+            expect(nodeSub3.outerHTML).to.be.eql('<div id="sub3">ok &lt;b&gt;here we go&lt;/b&gt;</div>');
+            expect(nodeSub3.vnode.vChildNodes.length).to.be.eql(1);
         });
 
         it('setValue', function () {
@@ -1614,18 +1621,6 @@
             expect(item4.selectedIndex).to.be.eql(0);
 
             window.document.body.removeChild(cont);
-        });
-
-        it('setXY', function () {
-            expect(node.left).to.be.eql(10);
-            expect(node.top).to.be.eql(30);
-
-            node.setXY(85, 55);
-            expect(node.left).to.be.eql(85);
-            expect(node.top).to.be.eql(55);
-
-            expect(node.getStyle('left')).to.be.eql('85px');
-            expect(node.getStyle('top')).to.be.eql('55px');
         });
 
         it('toggleClass', function () {
@@ -1836,6 +1831,86 @@
                 '&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;');
             expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth'+
                 '&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;');
+
+            expect(container.childNodes.length).to.be.eql(7);
+            expect(container.vnode.vChildNodes.length).to.be.eql(7);
+            expect(container.childNodes[6].childNodes.length).to.be.eql(0);
+            expect(container.vnode.vChildNodes[6].vChildNodes===undefined).to.be.true;
+        });
+
+        it('append String starting with text', function () {
+            var node = 'hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>';
+            container.append(node);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth'+
+                                               'hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth'+
+                                                    'hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>');
+            expect(container.childNodes.length).to.be.eql(8);
+            expect(container.vnode.vChildNodes.length).to.be.eql(8);
+            expect(container.childNodes[7].childNodes.length).to.be.eql(3);
+            expect(container.vnode.vChildNodes[7].vChildNodes.length).to.be.eql(3);
+        });
+
+        it('append String starting with text with element-ref', function () {
+            var node = 'hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>';
+            container.append(node, false, containerSub2);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div>'+
+                                               '<div id="sub3"><div id="sub3sub"></div>extra text</div></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div>'+
+                                               '<div id="sub3"><div id="sub3sub"></div>extra text</div></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.childNodes.length).to.be.eql(9);
+            expect(container.vnode.vChildNodes.length).to.be.eql(9);
+            expect(container.childNodes[5].childNodes.length).to.be.eql(3);
+            expect(container.vnode.vChildNodes[5].vChildNodes.length).to.be.eql(3);
+        });
+
+        it('append String starting with text escaped', function () {
+            var node = 'hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>';
+            container.append(node, true);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth'+
+                'hi&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth'+
+                'hi&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;');
+
+            expect(container.childNodes.length).to.be.eql(7);
+            expect(container.vnode.vChildNodes.length).to.be.eql(7);
+            expect(container.childNodes[6].childNodes.length).to.be.eql(0);
+            expect(container.vnode.vChildNodes[6].vChildNodes===undefined).to.be.true;
+        });
+
+        it('append String ending with text', function () {
+            var node = '<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hi';
+            container.append(node);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth'+
+                                               '<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hi');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth'+
+                                                    '<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hi');
+            expect(container.childNodes.length).to.be.eql(9);
+            expect(container.vnode.vChildNodes.length).to.be.eql(9);
+            expect(container.childNodes[7].childNodes.length).to.be.eql(3);
+            expect(container.vnode.vChildNodes[7].vChildNodes.length).to.be.eql(3);
+        });
+
+        it('append String ending with text with element-ref', function () {
+            var node = '<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hi';
+            container.append(node, false, containerSub2);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div><div id="ITSA"><div id="sub1"></div><div id="sub2"></div>'+
+                                               '<div id="sub3"><div id="sub3sub"></div>extra text</div></div>hithird<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div><div id="ITSA"><div id="sub1"></div><div id="sub2"></div>'+
+                                               '<div id="sub3"><div id="sub3sub"></div>extra text</div></div>hithird<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.childNodes.length).to.be.eql(8);
+            expect(container.vnode.vChildNodes.length).to.be.eql(8);
+            expect(container.childNodes[4].childNodes.length).to.be.eql(3);
+            expect(container.vnode.vChildNodes[4].vChildNodes.length).to.be.eql(3);
+        });
+
+        it('append String ending with text escaped', function () {
+            var node = '<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hi';
+            container.append(node, true);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth'+
+                '&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;hi');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth'+
+                '&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;hi');
 
             expect(container.childNodes.length).to.be.eql(7);
             expect(container.vnode.vChildNodes.length).to.be.eql(7);
@@ -2083,6 +2158,86 @@
             expect(container.vnode.vChildNodes[0].vChildNodes===undefined).to.be.true;
         });
 
+        it('prepend String starting with text', function () {
+            var node = 'hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>';
+            container.prepend(node);
+            expect(container.innerHTML).to.eql('hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>'+
+                                               'first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql('hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>'+
+                                               'first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.childNodes.length).to.be.eql(9);
+            expect(container.vnode.vChildNodes.length).to.be.eql(9);
+            expect(container.childNodes[1].childNodes.length).to.be.eql(3);
+            expect(container.vnode.vChildNodes[1].vChildNodes.length).to.be.eql(3);
+        });
+
+        it('prepend String starting with text with element-ref', function () {
+            var node = 'hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>';
+            container.prepend(node, false, containerSub2);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>secondhi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3">'+
+                                               '<div id="sub3sub"></div>extra text</div></div><div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>secondhi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3">'+
+                                               '<div id="sub3sub"></div>extra text</div></div><div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.childNodes.length).to.be.eql(8);
+            expect(container.vnode.vChildNodes.length).to.be.eql(8);
+            expect(container.childNodes[3].childNodes.length).to.be.eql(3);
+            expect(container.vnode.vChildNodes[3].vChildNodes.length).to.be.eql(3);
+        });
+
+        it('prepend String starting with text escaped', function () {
+            var node = 'hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>';
+            container.prepend(node, true);
+            expect(container.innerHTML).to.eql('hi&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;'+
+                                               'extra text&lt;/div&gt;&lt;/div&gt;first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.innerHTML).to.eql('hi&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;'+
+                                               'extra text&lt;/div&gt;&lt;/div&gt;first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+
+            expect(container.childNodes.length).to.be.eql(7);
+            expect(container.vnode.vChildNodes.length).to.be.eql(7);
+            expect(container.childNodes[0].childNodes.length).to.be.eql(0);
+            expect(container.vnode.vChildNodes[0].vChildNodes===undefined).to.be.true;
+        });
+
+        it('prepend String ending with text', function () {
+            var node = '<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hi';
+            container.prepend(node);
+            expect(container.innerHTML).to.eql('<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hi'+
+                                               'first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql('<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hi'+
+                                               'first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.childNodes.length).to.be.eql(8);
+            expect(container.vnode.vChildNodes.length).to.be.eql(8);
+            expect(container.childNodes[0].childNodes.length).to.be.eql(3);
+            expect(container.vnode.vChildNodes[0].vChildNodes.length).to.be.eql(3);
+        });
+
+        it('prepend String ending with text with element-ref', function () {
+            var node = '<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hi';
+            container.prepend(node, false, containerSub2);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3">'+
+                                               '<div id="sub3sub"></div>extra text</div></div>hi<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3">'+
+                                               '<div id="sub3sub"></div>extra text</div></div>hi<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.childNodes.length).to.be.eql(9);
+            expect(container.vnode.vChildNodes.length).to.be.eql(9);
+            expect(container.childNodes[3].childNodes.length).to.be.eql(3);
+            expect(container.vnode.vChildNodes[3].vChildNodes.length).to.be.eql(3);
+        });
+
+        it('prepend String ending with text escaped', function () {
+            var node = '<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hi';
+            container.prepend(node, true);
+            expect(container.innerHTML).to.eql('&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;'+
+                                               'extra text&lt;/div&gt;&lt;/div&gt;hifirst<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.innerHTML).to.eql('&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;'+
+                                               'extra text&lt;/div&gt;&lt;/div&gt;hifirst<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+
+            expect(container.childNodes.length).to.be.eql(7);
+            expect(container.vnode.vChildNodes.length).to.be.eql(7);
+            expect(container.childNodes[0].childNodes.length).to.be.eql(0);
+            expect(container.vnode.vChildNodes[0].vChildNodes===undefined).to.be.true;
+        });
+
         it('prepend ElementArray', function () {
             var node2 = node.cloneNode(true);
             node2.setId('ITSAb');
@@ -2133,7 +2288,7 @@
             node2.childNodes[2].setId('sub3b');
             node2.childNodes[2].childNodes[0].setId('sub3subb');
             container.prepend([node, node2], true);
-            // expect(container.innerHTML).to.eql('&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;&lt;div id="ITSAb"&gt;&lt;div id="sub1b"&gt;&lt;/div&gt;&lt;div id="sub2b"&gt;&lt;/div&gt;&lt;div id="sub3b"&gt;&lt;div id="sub3subb"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.innerHTML).to.eql('&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;&lt;div id="ITSAb"&gt;&lt;div id="sub1b"&gt;&lt;/div&gt;&lt;div id="sub2b"&gt;&lt;/div&gt;&lt;div id="sub3b"&gt;&lt;div id="sub3subb"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
             expect(container.vnode.innerHTML).to.eql('&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;&lt;div id="ITSAb"&gt;&lt;div id="sub1b"&gt;&lt;/div&gt;&lt;div id="sub2b"&gt;&lt;/div&gt;&lt;div id="sub3b"&gt;&lt;div id="sub3subb"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;first<div id="ITSA-cont-sub1"></div>second<div id="ITSA-cont-sub2"></div>third<div id="ITSA-cont-sub3"></div>fourth');
 
             expect(container.childNodes.length).to.be.eql(7);
@@ -2262,6 +2417,52 @@
             containerSub2.replace(node, true);
             expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;third<div id="ITSA-cont-sub3"></div>fourth');
             expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;third<div id="ITSA-cont-sub3"></div>fourth');
+
+
+            expect(container.childNodes.length).to.be.eql(5);
+            expect(container.vnode.vChildNodes.length).to.be.eql(5);
+            expect(container.childNodes[3]).to.be.eql(containerSub3);
+        });
+
+        it('replace String starting with text', function () {
+            var node = 'hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>';
+            containerSub2.replace(node);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>secondhi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>secondhi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.childNodes.length).to.be.eql(7);
+            expect(container.vnode.vChildNodes.length).to.be.eql(7);
+            expect(container.childNodes[3].childNodes.length).to.be.eql(3);
+            expect(container.vnode.vChildNodes[3].vChildNodes.length).to.be.eql(3);
+        });
+
+        it('replace String starting with text escaped', function () {
+            var node = 'hi<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>';
+            containerSub2.replace(node, true);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>secondhi&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;third<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>secondhi&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;third<div id="ITSA-cont-sub3"></div>fourth');
+
+
+            expect(container.childNodes.length).to.be.eql(5);
+            expect(container.vnode.vChildNodes.length).to.be.eql(5);
+            expect(container.childNodes[3]).to.be.eql(containerSub3);
+        });
+
+        it('replace String starting with text', function () {
+            var node = '<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hi';
+            containerSub2.replace(node);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hithird<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hithird<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.childNodes.length).to.be.eql(7);
+            expect(container.vnode.vChildNodes.length).to.be.eql(7);
+            expect(container.childNodes[3].childNodes.length).to.be.eql(3);
+            expect(container.vnode.vChildNodes[3].vChildNodes.length).to.be.eql(3);
+        });
+
+        it('replace String starting with text escaped', function () {
+            var node = '<div id="ITSA"><div id="sub1"></div><div id="sub2"></div><div id="sub3"><div id="sub3sub"></div>extra text</div></div>hi';
+            containerSub2.replace(node, true);
+            expect(container.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;hithird<div id="ITSA-cont-sub3"></div>fourth');
+            expect(container.vnode.innerHTML).to.eql('first<div id="ITSA-cont-sub1"></div>second&lt;div id="ITSA"&gt;&lt;div id="sub1"&gt;&lt;/div&gt;&lt;div id="sub2"&gt;&lt;/div&gt;&lt;div id="sub3"&gt;&lt;div id="sub3sub"&gt;&lt;/div&gt;extra text&lt;/div&gt;&lt;/div&gt;hithird<div id="ITSA-cont-sub3"></div>fourth');
 
 
             expect(container.childNodes.length).to.be.eql(5);

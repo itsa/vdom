@@ -14,6 +14,19 @@
 
 module.exports = function (window) {
 
+    if (!window._ITSAmodules) {
+        Object.defineProperty(window, '_ITSAmodules', {
+            configurable: false,
+            enumerable: false,
+            writable: false,
+            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {} its members
+        });
+    }
+
+    if (window._ITSAmodules.NodeParser) {
+        return window._ITSAmodules.NodeParser; // NodeParser was already created
+    }
+
     var NS = require('./vdom-ns.js')(window),
         extractor = require('./attribute-extractor.js'),
         voidElements = NS.voidElements,
@@ -28,7 +41,7 @@ module.exports = function (window) {
          * @return {vnode} the vnode-representation of the dom-node
          * @since 0.0.1
          */
-        domNodeToVNode = function(domNode, parentVNode) {
+        domNodeToVNode = window._ITSAmodules.NodeParser = function(domNode, parentVNode) {
             var nodeType = domNode.nodeType,
                 vnode, attributes, attr, i, len, childNodes, domChildNode, vChildNodes, tag, childVNode, extractClass, extractStyle;
             if (!NS.VALID_NODE_TYPES[nodeType]) {
@@ -43,13 +56,13 @@ module.exports = function (window) {
             vnode.domNode._vnode = vnode;
 
             vnode.nodeType = nodeType;
+            vnode.vParent = parentVNode;
 
             if (nodeType===1) {
                 // ElementNode
                 tag = vnode.tag = domNode.nodeName; // is always uppercase
 
                 vnode.attrs = {};
-                vnode.vParent = parentVNode;
 
                 attributes = domNode.attributes;
                 len = attributes.length;
@@ -97,7 +110,6 @@ module.exports = function (window) {
             }
             else {
                 // TextNode or CommentNode
-                vnode.vParent = parentVNode;
                 vnode.text = domNode.nodeValue;
             }
             // store vnode's id:

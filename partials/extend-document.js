@@ -16,6 +16,22 @@
 
 module.exports = function (window) {
 
+    if (!window._ITSAmodules) {
+        Object.defineProperty(window, '_ITSAmodules', {
+            configurable: false,
+            enumerable: false,
+            writable: false,
+            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {} its members
+        });
+    }
+
+    if (window._ITSAmodules.ExtendDocument) {
+        return; // ExtendDocument was already created
+    }
+
+    // prevent double definition:
+    window._ITSAmodules.ExtendDocument = true;
+
     var NS = require('./vdom-ns.js')(window),
         nodeids = NS.nodeids,
         DOCUMENT = window.document;

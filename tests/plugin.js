@@ -11,7 +11,7 @@
 
     var expect = require('chai').expect,
         should = require('chai').should(),
-        plugins = require("../vdom.js")(window),
+        plugins = require("../vdom.js")(window).Plugins,
         NS = require('../partials/vdom-ns.js')(window),
         nodeids = NS.nodeids,
         async = require('utils/lib/timers.js').async,
@@ -87,58 +87,5 @@
 
     });
 
-    describe('NodeConstrain', function () {
-
-        // bodyNode looks like this:
-        /*
-        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;">
-            <div style="height: 50px; width: 100px;"></div>
-            <div></div>
-        </div>
-        */
-
-        // Code to execute before every test.
-        beforeEach(function() {
-            node = window.document.createElement('div');
-            node.id = 'ITSA';
-            node.className = 'red blue';
-            node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
-                nodeSub1 = window.document.createElement('div');
-               nodeSub1.setAttribute('style', 'height: 50px; width: 100px;');
-                node.appendChild(nodeSub1);
-
-                nodeSub2 = window.document.createElement('div');
-                node.appendChild(nodeSub2);
-            window.document.body.appendChild(node);
-        });
-
-        // Code to execute after every test.
-        afterEach(function() {
-            window.document.body.removeChild(node);
-        });
-
-        it('setXY node without height', function () {
-            nodeSub2.plug(plugins.NodeConstrain, {selector: '#ITSA'});
-            nodeSub2.setXY(20, 5, '#ITSA');
-console.info(node.top);
-console.info(nodeSub2.top);
-console.info(nodeSub2.outerHTML);
-            expect(nodeSub2.left).to.be.eql(20);
-            expect(nodeSub2.top).to.be.eql(10);
-
-        });
-
-        it('setXY node with height', function () {
-            // nodeSub1.plug(plugins.NodeConstrain, {selector: '#ITSA'});
-            // nodeSub1.setXY(20, 10);
-// console.info(node.top);
-// console.info(nodeSub1.top);
-// console.info(nodeSub1.outerHTML);
-            // expect(nodeSub1.left).to.be.eql(20);
-            // expect(nodeSub1.top).to.be.eql(10);
-
-        });
-
-    });
 
 }(global.window || require('node-win')));

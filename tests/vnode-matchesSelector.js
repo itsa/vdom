@@ -112,7 +112,7 @@
         <div id="fakebody">
             <div id="div1" class="class1a class1b"></div>
             <div id="div2" class="class2a class2b">
-                <button id="button3" class="class3a class3b"></button>
+                <button id="button3" class="class3-a class3b"></button>
             </div>
         </div>
         */
@@ -132,7 +132,7 @@
 
             buttonnode = DOCUMENT.createElement('button');
             buttonnode.id = 'button3';
-            buttonnode.className = 'class3a class3b';
+            buttonnode.className = 'class3-a class3b';
 
             divnode2.appendChild(buttonnode);
             divnode1.appendChild(divnode2);
@@ -242,8 +242,8 @@
             divnode2.vnode.matchesSelector('#div1 #div2 .class2a').should.be.false;
         });
 
-        it('divnode2 --> "#div1 #div2 .class3a"', function () {
-            divnode2.vnode.matchesSelector('#div1 #div2 .class3a').should.be.false;
+        it('divnode2 --> "#div1 #div2 .class3-a"', function () {
+            divnode2.vnode.matchesSelector('#div1 #div2 .class3-a').should.be.false;
         });
 
         it('divnode2 --> "#div1 #div2 #button3"', function () {
@@ -266,8 +266,8 @@
             divnode2.vnode.matchesSelector('#div1#div2 .class2a').should.be.false;
         });
 
-        it('divnode2 --> "#div1#div2 .class3a"', function () {
-            divnode2.vnode.matchesSelector('#div1#div2 .class3a').should.be.false;
+        it('divnode2 --> "#div1#div2 .class3-a"', function () {
+            divnode2.vnode.matchesSelector('#div1#div2 .class3-a').should.be.false;
         });
 
         it('divnode2 --> "#div1#div2 #button3"', function () {
@@ -278,24 +278,28 @@
             buttonnode.vnode.matchesSelector('#div1 #button3').should.be.true;
         });
 
-        it('buttonnode --> "#div1 #button3.class3a"', function () {
-            buttonnode.vnode.matchesSelector('#div1 #button3.class3a').should.be.true;
+        it('buttonnode --> ".class3-a"', function () {
+            buttonnode.vnode.matchesSelector('.class3-a').should.be.true;
         });
 
-        it('buttonnode --> "#div1 #button3.class3a.class3b"', function () {
-            buttonnode.vnode.matchesSelector('#div1 #button3.class3a.class3b').should.be.true;
+        it('buttonnode --> "#div1 #button3.class3-a"', function () {
+            buttonnode.vnode.matchesSelector('#div1 #button3.class3-a').should.be.true;
         });
 
-        it('buttonnode --> "#div1 #button3.class3a .class3b"', function () {
-            buttonnode.vnode.matchesSelector('#div1 #button3.class3a .class3b').should.be.false;
+        it('buttonnode --> "#div1 #button3.class3-a.class3b"', function () {
+            buttonnode.vnode.matchesSelector('#div1 #button3.class3-a.class3b').should.be.true;
         });
 
-        it('buttonnode --> "div1 button.class3a"', function () {
-            buttonnode.vnode.matchesSelector('div button.class3a').should.be.true;
+        it('buttonnode --> "#div1 #button3.class3-a .class3b"', function () {
+            buttonnode.vnode.matchesSelector('#div1 #button3.class3-a .class3b').should.be.false;
         });
 
-        it('buttonnode --> "div1 button.class3a.class3b"', function () {
-            buttonnode.vnode.matchesSelector('div button.class3a.class3b').should.be.true;
+        it('buttonnode --> "div1 button.class3-a"', function () {
+            buttonnode.vnode.matchesSelector('div button.class3-a').should.be.true;
+        });
+
+        it('buttonnode --> "div1 button.class3-a.class3b"', function () {
+            buttonnode.vnode.matchesSelector('div button.class3-a.class3b').should.be.true;
         });
 
         it('buttonnode --> "#div1 #div2 #button3"', function () {
@@ -310,28 +314,28 @@
             buttonnode.vnode.matchesSelector('.class1a button').should.be.true;
         });
 
-        it('buttonnode --> "#div1 #div2 #button3.class3a"', function () {
-            buttonnode.vnode.matchesSelector('#div1 #div2 #button3.class3a').should.be.true;
+        it('buttonnode --> "#div1 #div2 #button3.class3-a"', function () {
+            buttonnode.vnode.matchesSelector('#div1 #div2 #button3.class3-a').should.be.true;
         });
 
-        it('buttonnode --> "#div1 #div2 #button3.class3a.class3b"', function () {
-            buttonnode.vnode.matchesSelector('#div1 #div2 #button3.class3a.class3b').should.be.true;
+        it('buttonnode --> "#div1 #div2 #button3.class3-a.class3b"', function () {
+            buttonnode.vnode.matchesSelector('#div1 #div2 #button3.class3-a.class3b').should.be.true;
         });
 
-        it('buttonnode --> "#div1 #div2 button#button3.class3a.class3b"', function () {
-            buttonnode.vnode.matchesSelector('#div1 #div2 button#button3.class3a.class3b').should.be.true;
+        it('buttonnode --> "#div1 #div2 button#button3.class3-a.class3b"', function () {
+            buttonnode.vnode.matchesSelector('#div1 #div2 button#button3.class3-a.class3b').should.be.true;
         });
 
-        it('buttonnode --> "#div1 #div2 button.class3a.class3b"', function () {
-            buttonnode.vnode.matchesSelector('#div1 #div2 button.class3a.class3b').should.be.true;
+        it('buttonnode --> "#div1 #div2 button.class3-a.class3b"', function () {
+            buttonnode.vnode.matchesSelector('#div1 #div2 button.class3-a.class3b').should.be.true;
         });
 
-        it('buttonnode --> "#div1 #div2 #button3.class3a .class3b"', function () {
-            buttonnode.vnode.matchesSelector('#div1 #div2 #button3.class3a .class3b').should.be.false;
+        it('buttonnode --> "#div1 #div2 #button3.class3-a .class3b"', function () {
+            buttonnode.vnode.matchesSelector('#div1 #div2 #button3.class3-a .class3b').should.be.false;
         });
 
-        it('buttonnode --> "#div1 #div2 #button3.class3a .class3b"', function () {
-            buttonnode.vnode.matchesSelector('#div1 #div2 #button3.class3a .class3b').should.be.false;
+        it('buttonnode --> "#div1 #div2 #button3.class3-a .class3b"', function () {
+            buttonnode.vnode.matchesSelector('#div1 #div2 #button3.class3-a .class3b').should.be.false;
         });
 
         it('divnode1 --> ".class1a"', function () {
@@ -366,48 +370,48 @@
             divnode2.vnode.matchesSelector('.noclass.class1b .class2a.class2b').should.be.false;
         });
 
-        it('divnode2 --> ".class1a .class2a .class3a"', function () {
-            divnode2.vnode.matchesSelector('.class1a .class2a .class3a').should.be.false;
+        it('divnode2 --> ".class1a .class2a .class3-a"', function () {
+            divnode2.vnode.matchesSelector('.class1a .class2a .class3-a').should.be.false;
         });
 
-        it('divnode2 --> ".class1a .class2a.class2b .class3a"', function () {
-            divnode2.vnode.matchesSelector('.class1a .class2a.class2b .class3a').should.be.false;
+        it('divnode2 --> ".class1a .class2a.class2b .class3-a"', function () {
+            divnode2.vnode.matchesSelector('.class1a .class2a.class2b .class3-a').should.be.false;
         });
 
-        it('divnode2 --> ".class1a.class1b .class2a.class2b .class3a"', function () {
-            divnode2.vnode.matchesSelector('.class1a.class1b .class2a.class2b .class3a').should.be.false;
+        it('divnode2 --> ".class1a.class1b .class2a.class2b .class3-a"', function () {
+            divnode2.vnode.matchesSelector('.class1a.class1b .class2a.class2b .class3-a').should.be.false;
         });
 
-        it('buttonnode --> ".class1a #div2 .class3a"', function () {
-            buttonnode.vnode.matchesSelector('.class1a #div2 .class3a').should.be.true;
+        it('buttonnode --> ".class1a #div2 .class3-a"', function () {
+            buttonnode.vnode.matchesSelector('.class1a #div2 .class3-a').should.be.true;
         });
 
-        it('buttonnode --> ".class1a #div2.class2b .class3a"', function () {
-            buttonnode.vnode.matchesSelector('.class1a #div2.class2b .class3a').should.be.true;
+        it('buttonnode --> ".class1a #div2.class2b .class3-a"', function () {
+            buttonnode.vnode.matchesSelector('.class1a #div2.class2b .class3-a').should.be.true;
         });
 
-        it('buttonnode --> ".class1a #div2.class2a.class2b .class3a"', function () {
-            buttonnode.vnode.matchesSelector('.class1a #div2.class2a.class2b .class3a').should.be.true;
+        it('buttonnode --> ".class1a #div2.class2a.class2b .class3-a"', function () {
+            buttonnode.vnode.matchesSelector('.class1a #div2.class2a.class2b .class3-a').should.be.true;
         });
 
-        it('buttonnode --> ".noclass #div2.class2a.class2b .class3a"', function () {
-            buttonnode.vnode.matchesSelector('.noclass #div2.class2a.class2b .class3a').should.be.false;
+        it('buttonnode --> ".noclass #div2.class2a.class2b .class3-a"', function () {
+            buttonnode.vnode.matchesSelector('.noclass #div2.class2a.class2b .class3-a').should.be.false;
         });
 
-        it('buttonnode --> ".class1a #div2.noclass.class2b .class3a"', function () {
-            buttonnode.vnode.matchesSelector('.class1a #div2.noclass.class2b .class3a').should.be.false;
+        it('buttonnode --> ".class1a #div2.noclass.class2b .class3-a"', function () {
+            buttonnode.vnode.matchesSelector('.class1a #div2.noclass.class2b .class3-a').should.be.false;
         });
 
         it('buttonnode --> ".class1a #div2.class2a.class2b .noclass"', function () {
             buttonnode.vnode.matchesSelector('.class1a #div2.class2a.class2b .noclass').should.be.false;
         });
 
-        it('buttonnode --> ".class1a.class1b #div2.class2a .class3a"', function () {
-            buttonnode.vnode.matchesSelector('.class1a.class1b #div2.class2a .class3a').should.be.true;
+        it('buttonnode --> ".class1a.class1b #div2.class2a .class3-a"', function () {
+            buttonnode.vnode.matchesSelector('.class1a.class1b #div2.class2a .class3-a').should.be.true;
         });
 
-        it('buttonnode --> ".class1a.class1b #div2.class2a.class2b .class3a"', function () {
-            buttonnode.vnode.matchesSelector('.class1a.class1b #div2.class2a.class2b .class3a').should.be.true;
+        it('buttonnode --> ".class1a.class1b #div2.class2a.class2b .class3-a"', function () {
+            buttonnode.vnode.matchesSelector('.class1a.class1b #div2.class2a.class2b .class3-a').should.be.true;
         });
 
     });
@@ -454,6 +458,15 @@
             bodyNode.appendChild(divnode2);
 
             domNodeToVNode(bodyNode);
+        });
+
+        it('[data-x]"', function () {
+            bodyNode.vnode.matchesSelector('#div1[data-x]').should.be.false;
+            divnode1.vnode.matchesSelector('#div1[data-x]').should.be.true;
+            divnode1.vnode.matchesSelector('#div1[data-x].red').should.be.true;
+            divnode2.vnode.matchesSelector('#div1[data-x]').should.be.false;
+            buttonnode.vnode.matchesSelector('#div1[data-x]').should.be.false;
+            buttonnode2.vnode.matchesSelector('#div1[data-x]').should.be.false;
         });
 
         it('[data-x="some   data"]"', function () {

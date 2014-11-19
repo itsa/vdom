@@ -421,6 +421,36 @@
 
         });
 
+        it('TextNode and Element', function () {
+            var vnodes = htmlToVNodes('hi<div>ITSA</div>', vNodeProto),
+                vnode, childvnode;
+            expect(vnodes.length).to.be.eql(2);
+
+            vnode = vnodes[0];
+            expect(vnode.nodeType).to.be.eql(3);
+            expect(vnode.text).to.be.eql('hi');
+            expect(vnode.vParent===undefined).to.be.true;
+
+            vnode = vnodes[1];
+            expect(vnode.nodeType).to.be.eql(1);
+            expect(vnode.tag).to.be.eql('DIV');
+            expect(vnode.isVoid).to.be.false;
+            expect(vnode.text===undefined).to.be.true;
+            expect(vnode.vChildNodes.length).to.be.eql(1);
+            expect(vnode.vParent===undefined).to.be.true;
+        });
+
+        it('TextNode', function () {
+            var vnodes = htmlToVNodes('hi<div>ITSA</div>', vNodeProto),
+                vnode, childvnode;
+            expect(vnodes.length).to.be.eql(2);
+
+            vnode = vnodes[0];
+            expect(vnode.nodeType).to.be.eql(3);
+            expect(vnode.text).to.be.eql('hi');
+            expect(vnode.vParent===undefined).to.be.true;
+        });
+
     });
 
 }(global.window || require('node-win')));
