@@ -18,10 +18,7 @@
 require('../css/element.css');
 require('js-ext/lib/object.js');
 require('js-ext/lib/string.js');
-require('polyfill/lib/window.console.js');
-require('polyfill/lib/weakmap.js');
-require('polyfill/lib/mutationobserver.js'); // needs weakmap
-
+require('polyfill');
 
 module.exports = function (window) {
 
@@ -48,6 +45,7 @@ module.exports = function (window) {
         vNodeProto = require('./vnode.js')(window),
         NS = require('./vdom-ns.js')(window),
         TRANSFORM_XY = require('polyfill/extra/transform.js')(window),
+        later = require('utils').later,
         DOCUMENT = window.document,
         nodeids = NS.nodeids,
         arrayIndexOf = Array.prototype.indexOf,
@@ -58,6 +56,8 @@ module.exports = function (window) {
         NO_TRANS = EL_+'notrans',
         INVISIBLE = EL_+'invisible',
         HIDDEN = EL_+'hidden',
+        TRANSPARENT = EL_+'transparent',
+        TRANSFORMED_1S = EL_+'transformed-1s',
         REGEXP_NODE_ID = /^#\S+$/,
         LEFT = 'left',
         TOP = 'top',
@@ -77,6 +77,7 @@ module.exports = function (window) {
         PX = 'px',
         REGEXP_TRX = /translateX\((-?\d+)/,
         REGEXP_TRY = /translateY\((-?\d+)/,
+        TRANS_END = 'transitionend',
         setupObserver,
         SIBLING_MATCH_CHARACTER = {
             '+': true,
@@ -715,11 +716,11 @@ module.exports = function (window) {
         };
 
         /**
-         * Gets an ElementArray of vElements that lie within this Element and match the css-selector.
+         * Gets an ElementArray of Elements that lie within this Element and match the css-selector.
          *
          * @method getAll
          * @param cssSelector {String} css-selector to match
-         * @return {ElementArray} ElementArray of vElements that match the css-selector
+         * @return {ElementArray} ElementArray of Elements that match the css-selector
          * @since 0.0.1
          */
         ElementPrototype.getAll = function(cssSelector) {
@@ -962,7 +963,7 @@ module.exports = function (window) {
         };
 
        /**
-        * Gets the value of the following vElements:
+        * Gets the value of the following Elements:
         *
         * <ul>
         *     <li>input</li>
@@ -1068,6 +1069,134 @@ module.exports = function (window) {
         */
         ElementPrototype.hasFocus = function() {
             return (DOCUMENT.activeElement===this);
+        };
+
+       /**
+        * Indicates whether the current focussed Element lies inside this Element (on a descendant Element).
+        *
+        * @method hasFocusInside
+        * @return {Boolean}
+        * @since 0.0.1
+        */
+        ElementPrototype.hasFocusInside = function() {
+            var activeElement = DOCUMENT.activeElement;
+            return ((DOCUMENT.activeElement!==this) && this.contains(activeElement));
+        };
+
+       /**
+        * Returns whether the inline style of the specified property is present. `Inline` means: what is set directly on the Element.
+        *
+        * Note: no need to camelCase cssProperty: both `margin-left` as well as `marginLeft` are fine
+        *
+        * @method hasInlineStyle
+        * @param cssProperty {String} the css-property to look for
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @return {Boolean} whether the inlinestyle was present
+        * @since 0.0.1
+        */
+        ElementPrototype.hasInlineStyle = function(cssProperty, pseudo) {
+            return !!this.getInlineStyle(cssProperty, pseudo);
+        };
+
+       /**
+        * Returns whether the inline style of the specified property is present. `Inline` means: what is set directly on the Element.
+        *
+        * Note: no need to camelCase cssProperty: both `margin-left` as well as `marginLeft` are fine
+        *
+        * @method hide
+        * @param cssProperty {String} the css-property to look for
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @return {Boolean} whether the inlinestyle was present
+        * @since 0.0.1
+        */
+        ElementPrototype.hide = function(fade) {
+// transitions only work with IE10+, and that browser has addEventListener
+            // when it doesn't have, it doesn;t harm to leave the transitionclass on: it would work anyway
+            // nevertheless we will remove it with a timeout
+            var instance = this,
+                promise,
+            afterTrans = function() {
+                if (instance.hasData('_hidden')) {
+                    instance.setClass(HIDDEN);
+                    instance.removeClass(TRANSFORMED_1S);
+                    instance.removeEventListener(TRANS_END, afterTrans, true);
+                    promise.fulfill();
+                }
+                else {
+                    promise.reject('Node is set to show again after it is set hidden.');
+                }
+            };
+            // we need to set data on the node to inform that the last action was to show the node
+            // this will prevent any `hide()`-transform-callback that moght be running from doing its action
+            instance.setData('_hidden', true);
+            if (fade) {
+                instance.setClass(TRANSFORMED_1S);
+                instance.setClass(TRANSPARENT);
+                instance.addEventListener(TRANS_END, afterTrans, true);
+                later(afterTrans, 1050);
+                promise = Promise.manage();
+                return promise;
+            }
+            else {
+                instance.setClass(HIDDEN);
+                instance.setClass(TRANSPARENT);
+                return Promise.resolve();
+            }
+        };
+
+       /**
+        * Returns whether the inline style of the specified property is present. `Inline` means: what is set directly on the Element.
+        *
+        * Note: no need to camelCase cssProperty: both `margin-left` as well as `marginLeft` are fine
+        *
+        * @method hide
+        * @param cssProperty {String} the css-property to look for
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @return {Boolean} whether the inlinestyle was present
+        * @since 0.0.1
+        */
+        ElementPrototype.show = function(fade) {
+            var instance = this,
+                promise,
+            afterTrans = function() {
+                if (!instance.hasData('_hidden')) {
+                    instance.removeClass(TRANSFORMED_1S);
+                    instance.removeEventListener(TRANS_END, afterTrans, true);
+                    promise.fulfill();
+                }
+                else {
+                    promise.reject('Node is set to hide again after it is set visible.');
+                }
+            };
+            // we need to set data on the node to inform that the last action was to show the node
+            // this will prevent any `hide()`-transform-callback that moght be running from doing its action
+            instance.removeData('_hidden');
+            if (fade) {
+                instance.setClass(TRANSFORMED_1S);
+                instance.removeClass(TRANSPARENT);
+                instance.removeClass(HIDDEN);
+                instance.addEventListener(TRANS_END, afterTrans, true);
+                later(afterTrans, 1050);
+                promise = Promise.manage();
+                return promise;
+            }
+            else {
+                instance.removeClass(TRANSFORMED_1S);
+                instance.removeClass(TRANSPARENT);
+                instance.removeClass(HIDDEN);
+                return Promise.resolve();
+            }
+        };
+
+       /**
+        * Indicates whether the Element currently is part if the DOM.
+        *
+        * @method inDOM
+        * @return {Boolean} whether the Element currently is part if the DOM.
+        * @since 0.0.1
+        */
+        ElementPrototype.inDOM = function() {
+            return DOCUMENT.contains(this);
         };
 
        /**
@@ -1338,14 +1467,14 @@ module.exports = function (window) {
         };
 
         /**
-         * Returns an ElementArray of all vElements within the Element, that match the CSS-selectors. You can pass one, or multiple CSS-selectors. When passed multiple,
+         * Returns an ElementArray of all Elements within the Element, that match the CSS-selectors. You can pass one, or multiple CSS-selectors. When passed multiple,
          * they need to be separated by a `comma`.
          *
          * querySelectorAll is a snapshot of the dom at the time this method was called. It is not updated when changes of the dom are made afterwards.
          *
          * @method querySelectorAll
          * @param selectors {String} CSS-selector(s) that should match
-         * @return {ElementArray} non-life Array (snapshot) with vElements
+         * @return {ElementArray} non-life Array (snapshot) with Elements
          */
         ElementPrototype.querySelectorAll = function(selectors) {
             var found = ElementArray.createArray(),
@@ -1396,11 +1525,15 @@ module.exports = function (window) {
         * Alias for thisNode.parentNode.removeChild(thisNode);
         *
         * @method remove
+        * @return {Node} the DOM-node that was removed. You could re-insert it at a later time.
         * @since 0.0.1
         */
         ElementPrototype.remove = function() {
-            var vnode = this.vnode;
-            vnode.vParent._removeChild(vnode);
+            var instance = this,
+                vnode = instance.vnode,
+                vParent = vnode.vParent;
+            vParent && vParent._removeChild(vnode);
+            return instance;
         };
 
        /**
@@ -1437,10 +1570,13 @@ module.exports = function (window) {
         *
         * @method removeChild
         * @param domNode {Node} the child-Node to remove
+        * @return {Node} the DOM-node that was removed. You could re-insert it at a later time.
         */
         ElementPrototype._removeChild = ElementPrototype.removeChild;
         ElementPrototype.removeChild = function(domNode) {
-            this.vnode._removeChild(domNode.vnode);
+            var instance = this;
+            instance.vnode._removeChild(domNode.vnode);
+            return instance;
         };
 
        /**
@@ -1482,6 +1618,17 @@ module.exports = function (window) {
                 }
             }
             return this;
+        };
+
+       /**
+        * Removes the Elment's `id`.
+        *
+        * @method removeId
+        * @chainable
+        * @since 0.0.1
+        */
+        ElementPrototype.removeId = function() {
+            return this.removeAttr('id');
         };
 
        /**
@@ -1749,7 +1896,7 @@ module.exports = function (window) {
         };
 
        /**
-        * Sets the value of the following vElements:
+        * Sets the value of the following Elements:
         *
         * <ul>
         *     <li>input</li>
@@ -2205,7 +2352,7 @@ for (j=0; j<len2; j++) {
 */
 
 /**
- * Returns an HTMLCollection of all vElements within this Element, that match their classes with the supplied `classNames` argument.
+ * Returns an HTMLCollection of all Elements within this Element, that match their classes with the supplied `classNames` argument.
  * To match multiple different classes, separate them with a `comma`.
  *
  * getElementsByClassName is life presentation of the dom. The returned HTMLCollection gets updated when the dom changes.
@@ -2214,11 +2361,11 @@ for (j=0; j<len2; j++) {
  *
  * @method getElementsByClassName
  * @param classNames {String} the classes to search for
- * @return {HTMLCollection} life Array with vElements
+ * @return {HTMLCollection} life Array with Elements
  */
 
 /**
- * Returns an HTMLCollection of all vElements within this Element, that match their `name`-attribute with the supplied `name` argument.
+ * Returns an HTMLCollection of all Elements within this Element, that match their `name`-attribute with the supplied `name` argument.
  *
  * getElementsByName is life presentation of the dom. The returned HTMLCollection gets updated when the dom changes.
  *
@@ -2226,12 +2373,12 @@ for (j=0; j<len2; j++) {
  *
  * @method getElementsByName
  * @param name {String} the property of name-attribute to search for
- * @return {HTMLCollection} life Array with vElements
+ * @return {HTMLCollection} life Array with Elements
  */
 
 
 /**
- * Returns an HTMLCollection of all vElements within this Element, that match their `name`-attribute with the supplied `name` argument.
+ * Returns an HTMLCollection of all Elements within this Element, that match their `name`-attribute with the supplied `name` argument.
  *
  * getElementsByTagName is life presentation of the dom. The returned HTMLCollection gets updated when the dom changes.
  *
@@ -2239,7 +2386,7 @@ for (j=0; j<len2; j++) {
  *
  * @method getElementsByTagName
  * @param tagNames {String} the tags to search for
- * @return {HTMLCollection} life Array with vElements
+ * @return {HTMLCollection} life Array with Elements
  */
 
 /**
@@ -2360,7 +2507,7 @@ for (j=0; j<len2; j++) {
  */
 
 /**
- * Returns the number of children (child vElements)
+ * Returns the number of children (child Elements)
  *
  * @property childElementCount
  * @type Number

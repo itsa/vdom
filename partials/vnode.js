@@ -1106,7 +1106,7 @@ module.exports = function (window) {
                 }
                 instance._vChildren = null;
                 // explicitely set instance.domNode._vnode and instance.domNode to null in order to prevent problems with the GC (we break the circular reference)
-                instance.domNode._vnode = null;
+                delete instance.domNode._vnode;
                 // if valid id, then _remove the DOMnodeRef from internal hash
                 instance.id && delete nodeids[instance.id];
                 instance._deleteFromParent();
@@ -1261,7 +1261,10 @@ module.exports = function (window) {
             (attributeName===STYLE) && (instance.styles={});
             // in case of CLASS attribute --> special treatment
             (attributeName===CLASS) && (instance.classNames={});
-            (attributeName===ID) && (delete nodeids[instance.id]);
+            if (attributeName===ID) {
+                delete nodeids[instance.id];
+                delete instance.id;
+            }
             instance.domNode._removeAttribute(attributeName);
             return instance;
         },
@@ -1324,6 +1327,10 @@ module.exports = function (window) {
                 extractStyle, extractClass,
                 attrs = instance.attrs;
             if (attrs[attributeName]!==value) {
+                if ((value===undefined) || (value===undefined)) {
+                    instance._removeAttr(attributeName);
+                    return instance;
+                }
                 attrs[attributeName] = value;
                 // in case of STYLE attribute --> special treatment
                 if (attributeName===STYLE) {

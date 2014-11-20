@@ -895,6 +895,40 @@
             expect(inputNode.hasFocus()).to.be.true;
         });
 
+        it('hasFocusInside', function () {
+            var inputNode = window.document.createElement('input');
+            nodeSub3.appendChild(inputNode);
+            expect(node.hasFocusInside()).to.be.false;
+            expect(nodeSub1.hasFocusInside()).to.be.false;
+            expect(nodeSub2.hasFocusInside()).to.be.false;
+            expect(nodeSub3.hasFocusInside()).to.be.false;
+            expect(nodeSub3Sub.hasFocusInside()).to.be.false;
+            expect(inputNode.hasFocusInside()).to.be.false;
+
+            inputNode.focus();
+            expect(node.hasFocusInside()).to.be.true;
+            expect(nodeSub1.hasFocusInside()).to.be.false;
+            expect(nodeSub2.hasFocusInside()).to.be.false;
+            expect(nodeSub3.hasFocusInside()).to.be.true;
+            expect(nodeSub3Sub.hasFocusInside()).to.be.false;
+            expect(inputNode.hasFocusInside()).to.be.false;
+        });
+
+        it('hasInlineStyle', function () {
+            expect(node.hasInlineStyle('position')).to.be.true;
+            expect(node.hasInlineStyle('border')).to.be.false;
+            node.setInlineStyle('color', '#F00', ':before');
+            expect(node.hasInlineStyle('position', ':before')).to.be.false;
+            expect(node.hasInlineStyle('color', ':before')).to.be.true;
+        });
+
+        it('inDOM', function () {
+            expect(nodeSub1.inDOM()).to.be.true;
+            expect(window.document.createElement('tag').inDOM()).to.be.false;
+            nodeSub1.remove();
+            expect(nodeSub1.inDOM()).to.be.false;
+        });
+
         it('inside', function () {
             expect(node.inside(node)).to.be.false;
             expect(nodeSub1.inside(node)).to.be.eql(node);
@@ -1090,6 +1124,25 @@
             expect(nodeids.sub2===undefined).to.be.true;
         });
 
+        it('remove and reinsert', function () {
+            var removedNode = nodeSub3.remove();
+            node.prepend(removedNode);
+            expect(node.childNodes.length).to.be.eql(3);
+            expect(node.vnode.vChildNodes.length).to.be.eql(3);
+            expect(node.childNodes[0]).to.be.eql(nodeSub3);
+            expect(node.childNodes[1]).to.be.eql(nodeSub1);
+            expect(node.childNodes[2]).to.be.eql(nodeSub2);
+            expect(node.vnode.vChildNodes[0].domNode).to.be.eql(nodeSub3);
+            expect(node.vnode.vChildNodes[1].domNode).to.be.eql(nodeSub1);
+            expect(node.vnode.vChildNodes[2].domNode).to.be.eql(nodeSub2);
+
+            expect(node.vnode.vChildNodes[0].vChildNodes.length).to.be.eql(2);
+            expect(node.vnode.vChildNodes[0].vChildNodes[0]).to.be.eql(nodeSub3Sub.vnode);
+            expect(node.vnode.vChildNodes[0].vChildNodes[1]).to.be.eql(nodeSub3SubText.vnode);
+
+            expect(nodeids.sub3).to.be.eql(nodeSub3);
+        });
+
         it('removeAttr', function () {
             var n = nodeSub2.removeAttr('class');
             expect(n).to.be.eql(nodeSub2);
@@ -1173,6 +1226,15 @@
             node.removeData('dummy1');
             expect(node.getData('dummy1')===undefined).to.be.true;
             expect(node.getData('dummy2')).to.be.eql(20);
+        });
+
+        it('removeId', function () {
+            var n = nodeSub2.removeId();
+            expect(n).to.be.eql(nodeSub2);
+            expect(nodeSub2.id).to.be.eql('');
+            expect(nodeSub2.vnode.attrs.id===undefined).to.be.true;
+            expect(nodeSub2.getId()===undefined).to.be.true;
+            expect(nodeids.sub2===undefined).to.be.true;
         });
 
         it('removeInlineStyle', function () {
