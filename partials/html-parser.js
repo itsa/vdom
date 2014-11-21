@@ -29,7 +29,7 @@ module.exports = function (window) {
     }
 
     var NS = require('./vdom-ns.js')(window),
-        extractor = require('./attribute-extractor.js'),
+        extractor = require('./attribute-extractor.js')(window),
         DOCUMENT = window.document,
         voidElements = NS.voidElements,
         nonVoidElements = NS.nonVoidElements,

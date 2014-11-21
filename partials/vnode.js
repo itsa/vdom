@@ -39,7 +39,7 @@ module.exports = function (window) {
     }
 
     var NS = require('./vdom-ns.js')(window),
-        extractor = require('./attribute-extractor.js'),
+        extractor = require('./attribute-extractor.js')(window),
         DOCUMENT = window.document,
         nodeids = NS.nodeids,
         htmlToVNodes = require('./html-parser.js')(window),

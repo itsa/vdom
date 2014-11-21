@@ -691,6 +691,35 @@
             window.document.body.removeChild(node3);
         });
 
+        it('getInlineTransform', function () {
+            expect(nodeSub1.getInlineTransform('translateX')===undefined).to.be.true;
+
+            nodeSub1.setAttr('style', 'transform: rotateX(50deg) translateX(10px); color: #AAA;');
+            expect(nodeSub1.getInlineTransform('rotateX')).to.be.eql('50deg');
+            expect(nodeSub1.getInlineTransform('translateX')).to.be.eql('10px');
+            expect(nodeSub1.getInlineStyle('color')).to.be.eql('#AAA');
+
+            nodeSub1.setAttr('style', 'background-color: #DDD; transform: rotateX(50deg) translateX(10px); color: #AAA;');
+            expect(nodeSub1.getInlineTransform('rotateX')).to.be.eql('50deg');
+            expect(nodeSub1.getInlineTransform('translateX')).to.be.eql('10px');
+            expect(nodeSub1.getInlineStyle('color')).to.be.eql('#AAA');
+            expect(nodeSub1.getInlineStyle('background-color')).to.be.eql('#DDD');
+
+            nodeSub1.setAttr('style', 'background-color: #DDD; transform: rotateX(50deg) translateX(10px);');
+            expect(nodeSub1.getInlineTransform('rotateX')).to.be.eql('50deg');
+            expect(nodeSub1.getInlineTransform('translateX')).to.be.eql('10px');
+            expect(nodeSub1.getInlineStyle('background-color')).to.be.eql('#DDD');
+
+
+            nodeSub1.setAttr('style', '{transform: rotateX(50deg) translateX(10px); color: #AAA;} :before {background-color: #DDD; transform: rotateX(150deg) translateX(110px);}');
+            expect(nodeSub1.getInlineTransform('rotateX')).to.be.eql('50deg');
+            expect(nodeSub1.getInlineTransform('translateX')).to.be.eql('10px');
+            expect(nodeSub1.getInlineStyle('color')).to.be.eql('#AAA');
+            expect(nodeSub1.getInlineTransform('rotateX', ':before')).to.be.eql('150deg');
+            expect(nodeSub1.getInlineTransform('translateX', ':before')).to.be.eql('110px');
+            expect(nodeSub1.getInlineStyle('background-color', ':before')).to.be.eql('#DDD');
+        });
+
         it('getOuterHTML', function () {
             // because the order of attributes might be randomly generated (behaviour of JS-properties), we check differently:
             // one time without classes, one time without id's
@@ -920,6 +949,46 @@
             node.setInlineStyle('color', '#F00', ':before');
             expect(node.hasInlineStyle('position', ':before')).to.be.false;
             expect(node.hasInlineStyle('color', ':before')).to.be.true;
+        });
+
+        it('hasInlineTransform', function () {
+            expect(nodeSub1.hasInlineTransform('translateX')).to.be.false;
+
+            nodeSub1.setAttr('style', 'transform: rotateX(50deg) translateX(10px); color: #AAA;');
+            expect(nodeSub1.hasInlineTransform('rotateX')).to.be.true;
+            expect(nodeSub1.hasInlineTransform('translateX')).to.be.true;
+            expect(nodeSub1.hasInlineStyle('color')).to.be.true;
+            expect(nodeSub1.hasInlineTransform('skewX')).to.be.false;
+            expect(nodeSub1.hasInlineStyle('font-size')).to.be.false;
+
+            nodeSub1.setAttr('style', 'background-color: #DDD; transform: rotateX(50deg) translateX(10px); color: #AAA;');
+            expect(nodeSub1.hasInlineTransform('rotateX')).to.be.true;
+            expect(nodeSub1.hasInlineTransform('translateX')).to.be.true;
+            expect(nodeSub1.hasInlineStyle('color')).to.be.true;
+            expect(nodeSub1.hasInlineStyle('background-color')).to.be.true;
+            expect(nodeSub1.hasInlineTransform('skewX')).to.be.false;
+            expect(nodeSub1.hasInlineStyle('font-size')).to.be.false;
+
+            nodeSub1.setAttr('style', 'background-color: #DDD; transform: rotateX(50deg) translateX(10px);');
+            expect(nodeSub1.hasInlineTransform('rotateX')).to.be.true;
+            expect(nodeSub1.hasInlineTransform('translateX')).to.be.true;
+            expect(nodeSub1.hasInlineStyle('background-color')).to.be.true;
+            expect(nodeSub1.hasInlineTransform('skewX')).to.be.false;
+            expect(nodeSub1.hasInlineStyle('font-size')).to.be.false;
+
+
+            nodeSub1.setAttr('style', '{transform: rotateX(50deg) translateX(10px); color: #AAA;} :before {background-color: #DDD; transform: rotateX(150deg) translateX(110px);}');
+            expect(nodeSub1.hasInlineTransform('rotateX')).to.be.true;
+            expect(nodeSub1.hasInlineTransform('translateX')).to.be.true;
+            expect(nodeSub1.hasInlineStyle('color')).to.be.true;
+            expect(nodeSub1.hasInlineTransform('skewX')).to.be.false;
+            expect(nodeSub1.hasInlineStyle('font-size')).to.be.false;
+
+            expect(nodeSub1.hasInlineTransform('rotateX', ':before')).to.be.true;
+            expect(nodeSub1.hasInlineTransform('translateX', ':before')).to.be.true;
+            expect(nodeSub1.hasInlineStyle('background-color', ':before')).to.be.true;
+            expect(nodeSub1.hasInlineTransform('skewX', ':before')).to.be.false;
+            expect(nodeSub1.hasInlineStyle('font-size', ':before')).to.be.false;
         });
 
         it('inDOM', function () {
@@ -1345,6 +1414,39 @@
             window.document.body.removeChild(node2);
         });
 
+        it('removeInlineTransform', function () {
+            nodeSub1.setAttr('style', 'transform: translateX(12px) translateY(15px);');
+            nodeSub1.removeInlineTransform('translateX');
+            expect(nodeSub1.getAttr('style')).to.be.eql('transform: translateY(15px);');
+            nodeSub1.removeInlineTransform('translateY');
+            expect(nodeSub1.getAttr('style')===null).to.be.true;
+
+            nodeSub1.setAttr('style', 'color:#AAA; transform: translateX(12px);');
+            nodeSub1.removeInlineTransform('translateX');
+            expect(nodeSub1.getAttr('style')).to.be.eql('color: #AAA;');
+
+            nodeSub1.setAttr('style', 'color:#AAA; transform: translateX(12px);');
+            nodeSub1.removeInlineStyle('color');
+            expect(nodeSub1.getAttr('style')).to.be.eql('transform: translateX(12px);');
+
+            nodeSub1.setAttr('style', '{color: #AAA; transform: translateX(12px) translateY(15px);} :before {color: #BBB; transform: skewX(45deg) translateY(15px);}');
+            nodeSub1.removeInlineTransform('translateY');
+            nodeSub1.removeInlineTransform('skewX', ':before');
+            expect(nodeSub1.getAttr('style').replace('color: #AAA; ', '').replace(' color: #AAA;', '').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{transform: translateX(12px); } :before {transform: translateY(15px); }');
+            expect(nodeSub1.getAttr('style').replace('transform: translateX(12px); ', '').replace(' transform: translateX(12px);', '').replace('transform: translateY(15px); ', '').replace(' transform: translateY(15px);', '')).to.be.eql('{color: #AAA; } :before {color: #BBB; }');
+            nodeSub1.removeInlineStyle('color');
+            expect(nodeSub1.getAttr('style').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{transform: translateX(12px); } :before {transform: translateY(15px); }');
+            expect(nodeSub1.getAttr('style').replace('transform: translateX(12px); ', '').replace(' transform: translateX(12px);', '').replace('transform: translateY(15px); ', '').replace(' transform: translateY(15px);', '')).to.be.eql('{} :before {color: #BBB; }');
+            nodeSub1.removeInlineStyle('color', ':before');
+            expect(nodeSub1.getAttr('style')).to.be.eql('{transform: translateX(12px); } :before {transform: translateY(15px); }');
+
+            nodeSub1.removeInlineTransform('translateX');
+            expect(nodeSub1.getAttr('style')).to.be.eql('{} :before {transform: translateY(15px); }');
+
+            nodeSub1.removeInlineTransform('translateY', ':before');
+            expect(nodeSub1.getAttr('style')===null).to.be.true;
+        });
+
         it('replaceClass', function () {
             node.replaceClass('red', 'yellow');
             node.replaceClass('dummy', 'purple');
@@ -1375,12 +1477,27 @@
 
         it('setAttr', function () {
             var cont = window.document.createElement('div'),
-                n = cont.setAttr('style', 'position:absolute; left:10px; top: 30px; height: 75px; width: 150px;');
+                n = cont.setAttr('style', 'position:absolute; left:10px; top: 30px; height: 75px; width: 150px;'),
+                cont2 = window.document.createElement('div'),
+                cont3 = window.document.createElement('div');
             window.document.body.appendChild(cont);
 
             expect(cont.outerHTML).to.be.eql('<div style="position: absolute; left: 10px; top: 30px; height: 75px; width: 150px;"></div>');
             expect(n).to.be.eql(cont);
+
+            cont2.setAttr('style', 'position:absolute; transform: translateX(12px) translateY(15px); width: 150px;');
+            window.document.body.appendChild(cont2);
+            expect(cont2.getAttr('style')).to.be.eql('position: absolute; transform: translateX(12px) translateY(15px); width: 150px;');
+            expect(cont2.outerHTML).to.be.eql('<div style="position: absolute; transform: translateX(12px) translateY(15px); width: 150px;"></div>');
+
+            cont3.setAttr('style', 'transform: translateX(12px) translateY(15px);');
+            window.document.body.appendChild(cont3);
+            expect(cont3.getAttr('style')).to.be.eql('transform: translateX(12px) translateY(15px);');
+            expect(cont3.outerHTML).to.be.eql('<div style="transform: translateX(12px) translateY(15px);"></div>');
+
             window.document.body.removeChild(cont);
+            window.document.body.removeChild(cont2);
+            window.document.body.removeChild(cont3);
         });
 
         it('setAttribute', function () {
@@ -1547,6 +1664,38 @@
             expect(beforeStyles.indexOf('dummy')!==-1).to.be.false;
         });
 
+        it('setInlineTransform', function () {
+            var styles, elementStyles, beforeStyles;
+
+            nodeSub1.setInlineTransform('translateX', '10px');
+            expect(nodeSub1.getAttr('style')).to.be.eql('transform: translateX(10px);');
+
+            nodeSub1.setInlineTransform('translateY', '25px');
+            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '')).to.be.eql('transform: translateY(25px);');
+            expect(nodeSub1.getAttr('style').replace(' translateY(25px)', '')).to.be.eql('transform: translateX(10px);');
+
+            nodeSub1.setInlineTransform('skewX', '30deg');
+            expect(nodeSub1.getAttr('style').replace(' skewX(30deg)', '').replace(' translateY(25px)', '')).to.be.eql('transform: translateX(10px);');
+            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '')).to.be.eql('transform: skewX(30deg);');
+            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' skewX(30deg)', '')).to.be.eql('transform: translateY(25px);');
+
+            nodeSub1.setInlineTransform('none');
+            expect(nodeSub1.getAttr('style')).to.be.eql('transform: none;');
+
+            nodeSub1.setInlineTransform('translateX', '10px');
+            expect(nodeSub1.getAttr('style')).to.be.eql('transform: translateX(10px);');
+
+            nodeSub1.setInlineTransform('translateY', '25px');
+            nodeSub1.setInlineStyle('color', '#AAA');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('transform: translateX(10px);');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('transform: translateY(25px);');
+            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace('transform:; ', '')).to.be.eql('color: #AAA;');
+
+            nodeSub1.setInlineTransform('rotateX', '50deg', ':before');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('{transform: translateX(10px); } :before {transform: rotateX(50deg); }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('{transform: translateY(25px); } :before {transform: rotateX(50deg); }');
+            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace('transform:; ', '')).to.be.eql('{color: #AAA; } :before {transform: rotateX(50deg); }');
+        });
         /*
         <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;">
             <div id="sub1" class="green yellow"></div>

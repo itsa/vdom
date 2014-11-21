@@ -44,20 +44,26 @@ module.exports = function (window) {
         htmlToVNodes = require('./html-parser.js')(window),
         vNodeProto = require('./vnode.js')(window),
         NS = require('./vdom-ns.js')(window),
-        TRANSFORM_XY = require('polyfill/extra/transform.js')(window),
+        TRANSFORM_PROPERTY = require('polyfill/extra/transform.js')(window),
+        BROWSER_TRANSFORM_PROPERTY = TRANSFORM_PROPERTY || 'transform',
+
+
+        BROWSER_TRANSITION_PROPERTY =  = require('polyfill/extra/transform.js')(window) || 'transition',
+
+
         later = require('utils').later,
         DOCUMENT = window.document,
         nodeids = NS.nodeids,
         arrayIndexOf = Array.prototype.indexOf,
         POSITION = 'position',
-        EL_ = 'el-',
-        BLOCK = EL_+'block',
-        BORDERBOX = EL_+'borderbox',
-        NO_TRANS = EL_+'notrans',
-        INVISIBLE = EL_+'invisible',
-        HIDDEN = EL_+'hidden',
-        TRANSPARENT = EL_+'transparent',
-        TRANSFORMED_1S = EL_+'transformed-1s',
+        ITSA_ = 'itsa-',
+        BLOCK = ITSA_+'block',
+        BORDERBOX = ITSA_+'borderbox',
+        NO_TRANS = ITSA_+'notrans',
+        INVISIBLE = ITSA_+'invisible',
+        HIDDEN = ITSA_+'hidden',
+        TRANSPARENT = ITSA_+'transparent',
+        TRANSFORMED_1S = ITSA_+'transformed-1s',
         REGEXP_NODE_ID = /^#\S+$/,
         LEFT = 'left',
         TOP = 'top',
@@ -894,6 +900,46 @@ module.exports = function (window) {
             return groupStyle && groupStyle[fromCamelCase(cssProperty)];
         };
 
+       /**
+        * Returns inline transform-css-property. `Inline` means: what is set directly on the Element,
+        * this doesn't mean necesairy how it is looked like: when no css is set inline, the Element might still have
+        * an appearance because of other CSS-rules.
+        *
+        * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+        *
+        * @method getInlineTransform
+        * @param transformProperty {String} the css-property to look for
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @return {String|undefined} css-style
+        * @since 0.0.1
+        */
+        ElementPrototype.getInlineTransform = function(transformProperty, pseudo) {
+            var styles = this.vnode.styles,
+                groupStyle = styles && styles[pseudo || 'element'],
+                transformStyles = groupStyle && groupStyle[BROWSER_TRANSFORM_PROPERTY];
+            return transformStyles && transformStyles[transformProperty];
+        };
+
+       /**
+        * Returns inline transform-css-property. `Inline` means: what is set directly on the Element,
+        * this doesn't mean necesairy how it is looked like: when no css is set inline, the Element might still have
+        * an appearance because of other CSS-rules.
+        *
+        * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+        *
+        * @method getInlineTransform
+        * @param transitionProperty {String} the css-property to look for
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @return {String|undefined} css-style
+        * @since 0.0.1
+        */
+        ElementPrototype.getInlineTransition = function(transitionProperty, pseudo) {
+            var styles = this.vnode.styles,
+                groupStyle = styles && styles[pseudo || 'element'],
+                transitionStyles = groupStyle && groupStyle[BROWSER_TRANSITION_PROPERTY];
+            return transitionStyles && transitionStyles[transitionProperty];
+        };
+
         /**
          * Gets the outerHTML of the dom-node.
          * Goes through the vdom, so it's superfast.
@@ -1099,14 +1145,42 @@ module.exports = function (window) {
         };
 
        /**
-        * Returns whether the inline style of the specified property is present. `Inline` means: what is set directly on the Element.
+        * Returns whether the specified inline transform-css-property is present. `Inline` means: what is set directly on the Element.
         *
-        * Note: no need to camelCase cssProperty: both `margin-left` as well as `marginLeft` are fine
+        * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+        *
+        * @method hasInlineTransform
+        * @param transformProperty {String} the css-property to look for
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @return {Boolean} whether the inline transform-css-property was present
+        * @since 0.0.1
+        */
+        ElementPrototype.hasInlineTransform = function(transformProperty, pseudo) {
+            return !!this.getInlineTransform(transformProperty, pseudo);
+        };
+
+       /**
+        * Returns whether the specified inline transform-css-property is present. `Inline` means: what is set directly on the Element.
+        *
+        * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+        *
+        * @method hasInlineTransition
+        * @param transformProperty {String} the css-property to look for
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @return {Boolean} whether the inline transform-css-property was present
+        * @since 0.0.1
+        */
+        ElementPrototype.hasInlineTransition = function(transformProperty, pseudo) {
+            return !!this.getInlineTransition(transformProperty, pseudo);
+        };
+
+       /**
+        * Hides a node by making it floated and removing it out of the visible screen.
+        * Hides immediately without `fade`, or will fade when fade is specified.
         *
         * @method hide
-        * @param cssProperty {String} the css-property to look for
-        * @param [pseudo] {String} to look inside a pseudo-style
-        * @return {Boolean} whether the inlinestyle was present
+        * @param [fade] {Number} sec to fade (you may use `0.1`)
+        * @return {Promise} fulfilled when the element is ready hiding, or rejected when showed up again (using node.show) before fully hided.
         * @since 0.0.1
         */
         ElementPrototype.hide = function(fade) {
@@ -1145,17 +1219,102 @@ module.exports = function (window) {
         };
 
        /**
-        * Returns whether the inline style of the specified property is present. `Inline` means: what is set directly on the Element.
+        * Shows a previously hidden node.
+        * HShows immediately without `fade`, or will fade-in when fade is specified.
         *
-        * Note: no need to camelCase cssProperty: both `margin-left` as well as `marginLeft` are fine
-        *
-        * @method hide
-        * @param cssProperty {String} the css-property to look for
-        * @param [pseudo] {String} to look inside a pseudo-style
-        * @return {Boolean} whether the inlinestyle was present
+        * @method show
+        * @param [fade] {Number} sec to fade-in (you may use `0.1`)
+        * @return {Promise} fulfilled when the element is ready showing up, or rejected when hidden again (using node.hide) before fully showed.
         * @since 0.0.1
         */
         ElementPrototype.show = function(fade) {
+            var instance = this,
+                promise,
+            afterTrans = function() {
+                if (!instance.hasData('_hidden')) {
+                    instance.removeClass(TRANSFORMED_1S);
+                    instance.removeEventListener(TRANS_END, afterTrans, true);
+                    promise.fulfill();
+                }
+                else {
+                    promise.reject('Node is set to hide again after it is set visible.');
+                }
+            };
+            // we need to set data on the node to inform that the last action was to show the node
+            // this will prevent any `hide()`-transform-callback that moght be running from doing its action
+            instance.removeData('_hidden');
+            if (fade) {
+                instance.setClass(TRANSFORMED_1S);
+                instance.removeClass(TRANSPARENT);
+                instance.removeClass(HIDDEN);
+                instance.addEventListener(TRANS_END, afterTrans, true);
+                later(afterTrans, 1050);
+                promise = Promise.manage();
+                return promise;
+            }
+            else {
+                instance.removeClass(TRANSFORMED_1S);
+                instance.removeInlineTransform();
+                instance.removeClass(TRANSPARENT);
+                instance.removeClass(HIDDEN);
+                return Promise.resolve();
+            }
+        };
+
+       /**
+        * Hides a node by making it floated and removing it out of the visible screen.
+        * Hides immediately without `fade`, or will fade when fade is specified.
+        *
+        * @method hide
+        * @param [fade] {Number} sec to fade (you may use `0.1`)
+        * @return {Promise} fulfilled when the element is ready hiding, or rejected when showed up again (using node.show) before fully hided.
+        * @since 0.0.1
+        */
+        ElementPrototype.Xhide = function(fade) {
+// transitions only work with IE10+, and that browser has addEventListener
+            // when it doesn't have, it doesn;t harm to leave the transitionclass on: it would work anyway
+            // nevertheless we will remove it with a timeout
+            var instance = this,
+                promise,
+            afterTrans = function() {
+                if (instance.hasData('_hidden')) {
+                    instance.setClass(HIDDEN);
+                    instance.removeClass(TRANSFORMED_1S);
+                    instance.removeEventListener(TRANS_END, afterTrans, true);
+                    promise.fulfill();
+                }
+                else {
+                    promise.reject('Node is set to show again after it is set hidden.');
+                }
+            };
+            // we need to set data on the node to inform that the last action was to show the node
+            // this will prevent any `hide()`-transform-callback that moght be running from doing its action
+            instance.setData('_hidden', true);
+            if (fade) {
+                instance.setClass(TRANSFORMED_1S);
+                instance.setClass(TRANSPARENT);
+                instance.addEventListener(TRANS_END, afterTrans, true);
+                later(afterTrans, 1050);
+                promise = Promise.manage();
+                return promise;
+            }
+            else {
+                instance.setClass(HIDDEN);
+                instance.setClass(TRANSPARENT);
+                return Promise.resolve();
+            }
+        };
+
+       /**
+        * Shows a previously hidden node.
+        * HShows immediately without `fade`, or will fade-in when fade is specified.
+        *
+        * @method show
+        * @param [fade] {Number} sec to fade-in (you may use `0.1`)
+        * @return {Promise} fulfilled when the element is ready showing up, or rejected when hidden again (using node.hide) before fully showed.
+        * @since 0.0.1
+        */
+        ElementPrototype.Xshow = function(fade) {
             var instance = this,
                 promise,
             afterTrans = function() {
@@ -1658,6 +1817,66 @@ module.exports = function (window) {
         };
 
        /**
+        * Removes a subtype `transform`-css-property of (inline) out of the Element.
+        * This way you can sefely remove partial `transform`-properties while remaining the
+        * other inline `transform` css=properties.
+        *
+        * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+        *
+        * @method removeInlineTransform
+        * @param transformProperty {String} the css-transform property to remove
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @chainable
+        * @since 0.0.1
+        */
+        ElementPrototype.removeInlineTransform = function(transformProperty, pseudo) {
+            var instance = this,
+                vnode = instance.vnode,
+                styles = vnode.styles,
+                groupStyle = styles && styles[pseudo || 'element'],
+                transformStyles = groupStyle && groupStyle[BROWSER_TRANSFORM_PROPERTY];
+            if (transformStyles) {
+                if (transformStyles[transformProperty]) {
+                    delete transformStyles[transformProperty];
+                    (transformStyles.size()===0) && (delete groupStyle[BROWSER_TRANSFORM_PROPERTY]);
+                    (styles.size()===0) && (delete vnode.styles[pseudo || 'element']);
+                    instance.setAttr('style', vnode.serializeStyles());
+                }
+            }
+            return instance;
+        };
+
+       /**
+        * Removes a subtype `transform`-css-property of (inline) out of the Element.
+        * This way you can sefely remove partial `transform`-properties while remaining the
+        * other inline `transform` css=properties.
+        *
+        * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+        *
+        * @method removeInlineTransition
+        * @param transitionProperty {String} the css-transform property to remove
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @chainable
+        * @since 0.0.1
+        */
+        ElementPrototype.removeInlineTransition = function(transitionProperty, pseudo) {
+            var instance = this,
+                vnode = instance.vnode,
+                styles = vnode.styles,
+                groupStyle = styles && styles[pseudo || 'element'],
+                transitionStyles = groupStyle && groupStyle[BROWSER_TRANSITION_PROPERTY];
+            if (transitionStyles) {
+                if (transitionStyles[transitionProperty]) {
+                    delete transitionStyles[transitionProperty];
+                    (transitionStyles.size()===0) && (delete groupStyle[BROWSER_TRANSITION_PROPERTY]);
+                    (styles.size()===0) && (delete vnode.styles[pseudo || 'element']);
+                    instance.setAttr('style', vnode.serializeStyles());
+                }
+            }
+            return instance;
+        };
+
+       /**
         * Replaces the Element with a new Element.
         *
         * @method replace
@@ -1859,6 +2078,74 @@ module.exports = function (window) {
             return instance;
         };
 
+       /**
+        * Sets a transform-css-property (inline) for the Element.
+        *
+        * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+        *
+        * @method setStyle
+        * @param transformProperty {String} the css-property to be set, f.e. `translateX`
+        * @param value {String} the css-value
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @chainable
+        * @since 0.0.1
+        */
+        ElementPrototype.setInlineTransform = function(transformProperty, value, pseudo) {
+            var instance = this,
+                vnode = instance.vnode,
+                transformStyles, group, noneValue;
+            noneValue = (transformProperty.toLowerCase()==='none');
+            if (!noneValue) {
+                value || (value='');
+                if (value==='') {
+                    return instance.removeInlineTransform(transformProperty, pseudo);
+                }
+            }
+            vnode.styles || (vnode.styles={});
+            group = pseudo || 'element';
+            vnode.styles[group] || (vnode.styles[group]={});
+            vnode.styles[group][BROWSER_TRANSFORM_PROPERTY] || (vnode.styles[group][BROWSER_TRANSFORM_PROPERTY]={});
+            if (noneValue) {
+                vnode.styles[group][BROWSER_TRANSFORM_PROPERTY] = {
+                    none: true
+                };
+            }
+            else {
+                transformStyles = vnode.styles[group][BROWSER_TRANSFORM_PROPERTY];
+                transformStyles[transformProperty] = value;
+                instance.removeInlineTransform('none', pseudo);
+            }
+            instance.setAttr('style', vnode.serializeStyles());
+            return instance;
+        };
+
+       /**
+        * Sets a transform-css-property (inline) for the Element.
+        *
+        * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+        *
+        * @method setStyle
+        * @param setInlineTransition {String} the css-property to be set, f.e. `translateX`
+        * @param delay {Number} the delay in seconds (may be a broken number, like `0.5`)
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @chainable
+        * @since 0.0.1
+        */
+        ElementPrototype.setInlineTransition = function(transitionProperty, delay, pseudo) {
+//transition: width 2s, height 2s, transform 2s;
+            var instance = this,
+                vnode = instance.vnode,
+                transitionStyles, group;
+            vnode.styles || (vnode.styles={});
+            group = pseudo || 'element';
+            vnode.styles[group] || (vnode.styles[group]={});
+            vnode.styles[group][BROWSER_TRANSITION_PROPERTY] || (vnode.styles[group][BROWSER_TRANSITION_PROPERTY]={});
+            transitionStyles = vnode.styles[group][BROWSER_TRANSITION_PROPERTY];
+            transitionStyles[transitionProperty] = delay;
+            instance.setAttr('style', vnode.serializeStyles());
+            return instance;
+        };
+
         /**
          * Gets or sets the outerHTML of both the Element as well as the representing dom-node.
          * Goes through the vdom, so it's superfast.
@@ -1976,7 +2263,7 @@ module.exports = function (window) {
         ElementPrototype.setXY = function(x, y, constrain, notransition) {
             console.log(NAME, 'setXY '+x+','+y);
             var instance = this,
-                transformXY = arguments[4] && TRANSFORM_XY, // hidden feature: is used by the `drag`-module to get smoother dragging
+                transformXY = arguments[4] && TRANSFORM_PROPERTY, // hidden feature: is used by the `drag`-module to get smoother dragging
                 dif, match, constrainNode, byExactId, parent, clone, currentT, extract,
                 containerTop, containerRight, containerLeft, containerBottom, requestedX, requestedY;
 

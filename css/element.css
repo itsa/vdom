@@ -1,4 +1,4 @@
-.el-notrans {
+.itsa-notrans {
     -webkit-transition: none !important;
     -moz-transition: none !important;
     -ms-transition: none !important;
@@ -6,15 +6,15 @@
     transition: none !important;
 }
 
-.el-invisible {
+.itsa-invisible {
     visibility: hidden !important;
 }
 
-.el-transparent {
+.itsa-transparent {
     opacity: 0;
 }
 
-.el-transformed-1s {
+.itsa-transformed-1s {
     -webkit-transition: opacity 1s; !important;
     -moz-transition: opacity 1s !important;
     -ms-transition: opacity 1s !important;
@@ -22,18 +22,18 @@
     transition: opacity 1s !important;
 }
 
-.el-hidden {
+.itsa-hidden {
     visibility: hidden !important;
     position: absolute !important;
     left: -9999px;
     top: -9999px;
 }
 
-.el-block {
+.itsa-block {
     display: block !important;
 }
 
-.el-borderbox {
+.itsa-borderbox {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box;

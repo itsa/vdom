@@ -25,6 +25,16 @@ module.exports = function (window) {
         vdom = {
             Plugins: require('./partials/element-plugin.js')(window)
         };
+        // if there is any Element with inline `transform` that is not compatible with the current browser:
+        // we can revert it into the right `transform`, because the vdom knows the right transform-name:
+        DOCUMENT.getAll('[style*="transform:"]').forEach(function(node) {
+            var vnode = node.vnode,
+                rightStyle = vnode.attrs.style;
+            // delete current definition, so that reset will do an update:
+            delete vnode.attrs.style;
+            // now reset:
+            vnode._setAttr('style', rightStyle);
+        });
     }
     else {
         // if no HTML, then return an empty Plugin-object
