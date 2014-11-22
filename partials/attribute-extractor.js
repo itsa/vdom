@@ -32,13 +32,16 @@ module.exports = function (window) {
     }
 
     var TRANSFORM_PROPERTY = require('polyfill/extra/transform.js')(window),
+        TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window),
         END_OF_VALUE = {
             ';': true,
             '}': true
         },
         TRANSFORM = 'transform',
         TRANSFORM_MUTATIONS = {},
-        _serializeTransform, _parseTransform, extractor;
+        TRANSITION = 'transition',
+        TRANSITION_MUTATIONS = {},
+        _serializeTransform, _parseTransform, _serializeTransition, _parseTransition, extractor;
 
     TRANSFORM_MUTATIONS[TRANSFORM] = true;
     TRANSFORM_MUTATIONS['-webkit-'+TRANSFORM] = true;
@@ -46,12 +49,31 @@ module.exports = function (window) {
     TRANSFORM_MUTATIONS['-ms-'+TRANSFORM] = true;
     TRANSFORM_MUTATIONS['-o-'+TRANSFORM] = true;
 
+    TRANSITION_MUTATIONS[TRANSITION] = true;
+    TRANSITION_MUTATIONS['-webkit-'+TRANSITION] = true;
+    TRANSITION_MUTATIONS['-moz-'+TRANSITION] = true;
+    TRANSITION_MUTATIONS['-ms-'+TRANSITION] = true;
+    TRANSITION_MUTATIONS['-o-'+TRANSITION] = true;
+
     _serializeTransform = function(transformValue) {
+        // transformValue is an Object !!
         var serialized = '';
         transformValue.each(function(value, key) {
             serialized += ' '+ key + ((key==='none') ? '' : '(' + value + ')');
         });
         return (serialized[0]===' ') ? serialized.substr(1) : serialized;
+    };
+
+    _serializeTransition = function(transitionValue) {
+        // transitionValue is an Object !!
+        var serialized = '',
+            timingFunction, delay;
+        transitionValue.each(function(value, key) {
+            timingFunction = value.timingFunction || 'ease';
+            delay = value.delay || 0;
+            serialized += ', ' + key + ' ' + value.duration+'s '+ timingFunction + ' '+ delay+'s';
+        });
+        return (serialized[0]===',') ? serialized.substr(2) : serialized;
     };
 
     _parseTransform = function(transformValueSerialised) {
@@ -88,10 +110,44 @@ module.exports = function (window) {
                         if (key==='none') {
                             return {
                                 none: true
-                            }
+                            };
                         }
                     }
                 }
+            }
+        }
+        return parsed;
+    };
+
+    _parseTransition = function(transitionValueSerialised) {
+        //transformValueSerialised might be: translateX(10px) matrix(1.0, 2.0, 3.0, 4.0, 5.0, 6.0) translateY(5px)
+        var parsed = {},
+            i, len, transitionItem, item, items, value, properties;
+        if (transitionValueSerialised) {
+            properties = transitionValueSerialised.split(',');
+            len = properties.length;
+            for (i=0; i<len; i++) {
+                items = properties[i].trim();
+                (items.indexOf('  ')!==-1) && items.replace(/'  '/g, ' ');
+                item = items.split(' ');
+                transitionItem = {
+                    duration: parseFloat(item[1]) || 0
+                };
+/*jshint boss:true */
+                if (value=item[2]) {
+/*jshint boss:false */
+                    // check if it is a Function, or a delayvalue
+                    if (value.parsable()) {
+                        transitionItem.delay = parseFloat(value);
+                    }
+                    else {
+                        transitionItem.timingFunction = value;
+                        (value=item[3]) && (transitionItem.delay = parseFloat(value));
+                    }
+                }
+                transitionItem.timingFunction || (transitionItem.timingFunction='ease');
+                transitionItem.delay || (transitionItem.delay=0);
+                parsed[item[0]] = transitionItem;
             }
         }
         return parsed;
@@ -191,8 +247,9 @@ module.exports = function (window) {
                             // in case `key` equals a variant of `transform`, but non-compatible with the current browser -->
                             // redefine it into a browser-compatible version:
                             TRANSFORM_MUTATIONS[key] && TRANSFORM_PROPERTY && (key!==TRANSFORM_PROPERTY) && (key=TRANSFORM_PROPERTY);
+                            TRANSITION_MUTATIONS[key] && TRANSITION_PROPERTY && (key!==TRANSITION_PROPERTY) && (key=TRANSITION_PROPERTY);
                             // store the property:
-                            group[key] = ((key===TRANSFORM_PROPERTY) ? _parseTransform(value) : value);
+                            group[key] = ((key===TRANSFORM_PROPERTY) ? _parseTransform(value) : ((key===TRANSITION_PROPERTY) ? _parseTransition(value) : value));
                             key = '';
                             insideValue = false;
                             insideKey = (character===';');
@@ -235,8 +292,9 @@ module.exports = function (window) {
                     // in case `key` equals a variant of `transform`, but non-compatible with the current browser -->
                     // redefine it into a browser-compatible version:
                     TRANSFORM_MUTATIONS[key] && TRANSFORM_PROPERTY && (key!==TRANSFORM_PROPERTY) && (key=TRANSFORM_PROPERTY);
+                    TRANSITION_MUTATIONS[key] && TRANSITION_PROPERTY && (key!==TRANSITION_PROPERTY) && (key=TRANSITION_PROPERTY);
                     // store the property:
-                    group[key] = ((key===TRANSFORM_PROPERTY) ? _parseTransform(value) : value);
+                    group[key] = ((key===TRANSFORM_PROPERTY) ? _parseTransform(value) : ((key===TRANSITION_PROPERTY) ? _parseTransition(value) : value));
                 }
             }
             return {
@@ -250,7 +308,7 @@ module.exports = function (window) {
                 onlyElementStyle = ((styles.size()===1) && styles.element);
             if (onlyElementStyle) {
                 styles.element.each(function(value, key) {
-                    serialized += ' '+ key + ': ' + ((key===TRANSFORM_PROPERTY) ? _serializeTransform(value) : value) + ';';
+                    serialized += ' '+ key + ': ' + ((key===TRANSFORM_PROPERTY) ? _serializeTransform(value) : ((key===TRANSITION_PROPERTY) ? _serializeTransition(value) : value)) + ';';
                 });
             }
             else {
@@ -258,7 +316,7 @@ module.exports = function (window) {
                     (groupKey==='element') || (serialized += ' '+groupKey+' ');
                     serialized += '{';
                     groupValue.each(function(value, key) {
-                        serialized += key + ': ' + ((key===TRANSFORM_PROPERTY) ? _serializeTransform(value) : value) + '; ';
+                        serialized += key + ': ' + ((key===TRANSFORM_PROPERTY) ? _serializeTransform(value) : ((key===TRANSITION_PROPERTY) ? _serializeTransition(value) : value)) + '; ';
                     });
                     serialized += '}';
                 });

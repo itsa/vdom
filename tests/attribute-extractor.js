@@ -344,4 +344,125 @@
         });
 
     });
+
+    describe('extractStyle with transition', function () {
+
+        it('single', function () {
+            var style = 'color: #F00; transition: width 2s ease-in 4.5s, height 6s; border: solid 1px #000;',
+                styles = {
+                    element: {
+                        color: '#F00',
+                        transition: {
+                            width: {
+                                duration: 2,
+                                timingFunction: 'ease-in',
+                                delay: 4.5
+                            },
+                            height: {
+                                duration: 6,
+                            }
+                        },
+                        border: 'solid 1px #000'
+                    }
+                },
+                extracted = extractor.extractStyle(style);
+            expect(extracted.attrStyle).to.be.eql('color: #F00; transition: width 2s ease-in 4.5s, height 6s; border: solid 1px #000;');
+            expect(extracted.styles).to.be.eql(styles);
+        });
+
+        it('multiple', function () {
+            var style = '{color: #F00; transition: width 2s ease-in 4.5s, height 6s; border: solid 1px #000; } :before {color: #FF0; transition: opacity 8s; font-weight: bold; } :after {color: #999; font-weight: normal; }',
+                styles = {
+                    element: {
+                        color: '#F00',
+                        transition: {
+                            width: {
+                                duration: 2,
+                                timingFunction: 'ease-in',
+                                delay: 4.5
+                            },
+                            height: {
+                                duration: 6,
+                            }
+                        },
+                        border: 'solid 1px #000'
+                    },
+                    ':before': {
+                        color: '#FF0',
+                        transition: {
+                            opacity: {
+                                duration: 8,
+                            }
+                        },
+                        'font-weight': 'bold'
+                    },
+                    ':after': {
+                        color: '#999',
+                        'font-weight': 'normal'
+                    }
+                },
+                extracted = extractor.extractStyle(style);
+            expect(extracted.attrStyle).to.be.eql('{color: #F00; transition: width 2s ease-in 4.5s, height 6s; border: solid 1px #000; } :before {color: #FF0; transition: opacity 8s; font-weight: bold; } :after {color: #999; font-weight: normal; }');
+            expect(extracted.styles).to.be.eql(styles);
+        });
+
+    });
+
+    describe('serializeStyles with transition', function () {
+
+        it('serializeStyles', function () {
+            var styles = {
+                element: {
+                    color: '#F00',
+                    transition: {
+                        width: {
+                            duration: 2,
+                            timingFunction: 'ease-in',
+                            delay: 4.5
+                        },
+                        height: {
+                            duration: 6,
+                        }
+                    },
+                    border: 'solid 1px #000'
+                }
+            };
+            expect(extractor.serializeStyles(styles)).to.be.eql('color: #F00; transition: width 2s ease-in 4.5s, height 6s; border: solid 1px #000;');
+        });
+
+        it('serializeStyles complex', function () {
+            var styles = {
+                element: {
+                    color: '#F00',
+                    transition: {
+                        width: {
+                            duration: 2,
+                            timingFunction: 'ease-in',
+                            delay: 4.5
+                        },
+                        height: {
+                            duration: 6,
+                        }
+                    },
+                    border: 'solid 1px #000'
+                },
+                ':before': {
+                    color: '#FF0',
+                    transition: {
+                        opacity: {
+                            duration: 8
+                        }
+                    },
+                    'font-weight': 'bold'
+                },
+                ':after': {
+                    color: '#999',
+                    'font-weight': 'normal'
+                }
+            };
+            expect(extractor.serializeStyles(styles)).to.be.eql('{color: #F00; transition: width 2s ease-in 4.5s, height 6s; border: solid 1px #000; } :before {color: #FF0; transition: opacity 8s; font-weight: bold; } :after {color: #999; font-weight: normal; }');
+        });
+
+    });
+
 }(global.window || require('node-win')));

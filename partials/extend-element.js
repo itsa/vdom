@@ -45,12 +45,9 @@ module.exports = function (window) {
         vNodeProto = require('./vnode.js')(window),
         NS = require('./vdom-ns.js')(window),
         TRANSFORM_PROPERTY = require('polyfill/extra/transform.js')(window),
-        BROWSER_TRANSFORM_PROPERTY = TRANSFORM_PROPERTY || 'transform',
-
-
-        BROWSER_TRANSITION_PROPERTY =  = require('polyfill/extra/transform.js')(window) || 'transition',
-
-
+        VENDOR_TRANSFORM_PROPERTY = TRANSFORM_PROPERTY || 'transform',
+        TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window),
+        VENDOR_TRANSITION_PROPERTY = TRANSITION_PROPERTY || 'transition',
         later = require('utils').later,
         DOCUMENT = window.document,
         nodeids = NS.nodeids,
@@ -916,7 +913,7 @@ module.exports = function (window) {
         ElementPrototype.getInlineTransform = function(transformProperty, pseudo) {
             var styles = this.vnode.styles,
                 groupStyle = styles && styles[pseudo || 'element'],
-                transformStyles = groupStyle && groupStyle[BROWSER_TRANSFORM_PROPERTY];
+                transformStyles = groupStyle && groupStyle[VENDOR_TRANSFORM_PROPERTY];
             return transformStyles && transformStyles[transformProperty];
         };
 
@@ -936,8 +933,10 @@ module.exports = function (window) {
         ElementPrototype.getInlineTransition = function(transitionProperty, pseudo) {
             var styles = this.vnode.styles,
                 groupStyle = styles && styles[pseudo || 'element'],
-                transitionStyles = groupStyle && groupStyle[BROWSER_TRANSITION_PROPERTY];
-            return transitionStyles && transitionStyles[transitionProperty];
+                transitionStyles = groupStyle && groupStyle[VENDOR_TRANSITION_PROPERTY];
+            if (transitionStyles) {
+                return transitionStyles[fromCamelCase(transitionProperty)];
+            }
         };
 
         /**
@@ -982,6 +981,59 @@ module.exports = function (window) {
         ElementPrototype.getStyle = function(cssProperty, pseudo) {
             return window.getComputedStyle(this, pseudo)[toCamelCase(cssProperty)];
         };
+
+
+ElementPrototype.getTransform = function(transformProperty, pseudo) {
+    var instance = this,
+        transform = instance.getStyle(VENDOR_TRANSFORM_PROPERTY, pseudo),
+        len = transform.length,
+        index = transform.indexOf(transformProperty),
+        value, character;
+console.info(transform);
+    if (transform.startsWith('matrix')) {
+
+    }
+    else if (transform.startsWith('matrix3d')) {
+
+    }
+    else if ((index = transform.indexOf(transformProperty))!==-1) {
+        value = '';
+        index += transformProperty.length;
+        while ((++index<len) && (character=transform[index]) && (character!==')')) {
+            value += character;
+        }
+        return value;
+    }
+};
+
+ElementPrototype.getTransition = function(transitionProperty, pseudo) {
+    var instance = this,
+        transition = instance.getStyle(VENDOR_TRANSITION_PROPERTY, pseudo),
+        len = transition.length,
+        index = transition.indexOf(transitionProperty),
+        value, character;
+    if (index!==-1) {
+        index += (transitionProperty.length-1);
+        // skip leading spaces:
+        while ((++index<len) && (transition[index]===' ')) {}
+        // reset to first non-space character
+        index--;
+        value = '';
+        while ((++index<len) && (character=transition[index]) && (character!==',')) {
+            value += character;
+        }
+        return value;
+    }
+};
+
+ElementPrototype.hasTransform = function(transformProperty, pseudo) {
+    return !!this.getTransform(transformProperty, pseudo);
+};
+
+ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
+    return !!this.getTransition(transitionProperty, pseudo);
+};
+
 
        /**
         * Elements tag-name in uppercase (same as nodeName).
@@ -1834,11 +1886,11 @@ module.exports = function (window) {
                 vnode = instance.vnode,
                 styles = vnode.styles,
                 groupStyle = styles && styles[pseudo || 'element'],
-                transformStyles = groupStyle && groupStyle[BROWSER_TRANSFORM_PROPERTY];
+                transformStyles = groupStyle && groupStyle[VENDOR_TRANSFORM_PROPERTY];
             if (transformStyles) {
                 if (transformStyles[transformProperty]) {
                     delete transformStyles[transformProperty];
-                    (transformStyles.size()===0) && (delete groupStyle[BROWSER_TRANSFORM_PROPERTY]);
+                    (transformStyles.size()===0) && (delete groupStyle[VENDOR_TRANSFORM_PROPERTY]);
                     (styles.size()===0) && (delete vnode.styles[pseudo || 'element']);
                     instance.setAttr('style', vnode.serializeStyles());
                 }
@@ -1864,11 +1916,11 @@ module.exports = function (window) {
                 vnode = instance.vnode,
                 styles = vnode.styles,
                 groupStyle = styles && styles[pseudo || 'element'],
-                transitionStyles = groupStyle && groupStyle[BROWSER_TRANSITION_PROPERTY];
+                transitionStyles = groupStyle && groupStyle[VENDOR_TRANSITION_PROPERTY];
             if (transitionStyles) {
                 if (transitionStyles[transitionProperty]) {
                     delete transitionStyles[transitionProperty];
-                    (transitionStyles.size()===0) && (delete groupStyle[BROWSER_TRANSITION_PROPERTY]);
+                    (transitionStyles.size()===0) && (delete groupStyle[VENDOR_TRANSITION_PROPERTY]);
                     (styles.size()===0) && (delete vnode.styles[pseudo || 'element']);
                     instance.setAttr('style', vnode.serializeStyles());
                 }
@@ -2057,10 +2109,12 @@ module.exports = function (window) {
         * @param cssProperty {String} the css-property to be set
         * @param value {String} the css-value
         * @param [pseudo] {String} to look inside a pseudo-style
+        * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
+        *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.setInlineStyle = function(cssProperty, value, pseudo) {
+        ElementPrototype.setInlineStyle = function(cssProperty, value, pseudo, returnPromise) {
             var instance = this,
                 vnode = instance.vnode,
                 styles, group;
@@ -2104,14 +2158,14 @@ module.exports = function (window) {
             vnode.styles || (vnode.styles={});
             group = pseudo || 'element';
             vnode.styles[group] || (vnode.styles[group]={});
-            vnode.styles[group][BROWSER_TRANSFORM_PROPERTY] || (vnode.styles[group][BROWSER_TRANSFORM_PROPERTY]={});
+            vnode.styles[group][VENDOR_TRANSFORM_PROPERTY] || (vnode.styles[group][VENDOR_TRANSFORM_PROPERTY]={});
             if (noneValue) {
-                vnode.styles[group][BROWSER_TRANSFORM_PROPERTY] = {
+                vnode.styles[group][VENDOR_TRANSFORM_PROPERTY] = {
                     none: true
                 };
             }
             else {
-                transformStyles = vnode.styles[group][BROWSER_TRANSFORM_PROPERTY];
+                transformStyles = vnode.styles[group][VENDOR_TRANSFORM_PROPERTY];
                 transformStyles[transformProperty] = value;
                 instance.removeInlineTransform('none', pseudo);
             }
@@ -2122,26 +2176,33 @@ module.exports = function (window) {
        /**
         * Sets a transform-css-property (inline) for the Element.
         *
-        * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+        * See more about transitions: https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Using_CSS_transitions
         *
         * @method setStyle
         * @param setInlineTransition {String} the css-property to be set, f.e. `translateX`
+        * @param duration {Number} the duration in seconds (may be a broken number, like `0.5`)
+        * @param [timingFunction] {String} See https://developer.mozilla.org/en-US/docs/Web/CSS/transition-timing-function
         * @param delay {Number} the delay in seconds (may be a broken number, like `0.5`)
         * @param [pseudo] {String} to look inside a pseudo-style
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.setInlineTransition = function(transitionProperty, delay, pseudo) {
+        ElementPrototype.setInlineTransition = function(transitionProperty, duration, timingFunction, delay, pseudo) {
 //transition: width 2s, height 2s, transform 2s;
             var instance = this,
                 vnode = instance.vnode,
-                transitionStyles, group;
+                transitionStyles, group, trans;
             vnode.styles || (vnode.styles={});
             group = pseudo || 'element';
             vnode.styles[group] || (vnode.styles[group]={});
-            vnode.styles[group][BROWSER_TRANSITION_PROPERTY] || (vnode.styles[group][BROWSER_TRANSITION_PROPERTY]={});
-            transitionStyles = vnode.styles[group][BROWSER_TRANSITION_PROPERTY];
-            transitionStyles[transitionProperty] = delay;
+            vnode.styles[group][VENDOR_TRANSITION_PROPERTY] || (vnode.styles[group][VENDOR_TRANSITION_PROPERTY]={});
+            transitionStyles = vnode.styles[group][VENDOR_TRANSITION_PROPERTY];
+            transitionProperty = fromCamelCase(transitionProperty);
+            trans = transitionStyles[transitionProperty] = {
+                duration: duration
+            };
+            timingFunction && (trans.timingFunction=timingFunction);
+            delay && (trans.delay=delay);
             instance.setAttr('style', vnode.serializeStyles());
             return instance;
         };
