@@ -67,39 +67,36 @@
             window.document.body.removeChild(node);
         });
 
-        it('removeInlineTransition', function () {
-            nodeSub1.setAttr('style', 'transition: width 2s ease-in 4s, height 6s;');
-            nodeSub1.removeInlineTransition('width');
-            expect(nodeSub1.getAttr('style')).to.be.eql('transition: height 6s;');
-            nodeSub1.setAttr('style', 'transition: width 2s ease-in 4s, height 6s;');
-            nodeSub1.removeInlineTransition('height');
-            expect(nodeSub1.getAttr('style')).to.be.eql('transition: width 2s ease-in 4s;');
-            nodeSub1.removeInlineTransition('width');
-            expect(nodeSub1.getAttr('style')===null).to.be.true;
-            nodeSub1.setAttr('style', 'color:#AAA; transition: width 2s ease-in 4s;');
-            nodeSub1.removeInlineTransition('width');
-            expect(nodeSub1.getAttr('style')).to.be.eql('color: #AAA;');
+        it('getTransform', function () {
+            node.prepend('<style type="text/css">#ITSA div {transform: skewX(30deg);} #ITSA div:before {transform: skewY(100deg);}</style>');
 
-            nodeSub1.setAttr('style', 'color:#AAA; transition: width 2s ease-in 4s;');
-            nodeSub1.removeInlineStyle('color');
-            expect(nodeSub1.getAttr('style')).to.be.eql('transition: width 2s ease-in 4s;');
+            expect(nodeSub1.getTransform('translateX')===undefined).to.be.true;
+            expect(nodeSub1.getTransform('skewX')).to.be.eql('30deg');
+            expect(nodeSub1.getTransform('skewY', ':before')).to.be.eql('100deg');
+            expect(nodeSub1.getTransform('skewX', ':before')===undefined).to.be.true;
+            expect(nodeSub1.getTransform('skewY')===undefined).to.be.true;
 
-            nodeSub1.setAttr('style', '{color:#AAA; transition: width 2s ease-in 4s;} :before {color: #BBB; transition: width 12s ease-in 14s, opacity 25s;}');
+            nodeSub1.setAttr('style', 'transform: rotateX(50deg) translateX(10px); color: #AAA;');
+            expect(nodeSub1.getTransform('rotateX')).to.be.eql('50deg');
+            expect(nodeSub1.getTransform('translateX')).to.be.eql('10px');
 
-            nodeSub1.removeInlineTransition('opacity', ':before');
-            expect(nodeSub1.getAttr('style').replace('color: #AAA; ', '').replace(' color: #AAA;', '').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{transition: width 2s ease-in 4s; } :before {transition: width 12s ease-in 14s; }');
-            expect(nodeSub1.getAttr('style').replace('transition: width 2s ease-in 4s; ', '').replace(' transition: width 2s ease-in 4s;', '').replace('transition: width 12s ease-in 14s; ', '').replace(' transition: width 12s ease-in 14s;', '')).to.be.eql('{color: #AAA; } :before {color: #BBB; }');
-            nodeSub1.removeInlineStyle('color');
-            expect(nodeSub1.getAttr('style').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{transition: width 2s ease-in 4s; } :before {transition: width 12s ease-in 14s; }');
-            expect(nodeSub1.getAttr('style').replace('transition: width 2s ease-in 4s; ', '').replace(' transition: width 2s ease-in 4s;', '').replace('transition: width 12s ease-in 14s; ', '').replace(' transition: width 12s ease-in 14s;', '')).to.be.eql('{} :before {color: #BBB; }');
-            nodeSub1.removeInlineStyle('color', ':before');
-            expect(nodeSub1.getAttr('style')).to.be.eql('{transition: width 2s ease-in 4s; } :before {transition: width 12s ease-in 14s; }');
+            nodeSub1.setAttr('style', 'background-color: #DDD; transform: rotateX(50deg) translateX(10px); color: #AAA;');
+            expect(nodeSub1.getTransform('rotateX')).to.be.eql('50deg');
+            expect(nodeSub1.getTransform('translateX')).to.be.eql('10px');
 
-            nodeSub1.removeInlineTransition('width');
-            expect(nodeSub1.getAttr('style')).to.be.eql('{} :before {transition: width 12s ease-in 14s; }');
+            nodeSub1.setAttr('style', 'background-color: #DDD; transform: rotateX(50deg) translateX(10px);');
+            expect(nodeSub1.getTransform('rotateX')).to.be.eql('50deg');
+            expect(nodeSub1.getTransform('translateX')).to.be.eql('10px');
 
-            nodeSub1.removeInlineTransition('width', ':before');
-            expect(nodeSub1.getAttr('style')===null).to.be.true;
+            nodeSub1.setAttr('style', '{transform: rotateX(50deg) translateX(10px); color: #AAA;} :before {background-color: #DDD; transform: rotateX(150deg) translateX(110px);}');
+            expect(nodeSub1.getTransform('rotateX')).to.be.eql('50deg');
+            expect(nodeSub1.getTransform('translateX')).to.be.eql('10px');
+            expect(nodeSub1.getTransform('rotateX', ':before')).to.be.eql('150deg');
+            expect(nodeSub1.getTransform('translateX', ':before')).to.be.eql('110px');
+
+            nodeSub1.setAttr('style', '{background-color: #DDD; transform: skewX(50deg) translateX(10px); color: #AAA;} :before {transform: skewY(150deg);}');
+            expect(nodeSub1.getTransform('skewX')).to.be.eql('50deg');
+            expect(nodeSub1.getTransform('skewY', ':before')).to.be.eql('150deg');
         });
 
 

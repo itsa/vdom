@@ -724,26 +724,26 @@
 
             nodeSub1.setAttr('style', 'transition: width 1s lineair 2s, height 3s; color: #AAA;');
             expect(nodeSub1.getInlineTransition('width')).to.be.eql({duration: 1, timingFunction: 'lineair', delay: 2});
-            expect(nodeSub1.getInlineTransition('height')).to.be.eql({duration: 3, timingFunction: 'ease', delay: 0});
+            expect(nodeSub1.getInlineTransition('height')).to.be.eql({duration: 3});
             expect(nodeSub1.getInlineStyle('color')).to.be.eql('#AAA');
 
             nodeSub1.setAttr('style', 'background-color: #DDD; transition: width 1s lineair 2s, height 3s; color: #AAA;');
             expect(nodeSub1.getInlineTransition('width')).to.be.eql({duration: 1, timingFunction: 'lineair', delay: 2});
-            expect(nodeSub1.getInlineTransition('height')).to.be.eql({duration: 3, timingFunction: 'ease', delay: 0});
+            expect(nodeSub1.getInlineTransition('height')).to.be.eql({duration: 3});
             expect(nodeSub1.getInlineStyle('color')).to.be.eql('#AAA');
             expect(nodeSub1.getInlineStyle('background-color')).to.be.eql('#DDD');
 
             nodeSub1.setAttr('style', 'background-color: #DDD; transition: width 1s lineair 2s, height 3s;');
             expect(nodeSub1.getInlineTransition('width')).to.be.eql({duration: 1, timingFunction: 'lineair', delay: 2});
-            expect(nodeSub1.getInlineTransition('height')).to.be.eql({duration: 3, timingFunction: 'ease', delay: 0});
+            expect(nodeSub1.getInlineTransition('height')).to.be.eql({duration: 3});
             expect(nodeSub1.getInlineStyle('background-color')).to.be.eql('#DDD');
 
             nodeSub1.setAttr('style', '{background-color: #DDD; transition: width 1s lineair 2s, height 3s;} :before {color: #FF0; transition: width 4s ease-in 6s, height 10s;}');
             expect(nodeSub1.getInlineTransition('width')).to.be.eql({duration: 1, timingFunction: 'lineair', delay: 2});
-            expect(nodeSub1.getInlineTransition('height')).to.be.eql({duration: 3, timingFunction: 'ease', delay: 0});
+            expect(nodeSub1.getInlineTransition('height')).to.be.eql({duration: 3});
             expect(nodeSub1.getInlineStyle('background-color')).to.be.eql('#DDD');
             expect(nodeSub1.getInlineTransition('width', ':before')).to.be.eql({duration: 4, timingFunction: 'ease-in', delay: 6});
-            expect(nodeSub1.getInlineTransition('height', ':before')).to.be.eql({duration: 10, timingFunction: 'ease', delay: 0});
+            expect(nodeSub1.getInlineTransition('height', ':before')).to.be.eql({duration: 10});
             expect(nodeSub1.getInlineStyle('color', ':before')).to.be.eql('#FF0');
         });
 
@@ -837,34 +837,35 @@
         });
 
         it('getTransition', function () {
-            node.prepend('<style type="text/css">#ITSA div {transition: opacity 2.2s ease-out 3s;} #ITSA div:before {transition: top 2.3s;}</style>');
+            node.prepend('<style type="text/css">#ITSA div {color: #F00; transition: opacity 2.2s ease-out 3s;} #ITSA div:before {transition: top 2.3s;}</style>');
+
             expect(nodeSub1.getTransition('width')===undefined).to.be.true;
-            expect(nodeSub1.getTransform('opacity')).to.be.eql({duration: 2.2, timingFunction: 'ease-out', delay: 3});
-            expect(nodeSub1.getTransform('top', ':before')).to.be.eql({duration: 2.3, timingFunction: 'ease', delay: 0});
-            expect(nodeSub1.getTransform('opacity', ':before')===undefined).to.be.true;
-            expect(nodeSub1.getTransform('top')===undefined).to.be.true;
+            expect(nodeSub1.getTransition('opacity')).to.be.eql({duration: 2.2, timingFunction: 'cubic-bezier(0, 0, 0.58, 1)', delay: 3});
+            expect(nodeSub1.getTransition('top', ':before')).to.be.eql({duration: 2.3, timingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)', delay: 0});
+            expect(nodeSub1.getTransition('opacity', ':before')===undefined).to.be.true;
+            expect(nodeSub1.getTransition('top')===undefined).to.be.true;
 
             nodeSub1.setAttr('style', 'transition: width 1s lineair 2s, height 3s; color: #AAA;');
             expect(nodeSub1.getTransition('width')).to.be.eql({duration: 1, timingFunction: 'lineair', delay: 2});
             expect(nodeSub1.getTransition('height')).to.be.eql({duration: 3, timingFunction: 'ease', delay: 0});
+            expect(nodeSub1.getTransition('top', ':before')).to.be.eql({duration: 2.3, timingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)', delay: 0});
+            expect(nodeSub1.getTransition('opacity', ':before')===undefined).to.be.true;
+        });
 
-            nodeSub1.setAttr('style', 'background-color: #DDD; transition: width 1s lineair 2s, height 3s; color: #AAA;');
+        it('getTransition with "all"', function () {
+            node.prepend('<style type="text/css">#ITSA div {color: #F00; transition: all 2.2s ease-out 3s;} #ITSA div:before {transition: all 2.3s;}</style>');
+
+            expect(nodeSub1.getTransition('width')).to.be.eql({duration: 2.2, timingFunction: 'cubic-bezier(0, 0, 0.58, 1)', delay: 3});
+            expect(nodeSub1.getTransition('opacity')).to.be.eql({duration: 2.2, timingFunction: 'cubic-bezier(0, 0, 0.58, 1)', delay: 3});
+            expect(nodeSub1.getTransition('top', ':before')).to.be.eql({duration: 2.3, timingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)', delay: 0});
+            expect(nodeSub1.getTransition('opacity', ':before')).to.be.eql({duration: 2.3, timingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)', delay: 0});
+            expect(nodeSub1.getTransition('top')).to.be.eql({duration: 2.2, timingFunction: 'cubic-bezier(0, 0, 0.58, 1)', delay: 3});
+
+            nodeSub1.setAttr('style', 'transition: width 1s lineair 2s, height 3s; color: #AAA;');
             expect(nodeSub1.getTransition('width')).to.be.eql({duration: 1, timingFunction: 'lineair', delay: 2});
             expect(nodeSub1.getTransition('height')).to.be.eql({duration: 3, timingFunction: 'ease', delay: 0});
-
-            nodeSub1.setAttr('style', 'background-color: #DDD; transition: width 1s lineair 2s, height 3s;');
-            expect(nodeSub1.getTransition('width')).to.be.eql({duration: 1, timingFunction: 'lineair', delay: 2});
-            expect(nodeSub1.getTransition('height')).to.be.eql({duration: 3, timingFunction: 'ease', delay: 0});
-
-            nodeSub1.setAttr('style', '{background-color: #DDD; transition: width 1s lineair 2s, height 3s;} :before {color: #FF0; transition: width 4s ease-in 6s, height 10s;}');
-            expect(nodeSub1.getTransition('width')).to.be.eql({duration: 1, timingFunction: 'lineair', delay: 2});
-            expect(nodeSub1.getTransition('height')).to.be.eql({duration: 3, timingFunction: 'ease', delay: 0});
-            expect(nodeSub1.getTransition('width', ':before')).to.be.eql({duration: 4, timingFunction: 'ease-in', delay: 6});
-            expect(nodeSub1.getTransition('height', ':before')).to.be.eql({duration: 10, timingFunction: 'ease', delay: 0});
-
-            nodeSub1.setAttr('style', '{background-color: #DDD; transition: opacity 12.2s ease-in 13s;} :before {color: #FF0; transition: top 12.3s;;}');
-            expect(nodeSub1.getTransform('opacity')).to.be.eql({duration: 12.2, timingFunction: 'ease-in', delay: 13});
-            expect(nodeSub1.getTransform('top', ':before')).to.be.eql({duration: 12.3, timingFunction: 'ease', delay: 0});
+            expect(nodeSub1.getTransition('top', ':before')).to.be.eql({duration: 2.3, timingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)', delay: 0});
+            expect(nodeSub1.getTransition('opacity', ':before')).to.be.eql({duration: 2.3, timingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)', delay: 0});
         });
 
         it('getValue', function () {
@@ -1127,6 +1128,47 @@
             expect(nodeSub1.hasInlineStyle('background-color', ':before')).to.be.true;
             expect(nodeSub1.hasInlineTransition('opacity', ':before')).to.be.false;
             expect(nodeSub1.hasInlineStyle('font-size', ':before')).to.be.false;
+        });
+
+        it('hasTransition', function () {
+            node.prepend('<style type="text/css">#ITSA div {color: #F00; transition: opacity 2.2s ease-out 3s;} #ITSA div:before {transition: top 2.3s;}</style>');
+
+            expect(nodeSub1.hasTransition('width')).to.be.false;
+            expect(nodeSub1.hasTransition('opacity')).to.be.true;
+            expect(nodeSub1.hasTransition('top', ':before')).to.be.true;
+            expect(nodeSub1.hasTransition('opacity', ':before')).to.be.false;
+            expect(nodeSub1.hasTransition('top')).to.be.false;
+
+            nodeSub1.setAttr('style', 'transition: width 1s lineair 2s, height 3s; color: #AAA;');
+            expect(nodeSub1.hasTransition('width')).to.be.true;
+            expect(nodeSub1.hasTransition('height')).to.be.true;
+            expect(nodeSub1.hasTransition('opacity')).to.be.false;
+            expect(nodeSub1.hasTransition('top', ':before')).to.be.true;
+            expect(nodeSub1.hasTransition('opacity', ':before')).to.be.false;
+        });
+
+        it('hasTransition with "all"', function () {
+            node.prepend('<style type="text/css">#ITSA div {color: #F00; transition: all 2.2s ease-out 3s;} #ITSA div:before {transition: all 2.3s;}</style>');
+
+            expect(nodeSub1.hasTransition('width')).to.be.true;
+            expect(nodeSub1.hasTransition('opacity')).to.be.true;
+            expect(nodeSub1.hasTransition('top', ':before')).to.be.true;
+            expect(nodeSub1.hasTransition('opacity', ':before')).to.be.true;
+            expect(nodeSub1.hasTransition('top')).to.be.true;
+
+            nodeSub1.setAttr('style', 'transition: width 1s lineair 2s, height 3s; color: #AAA;');
+            expect(nodeSub1.hasTransition('width')).to.be.true;
+            expect(nodeSub1.hasTransition('height')).to.be.true;
+            expect(nodeSub1.hasTransition('opacity')).to.be.false;
+            expect(nodeSub1.hasTransition('top', ':before')).to.be.true;
+            expect(nodeSub1.hasTransition('opacity', ':before')).to.be.true;
+
+            nodeSub1.setAttr('style', 'transition: all 3s; color: #AAA;');
+            expect(nodeSub1.hasTransition('width')).to.be.true;
+            expect(nodeSub1.hasTransition('height')).to.be.true;
+            expect(nodeSub1.hasTransition('opacity')).to.be.true;
+            expect(nodeSub1.hasTransition('top', ':before')).to.be.true;
+            expect(nodeSub1.hasTransition('opacity', ':before')).to.be.true;
         });
 
         it('inDOM', function () {
@@ -1588,7 +1630,7 @@
         it('removeInlineTransition', function () {
             nodeSub1.setAttr('style', 'transition: width 2s ease-in 4s, height 6s;');
             nodeSub1.removeInlineTransition('width');
-            expect(nodeSub1.getAttr('style')).to.be.eql('transition: height 6s ease 0s;');
+            expect(nodeSub1.getAttr('style')).to.be.eql('transition: height 6s;');
             nodeSub1.setAttr('style', 'transition: width 2s ease-in 4s, height 6s;');
             nodeSub1.removeInlineTransition('height');
             expect(nodeSub1.getAttr('style')).to.be.eql('transition: width 2s ease-in 4s;');
@@ -1874,26 +1916,26 @@
             var styles, elementStyles, beforeStyles;
 
             nodeSub1.setInlineTransition('width', 1);
-            expect(nodeSub1.getAttr('style')).to.be.eql('transition: width 1s ease 0s;');
+            expect(nodeSub1.getAttr('style')).to.be.eql('transition: width 1s;');
 
             nodeSub1.setInlineTransition('height', 2);
-            expect(nodeSub1.getAttr('style').replace(' width 1s ease 0s,', '').replace(', width 1s ease 0s', '')).to.be.eql('transition: height 2s ease 0s;');
-            expect(nodeSub1.getAttr('style').replace(' height 2s ease 0s,', '').replace(', height 2s ease 0s', '')).to.be.eql('transition: width 1s ease 0s;');
+            expect(nodeSub1.getAttr('style').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('transition: height 2s;');
+            expect(nodeSub1.getAttr('style').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('transition: width 1s;');
 
             nodeSub1.setInlineStyle('color', '#AAA');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' width 1s ease 0s,', '').replace(', width 1s ease 0s', '')).to.be.eql('transition: height 2s ease 0s;');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' height 2s ease 0s,', '').replace(', height 2s ease 0s', '')).to.be.eql('transition: width 1s ease 0s;');
-            expect(nodeSub1.getAttr('style').replace('width 1s ease 0s', '').replace('height 2s ease 0s', '').replace('transition: , ; ', '')).to.be.eql('color: #AAA;');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('transition: height 2s;');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('transition: width 1s;');
+            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 2s', '').replace('transition: , ; ', '')).to.be.eql('color: #AAA;');
 
             nodeSub1.setInlineTransition('width', 3, null, null, ':before');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' width 1s ease 0s,', '').replace(', width 1s ease 0s', '')).to.be.eql('{transition: height 2s ease 0s; } :before {transition: width 3s ease 0s; }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' height 2s ease 0s,', '').replace(', height 2s ease 0s', '')).to.be.eql('{transition: width 1s ease 0s; } :before {transition: width 3s ease 0s; }');
-            expect(nodeSub1.getAttr('style').replace('width 1s ease 0s', '').replace('height 2s ease 0s', '').replace('transition: , ; ', '')).to.be.eql('{color: #AAA; } :before {transition: width 3s ease 0s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{transition: height 2s; } :before {transition: width 3s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('{transition: width 1s; } :before {transition: width 3s; }');
+            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 2s', '').replace('transition: , ; ', '')).to.be.eql('{color: #AAA; } :before {transition: width 3s; }');
 
             nodeSub1.setInlineTransition('height', 8, 'ease-in', 4);
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' width 1s ease 0s,', '').replace(', width 1s ease 0s', '')).to.be.eql('{transition: height 8s ease-in 4s; } :before {transition: width 3s ease 0s; }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql('{transition: width 1s ease 0s; } :before {transition: width 3s ease 0s; }');
-            expect(nodeSub1.getAttr('style').replace('width 1s ease 0s', '').replace('height 8s ease-in 4s', '').replace('transition: , ; ', '')).to.be.eql('{color: #AAA; } :before {transition: width 3s ease 0s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{transition: height 8s ease-in 4s; } :before {transition: width 3s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql('{transition: width 1s; } :before {transition: width 3s; }');
+            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 8s ease-in 4s', '').replace('transition: , ; ', '')).to.be.eql('{color: #AAA; } :before {transition: width 3s; }');
         });
 
         /*

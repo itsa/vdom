@@ -69,9 +69,14 @@ module.exports = function (window) {
         var serialized = '',
             timingFunction, delay;
         transitionValue.each(function(value, key) {
-            timingFunction = value.timingFunction || 'ease';
-            delay = value.delay || 0;
-            serialized += ', ' + key + ' ' + value.duration+'s '+ timingFunction + ' '+ delay+'s';
+            timingFunction = value.timingFunction;
+            delay = value.delay;
+            serialized += ', ' + key;
+            if (key!=='none') {
+                serialized += ' ' + value.duration+'s';
+                timingFunction && (serialized+=' ' + timingFunction);
+                delay && (serialized+=' ' + delay+'s');
+            }
         });
         return (serialized[0]===',') ? serialized.substr(2) : serialized;
     };
@@ -122,7 +127,7 @@ module.exports = function (window) {
     _parseTransition = function(transitionValueSerialised) {
         //transformValueSerialised might be: translateX(10px) matrix(1.0, 2.0, 3.0, 4.0, 5.0, 6.0) translateY(5px)
         var parsed = {},
-            i, len, transitionItem, item, items, value, properties;
+            i, len, transitionItem, item, items, value, properties, item0, item1, item2, item3;
         if (transitionValueSerialised) {
             properties = transitionValueSerialised.split(',');
             len = properties.length;
@@ -130,24 +135,37 @@ module.exports = function (window) {
                 items = properties[i].trim();
                 (items.indexOf('  ')!==-1) && items.replace(/'  '/g, ' ');
                 item = items.split(' ');
-                transitionItem = {
-                    duration: parseFloat(item[1]) || 0
-                };
+                item0 = item[0];
+                item1 = item[1];
+                item2 = item[2];
+                item3 = item[3];
+
+                if (item0.parsable()) {
+                    // no key, but starting with a duration
+                    item3 = item2;
+                    item2 = item1;
+                    item1 = item0;
+                    item0 = 'all';
+                }
+
+                transitionItem = {};
+                (item0.toLowerCase()==='none') && (item0='none');
+                if (item0!=='none') {
+                    transitionItem.duration = parseFloat(item1) || 0;
 /*jshint boss:true */
-                if (value=item[2]) {
+                    if (value=item2) {
 /*jshint boss:false */
-                    // check if it is a Function, or a delayvalue
-                    if (value.parsable()) {
-                        transitionItem.delay = parseFloat(value);
-                    }
-                    else {
-                        transitionItem.timingFunction = value;
-                        (value=item[3]) && (transitionItem.delay = parseFloat(value));
+                        // check if it is a Function, or a delayvalue
+                        if (value.parsable()) {
+                            transitionItem.delay = parseFloat(value);
+                        }
+                        else {
+                            transitionItem.timingFunction = value;
+                            (value=item3) && (transitionItem.delay = parseFloat(value));
+                        }
                     }
                 }
-                transitionItem.timingFunction || (transitionItem.timingFunction='ease');
-                transitionItem.delay || (transitionItem.delay=0);
-                parsed[item[0]] = transitionItem;
+                parsed[item0] = transitionItem;
             }
         }
         return parsed;

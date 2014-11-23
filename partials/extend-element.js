@@ -115,7 +115,7 @@ module.exports = function (window) {
             };
         },
         toCamelCase = function(input) {
-            return input.toLowerCase().replace(/-(.)/g, function(match, group) {
+            return input.replace(/-(.)/g, function(match, group) {
                 return group.toUpperCase();
             });
         },
@@ -979,6 +979,10 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         ElementPrototype.getStyle = function(cssProperty, pseudo) {
+            // Cautious: when reading the property `transform`, getComputedStyle should
+            // read the calculated value, but some browsers (webkit) only calculate the style on the current element
+            // In those cases, we need a patch and look up the tree ourselves
+            //  Also: we will return separate value, NOT matrices
             return window.getComputedStyle(this, pseudo)[toCamelCase(cssProperty)];
         };
 
@@ -990,11 +994,13 @@ ElementPrototype.getTransform = function(transformProperty, pseudo) {
         index = transform.indexOf(transformProperty),
         value, character;
 console.info(transform);
-    if (transform.startsWith('matrix')) {
-
+    if (transform.startsWith('matrix(')) {
+        // for example "matrix(1, 0, 0.57735, 1, 0, 0)"
+        return TRANSFORM_MATRICES.getFromMatrix(transform.substring(7, transform.length-1))[transformProperty];
     }
-    else if (transform.startsWith('matrix3d')) {
-
+    else if (transform.startsWith('matrix3d(')) {
+        // for example "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 120, 120, 12, 1)"
+        return TRANSFORM_MATRICES.getFromMatrix3d(transform.substring(9, transform.length-1))[transformProperty];
     }
     else if ((index = transform.indexOf(transformProperty))!==-1) {
         value = '';
@@ -1008,21 +1014,59 @@ console.info(transform);
 
 ElementPrototype.getTransition = function(transitionProperty, pseudo) {
     var instance = this,
-        transition = instance.getStyle(VENDOR_TRANSITION_PROPERTY, pseudo),
-        len = transition.length,
-        index = transition.indexOf(transitionProperty),
-        value, character;
-    if (index!==-1) {
-        index += (transitionProperty.length-1);
-        // skip leading spaces:
-        while ((++index<len) && (transition[index]===' ')) {}
-        // reset to first non-space character
-        index--;
-        value = '';
-        while ((++index<len) && (character=transition[index]) && (character!==',')) {
-            value += character;
+        transProperty, transDuration, transTimingFunction, transDelay, transPropertySplitted,
+        transition, transDurationSplitted, transTimingFunctionSplitted, transDelaySplitted;
+    if (instance.hasInlineStyle(VENDOR_TRANSITION_PROPERTY, pseudo)) {
+        transition = instance.getInlineTransition(transitionProperty, pseudo);
+        // if not found, then search for "all":
+        transition || (transition=instance.getInlineTransition('all', pseudo));
+        if (transition) {
+            // getTransition always returns all the properties:
+            transition.timingFunction || (transition.timingFunction='ease');
+            transition.delay || (transition.delay=0);
         }
-        return value;
+        return transition;
+    }
+    transProperty = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'Property', pseudo);
+    transDuration = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'Duration', pseudo);
+    transTimingFunction = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'TimingFunction', pseudo);
+    transDelay = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'Delay', pseudo);
+    transPropertySplitted = transProperty && transProperty.split(',');
+    if (transProperty) {
+        if (transPropertySplitted.length>1) {
+            // multiple definitions
+            index = transPropertySplitted.indexOf(transitionProperty);
+            // the array is in a form like this: 'width, height, opacity' --> therefore, we might need to look at a whitespace
+            if (index===-1) {
+                index = transPropertySplitted.indexOf(' '+transitionProperty);
+                // if not found, then search for "all":
+                if (index===-1) {
+                    index = transPropertySplitted.indexOf('all');
+                    (index===-1) && (index=transPropertySplitted.indexOf(' '+'all'));
+                }
+            }
+            if (index!==-1) {
+                transDurationSplitted = transDuration.split(','),
+                transTimingFunctionSplitted = transTimingFunction.split(','),
+                transDelaySplitted = transDelay.split(','),
+                transition = {
+                    duration: parseFloat(transDurationSplitted[index]),
+                    timingFunction: transTimingFunctionSplitted[index].trimLeft(),
+                    delay: parseFloat(transDelaySplitted)
+                };
+            }
+        }
+        else {
+            // one definition
+            if ((transProperty===transitionProperty) || (transProperty==='all')) {
+                transition = {
+                    duration: parseFloat(transDuration),
+                    timingFunction: transTimingFunction,
+                    delay: parseFloat(transDelay)
+                };
+            }
+        }
+        return transition;
     }
 };
 

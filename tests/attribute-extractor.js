@@ -370,6 +370,43 @@
             expect(extracted.styles).to.be.eql(styles);
         });
 
+        it('single without key', function () {
+            var style = 'color: #F00; transition: 2s ease-in 4.5s; border: solid 1px #000;',
+                styles = {
+                    element: {
+                        color: '#F00',
+                        transition: {
+                            all: {
+                                duration: 2,
+                                timingFunction: 'ease-in',
+                                delay: 4.5
+                            }
+                        },
+                        border: 'solid 1px #000'
+                    }
+                },
+                extracted = extractor.extractStyle(style);
+            expect(extracted.attrStyle).to.be.eql('color: #F00; transition: all 2s ease-in 4.5s; border: solid 1px #000;');
+            expect(extracted.styles).to.be.eql(styles);
+        });
+
+        it('single with transition none', function () {
+            var style = 'color: #F00; transition: none; border: solid 1px #000;',
+                styles = {
+                    element: {
+                        color: '#F00',
+                        transition: {
+                            none: {
+                            }
+                        },
+                        border: 'solid 1px #000'
+                    }
+                },
+                extracted = extractor.extractStyle(style);
+            expect(extracted.attrStyle).to.be.eql('color: #F00; transition: none; border: solid 1px #000;');
+            expect(extracted.styles).to.be.eql(styles);
+        });
+
         it('multiple', function () {
             var style = '{color: #F00; transition: width 2s ease-in 4.5s, height 6s; border: solid 1px #000; } :before {color: #FF0; transition: opacity 8s; font-weight: bold; } :after {color: #999; font-weight: normal; }',
                 styles = {
