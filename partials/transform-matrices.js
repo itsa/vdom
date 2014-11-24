@@ -1,6 +1,8 @@
+"use strict";
 
 module.exports = {
     getFromMatrix: function(matrix) {
+        matrix || (matrix='');
         return {
             skewX: 0,
             skewY: 0,
@@ -9,9 +11,10 @@ module.exports = {
             rotate: 0, // no x vs y
             scaleX: 0,
             scaleY: 0
-        }
+        };
     },
     getFromMatrix3d: function(matrix) {
+        matrix || (matrix='');
         return {
             skewX: 0,
             skewY: 0,
@@ -25,6 +28,6 @@ module.exports = {
             scaleX: 0,
             scaleY: 0,
             scaleZ: 0
-        }
+        };
     }
 };

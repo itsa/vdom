@@ -18,6 +18,7 @@
 require('../css/element.css');
 require('js-ext/lib/object.js');
 require('js-ext/lib/string.js');
+require('js-ext/lib/promise.js');
 require('polyfill');
 
 module.exports = function (window) {
@@ -48,6 +49,7 @@ module.exports = function (window) {
         VENDOR_TRANSFORM_PROPERTY = TRANSFORM_PROPERTY || 'transform',
         TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window),
         VENDOR_TRANSITION_PROPERTY = TRANSITION_PROPERTY || 'transition',
+        EV_TRANSITION_END = require('polyfill/extra/transitionend.js')(window),
         later = require('utils').later,
         DOCUMENT = window.document,
         nodeids = NS.nodeids,
@@ -123,6 +125,29 @@ module.exports = function (window) {
             return input.replace(/[a-z]([A-Z])/g, function(match, group) {
                 return match[0]+'-'+group.toLowerCase();
             });
+        },
+        getTransPromise = function(node, hasTransitionedStyle, removalPromise) {
+            var promise;
+            if (hasTransitionedStyle) {
+                promise = new window.Promise(function(fulfill) {
+                    var afterTrans = function() {
+                        node.removeEventListener(EV_TRANSITION_END, afterTrans, true);
+                        fulfill();
+                    };
+                    if (EV_TRANSITION_END===undefined) {
+                        // no transition supported
+                        fulfill();
+                    }
+                    else {
+                        node.addEventListener(EV_TRANSITION_END, afterTrans, true);
+                    }
+                });
+                removalPromise && (promise=window.Promise.finishAll([promise, removalPromise]));
+            }
+            else {
+                promise = removalPromise || window.Promise.resolve();
+            }
+            return promise;
         },
         classListProto = {
             add: function(className) {
@@ -927,7 +952,12 @@ module.exports = function (window) {
         * @method getInlineTransform
         * @param transitionProperty {String} the css-property to look for
         * @param [pseudo] {String} to look inside a pseudo-style
-        * @return {String|undefined} css-style
+        * @return {Object} the transition-object, with the properties:
+        * <ul>
+        *     <li>duration {Number}</li>
+        *     <li>timingFunction {String}</li>
+        *     <li>delay {Number}</li>
+        * </ul>
         * @since 0.0.1
         */
         ElementPrototype.getInlineTransition = function(transitionProperty, pseudo) {
@@ -986,98 +1016,132 @@ module.exports = function (window) {
             return window.getComputedStyle(this, pseudo)[toCamelCase(cssProperty)];
         };
 
-
-ElementPrototype.getTransform = function(transformProperty, pseudo) {
-    var instance = this,
-        transform = instance.getStyle(VENDOR_TRANSFORM_PROPERTY, pseudo),
-        len = transform.length,
-        index = transform.indexOf(transformProperty),
-        value, character;
-console.info(transform);
-    if (transform.startsWith('matrix(')) {
-        // for example "matrix(1, 0, 0.57735, 1, 0, 0)"
-        return TRANSFORM_MATRICES.getFromMatrix(transform.substring(7, transform.length-1))[transformProperty];
-    }
-    else if (transform.startsWith('matrix3d(')) {
-        // for example "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 120, 120, 12, 1)"
-        return TRANSFORM_MATRICES.getFromMatrix3d(transform.substring(9, transform.length-1))[transformProperty];
-    }
-    else if ((index = transform.indexOf(transformProperty))!==-1) {
-        value = '';
-        index += transformProperty.length;
-        while ((++index<len) && (character=transform[index]) && (character!==')')) {
-            value += character;
-        }
-        return value;
-    }
-};
-
-ElementPrototype.getTransition = function(transitionProperty, pseudo) {
-    var instance = this,
-        transProperty, transDuration, transTimingFunction, transDelay, transPropertySplitted,
-        transition, transDurationSplitted, transTimingFunctionSplitted, transDelaySplitted;
-    if (instance.hasInlineStyle(VENDOR_TRANSITION_PROPERTY, pseudo)) {
-        transition = instance.getInlineTransition(transitionProperty, pseudo);
-        // if not found, then search for "all":
-        transition || (transition=instance.getInlineTransition('all', pseudo));
-        if (transition) {
-            // getTransition always returns all the properties:
-            transition.timingFunction || (transition.timingFunction='ease');
-            transition.delay || (transition.delay=0);
-        }
-        return transition;
-    }
-    transProperty = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'Property', pseudo);
-    transDuration = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'Duration', pseudo);
-    transTimingFunction = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'TimingFunction', pseudo);
-    transDelay = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'Delay', pseudo);
-    transPropertySplitted = transProperty && transProperty.split(',');
-    if (transProperty) {
-        if (transPropertySplitted.length>1) {
-            // multiple definitions
-            index = transPropertySplitted.indexOf(transitionProperty);
-            // the array is in a form like this: 'width, height, opacity' --> therefore, we might need to look at a whitespace
-            if (index===-1) {
-                index = transPropertySplitted.indexOf(' '+transitionProperty);
-                // if not found, then search for "all":
-                if (index===-1) {
-                    index = transPropertySplitted.indexOf('all');
-                    (index===-1) && (index=transPropertySplitted.indexOf(' '+'all'));
+        /**
+        * W.I.P.
+        *
+        * Returns cascaded "transform" style of the specified trandform-property. `Cascaded` means: the actual present style,
+        * the way it is visible (calculated through the DOM-tree).
+        *
+        * Note: Even when "transform" is set inline, cascaded transform is active (not overruling inline)
+        * Thus, if parentNode has "transform: translateX(10px)" and inline has "transform: translateY(20px)", then the calculated
+        * value will be "transform: translateX(10px) translateY(20px)"
+        *
+        * @method getTransform
+        * @param transformProperty {String} transform property that is queried, f.e. "translateX"
+        * @param [pseudo] {String} to query pseudo-element, fe: `:before` or `:first-line`
+        * @return {String} value for the css-transform-property
+        * @since 0.0.1
+        */
+        ElementPrototype.getTransform = function(/* transformProperty, pseudo */) {
+        // getComputedStyle returns "matrix" or "matrix3d", which we need to extract into separate values.
+        // Cautious: when reading the property `transform`, getComputedStyle should
+        // read the calculated value ("transform" is composited), but some browsers (webkit) only calculate the style on the current element
+        // In those cases, we need a patch and look up the tree ourselves
+        //  Also: we will return separate value, NOT matrices
+        // TODO: finish this method (create TRANSFORM_MATRICES which depend on transfer-matrices.js)
+        /*
+            var instance = this,
+                transform = instance.getStyle(VENDOR_TRANSFORM_PROPERTY, pseudo),
+                len = transform.length,
+                index = transform.indexOf(transformProperty),
+                value, character;
+            if (transform.startsWith('matrix(')) {
+                // for example "matrix(1, 0, 0.57735, 1, 0, 0)"
+                return TRANSFORM_MATRICES.getFromMatrix(transform.substring(7, transform.length-1))[transformProperty];
+            }
+            else if (transform.startsWith('matrix3d(')) {
+                // for example "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 120, 120, 12, 1)"
+                return TRANSFORM_MATRICES.getFromMatrix3d(transform.substring(9, transform.length-1))[transformProperty];
+            }
+            else if ((index = transform.indexOf(transformProperty))!==-1) {
+                value = '';
+                index += transformProperty.length;
+                while ((++index<len) && (character=transform[index]) && (character!==')')) {
+                    value += character;
                 }
+                return value;
             }
-            if (index!==-1) {
-                transDurationSplitted = transDuration.split(','),
-                transTimingFunctionSplitted = transTimingFunction.split(','),
-                transDelaySplitted = transDelay.split(','),
-                transition = {
-                    duration: parseFloat(transDurationSplitted[index]),
-                    timingFunction: transTimingFunctionSplitted[index].trimLeft(),
-                    delay: parseFloat(transDelaySplitted)
-                };
+        */
+        };
+
+        /**
+        * Returns cascaded "transition" style of the specified trandform-property. `Cascaded` means: the actual present style,
+        * the way it is visible (calculated through the DOM-tree).
+        *
+        * Note1: When "transition" is set inline, ONLY inline transtition is active!
+        * Thus, if parentNode has "transition: width 2s" and inline has "transition: height 3s", then the transition
+        * will be "transition: height 3s" --> returning "undefined" for transitionProperty=width.
+        * Note2: in case of "transition: all" --> these values will be returned for every "transitionProperty" (even when querying "width")
+        *
+        * @method getTransition
+        * @param transformProperty {String} transform property that is queried, f.e. "width", or "all"
+        * @param [pseudo] {String} to query pseudo-element, fe: `:before` or `:first-line`
+        * @return {Object} the transition-object, with the properties:
+        * <ul>
+        *     <li>duration {Number}</li>
+        *     <li>timingFunction {String}</li>
+        *     <li>delay {Number}</li>
+        * </ul>
+        * @since 0.0.1
+        */
+        ElementPrototype.getTransition = function(transitionProperty, pseudo) {
+            var instance = this,
+                transProperty, transDuration, transTimingFunction, transDelay, transPropertySplitted,
+                transition, transDurationSplitted, transTimingFunctionSplitted, transDelaySplitted, index;
+            if (instance.hasInlineStyle(VENDOR_TRANSITION_PROPERTY, pseudo)) {
+                transition = instance.getInlineTransition(transitionProperty, pseudo);
+                // if not found, then search for "all":
+                transition || (transition=instance.getInlineTransition('all', pseudo));
+                if (transition) {
+                    // getTransition always returns all the properties:
+                    transition.timingFunction || (transition.timingFunction='ease');
+                    transition.delay || (transition.delay=0);
+                }
+                return transition;
             }
-        }
-        else {
-            // one definition
-            if ((transProperty===transitionProperty) || (transProperty==='all')) {
-                transition = {
-                    duration: parseFloat(transDuration),
-                    timingFunction: transTimingFunction,
-                    delay: parseFloat(transDelay)
-                };
+            transProperty = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'Property', pseudo);
+            transDuration = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'Duration', pseudo);
+            transTimingFunction = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'TimingFunction', pseudo);
+            transDelay = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'Delay', pseudo);
+            transPropertySplitted = transProperty && transProperty.split(',');
+            if (transProperty) {
+                if (transPropertySplitted.length>1) {
+                    // multiple definitions
+                    index = transPropertySplitted.indexOf(transitionProperty);
+                    // the array is in a form like this: 'width, height, opacity' --> therefore, we might need to look at a whitespace
+                    if (index===-1) {
+                        index = transPropertySplitted.indexOf(' '+transitionProperty);
+                        // if not found, then search for "all":
+                        if (index===-1) {
+                            index = transPropertySplitted.indexOf('all');
+                            (index===-1) && (index=transPropertySplitted.indexOf(' '+'all'));
+                        }
+                    }
+                    if (index!==-1) {
+                        transDurationSplitted = transDuration.split(','),
+                        transTimingFunctionSplitted = transTimingFunction.split(','),
+                        transDelaySplitted = transDelay.split(','),
+                        transition = {
+                            duration: parseFloat(transDurationSplitted[index]),
+                            timingFunction: transTimingFunctionSplitted[index].trimLeft(),
+                            delay: parseFloat(transDelaySplitted)
+                        };
+                    }
+                }
+                else {
+                    // one definition
+                    if ((transProperty===transitionProperty) || (transProperty==='all')) {
+                        transition = {
+                            duration: parseFloat(transDuration),
+                            timingFunction: transTimingFunction,
+                            delay: parseFloat(transDelay)
+                        };
+                    }
+                }
+                transition && (transition.duration===0) && (transition=undefined);
+                return transition;
             }
-        }
-        return transition;
-    }
-};
-
-ElementPrototype.hasTransform = function(transformProperty, pseudo) {
-    return !!this.getTransform(transformProperty, pseudo);
-};
-
-ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
-    return !!this.getTransition(transitionProperty, pseudo);
-};
-
+        };
 
        /**
         * Elements tag-name in uppercase (same as nodeName).
@@ -1268,6 +1332,41 @@ ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
         */
         ElementPrototype.hasInlineTransition = function(transformProperty, pseudo) {
             return !!this.getInlineTransition(transformProperty, pseudo);
+        };
+
+        /**
+        * Returns whether the specified transform-property is active.
+        *
+        * Note: Even when "transform" is set inline, cascaded transform is active (not overruling inline)
+        * Thus, if parentNode has "transform: translateX(10px)" and inline has "transform: translateY(20px)",
+        * then hasTransform('translateX') will return true.
+        *
+        * @method hasTransform
+        * @param transformProperty {String} the css-property to look for
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @return {Boolean} whether the inlinestyle was present
+        * @since 0.0.1
+        */
+        ElementPrototype.hasTransform = function(transformProperty, pseudo) {
+            return !!this.getTransform(transformProperty, pseudo);
+        };
+
+        /**
+        * Returns whether the specified transform-property is active.
+        *
+        * Note1: When "transition" is set inline, ONLY inline transtition is active!
+        * Thus, if parentNode has "transition: width 2s" and inline has "transition: height 3s",
+        * then hasTransition('width') will return false.
+        * Note2: in case of "transition: all" --> hasTransition() will always `true` for every transitionProperty.
+        *
+        * @method hasTransition
+        * @param transitionProperty {String} the css-property to look for
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @return {Boolean} whether the inlinestyle was present
+        * @since 0.0.1
+        */
+        ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
+            return !!this.getTransition(transitionProperty, pseudo);
         };
 
        /**
@@ -1839,10 +1938,12 @@ ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
         *
         * @method removeClass
         * @param className {String|Array} the className that should be removed. May be an Array of classNames.
+        * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
+        *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.removeClass = function(className) {
+        ElementPrototype.removeClass = function(className, returnPromise) {
             var instance = this;
             instance.getClassList().remove(className);
             return instance;
@@ -1893,28 +1994,103 @@ ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
         * @method removeInlineStyle
         * @param cssProperty {String} the css-property to remove
         * @param [pseudo] {String} to look inside a pseudo-style
+        * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
+        *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.removeInlineStyle = function(cssProperty, pseudo) {
+        ElementPrototype.removeInlineStyle = function(cssProperty, pseudo, returnPromise) {
+            return this.removeInlineStyles({property: cssProperty, pseudo: pseudo}, returnPromise);
+        };
+
+       /**
+        * Removes multiple css-properties (inline) out of the Element. You need to supply an Array of Objects, with the properties:
+        *        <ul>
+        *            <li>property  {String}</li>
+        *            <li>pseudo  {String}</li>
+        *        <ul>
+        * No need to use camelCase.
+        *
+        * @method removeInlineStyle
+        * @param cssProperties {Array} Array of objects with the properties:
+        *        <ul>
+        *            <li>property  {String}</li>
+        *            <li>pseudo  {String}</li>
+        *        <ul>
+        * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
+        *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
+        * @chainable
+        * @since 0.0.1
+        */
+        ElementPrototype.removeInlineStyles = function(cssProperties, returnPromise) {
             var instance = this,
                 vnode = instance.vnode,
-                styles = vnode.styles[pseudo || 'element'],
-                prop;
-            if (styles) {
-                prop = fromCamelCase(cssProperty);
-                if (styles[prop]) {
-                    delete styles[prop];
-                    (styles.size()===0) && (delete vnode.styles[pseudo || 'element']);
-                    instance.setAttr('style', vnode.serializeStyles());
+                needSync, prop, styles, i, len, item, hasTransitionedStyle, promise,
+                pseudo, clonedStyles, newStyles, group;
+            Array.isArray(cssProperties) || (cssProperties=[cssProperties]);
+            len = cssProperties.length;
+            for (i=0; i<len; i++) {
+                item = cssProperties[i];
+                pseudo = item.pseudo;
+                group = pseudo || 'element';
+                styles = vnode.styles[group];
+                if (styles) {
+                    prop = fromCamelCase(item.property);
+                    if (styles[prop]) {
+                        delete styles[prop];
+                        (styles.size()===0) && (delete vnode.styles[pseudo || 'element']);
+                        needSync = true;
+                        if (returnPromise && (prop!==VENDOR_TRANSITION_PROPERTY) && instance.hasTransition(prop, pseudo)) {
+                            // ALWAYS set its current calculated value --> this makes transition
+                            // work with a startingpoint of `auto`, or when the page isn't completely loaded
+                            // instance.setInlineStyle(property, instance.getStyle(property, pseudo), pseudo);
+                            // first, clone the style, if it hasn't been done yet:
+                            hasTransitionedStyle || (clonedStyles=styles.shallowClone());
+                            // backup the actual style:
+                            clonedStyles[prop] = instance.getStyle(prop, pseudo);
+                            hasTransitionedStyle = true;
+                        }
+                        else if (clonedStyles) {
+                            clonedStyles[prop] = item.value;
+                        }
+                    }
+                }
+
+            }
+            if (returnPromise) {
+                if (needSync) {
+                    promise = window.Promise.manage();
+                    if (hasTransitionedStyle) {
+                        newStyles = styles;
+                        vnode.styles[group] = clonedStyles;
+                        instance.setAttr('style', vnode.serializeStyles());
+                    }
+                    // need to call `setAttr` in a next event-cycle, otherwise the eventlistener made
+                    // by `getTransPromise gets blocked.
+                    later(function() {
+                        if (hasTransitionedStyle) {
+                            vnode.styles[group] = newStyles;
+                        }
+                        getTransPromise(instance, hasTransitionedStyle).then(
+                            promise.fulfill,
+                            promise.reject
+                        );
+                        instance.setAttr('style', vnode.serializeStyles());
+                    });
+                    return promise;
+                }
+                else {
+                    return window.Promise.resolve();
                 }
             }
+            // else
+            needSync && instance.setAttr('style', vnode.serializeStyles());
             return instance;
         };
 
        /**
         * Removes a subtype `transform`-css-property of (inline) out of the Element.
-        * This way you can sefely remove partial `transform`-properties while remaining the
+        * This way you can safely remove partial `transform`-properties while remaining the
         * other inline `transform` css=properties.
         *
         * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
@@ -1922,23 +2098,105 @@ ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
         * @method removeInlineTransform
         * @param transformProperty {String} the css-transform property to remove
         * @param [pseudo] {String} to look inside a pseudo-style
+        * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
+        *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.removeInlineTransform = function(transformProperty, pseudo) {
+        ElementPrototype.removeInlineTransform = function(transformProperty, pseudo, returnPromise) {
+            return this.removeInlineTransforms({transformProperty: transformProperty, pseudo: pseudo}, returnPromise);
+        };
+
+       /**
+        * Removes multiple subtype `transform`-css-property of (inline) out of the Element.
+        * This way you can safely remove partial `transform`-properties while remaining the
+        * other inline `transform` css=properties.
+        * You need to supply an Array of Objects, with the properties:
+        *        <ul>
+        *            <li>property  {String}</li>
+        *            <li>pseudo  {String}</li>
+        *        <ul>
+        *
+        * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+        *
+        * @method removeInlineTransform
+        * @param cssProperties {Array} Array of objects with the properties:
+        *        <ul>
+        *            <li>transformProperty  {String}</li>
+        *            <li>pseudo  {String}</li>
+        *        <ul>
+        * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
+        *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
+        * @chainable
+        * @since 0.0.1
+        */
+        ElementPrototype.removeInlineTransforms = function(transformProperties, returnPromise) {
             var instance = this,
                 vnode = instance.vnode,
                 styles = vnode.styles,
-                groupStyle = styles && styles[pseudo || 'element'],
-                transformStyles = groupStyle && groupStyle[VENDOR_TRANSFORM_PROPERTY];
-            if (transformStyles) {
-                if (transformStyles[transformProperty]) {
-                    delete transformStyles[transformProperty];
-                    (transformStyles.size()===0) && (delete groupStyle[VENDOR_TRANSFORM_PROPERTY]);
-                    (styles.size()===0) && (delete vnode.styles[pseudo || 'element']);
-                    instance.setAttr('style', vnode.serializeStyles());
+                groupStyle, transformStyles, needSync, i, item, len, hasTransitionedStyle, promise,
+                pseudo, clonedStyles, newStyles, group;
+
+            if (styles) {
+                Array.isArray(transformProperties) || (transformProperties=[transformProperties]);
+                len = transformProperties.length;
+                for (i=0; i<len; i++) {
+                    item = transformProperties[i];
+                    pseudo = item.pseudo;
+                    group = pseudo || 'element';
+                    groupStyle = styles[group];
+                    transformStyles = groupStyle && groupStyle[VENDOR_TRANSFORM_PROPERTY];
+                    if (transformStyles) {
+                        if (transformStyles[item.transformProperty]) {
+                            delete transformStyles[item.transformProperty];
+                            (transformStyles.size()===0) && (delete groupStyle[VENDOR_TRANSFORM_PROPERTY]);
+                            (styles.size()===0) && (delete vnode.styles[pseudo || 'element']);
+                            needSync = true;
+                            if (returnPromise && instance.hasTransition('transform', pseudo)) {
+                                // ALWAYS set its current calculated value --> this makes transition
+                                // work with a startingpoint of `auto`, or when the page isn't completely loaded
+                                // instance.setInlineStyle(property, instance.getStyle(property, pseudo), pseudo);
+                                // first, clone the style, if it hasn't been done yet:
+                                hasTransitionedStyle || (clonedStyles=styles.shallowClone());
+                                // backup the actual style:
+                                clonedStyles.transform = instance.getStyle('transform', pseudo);
+                                hasTransitionedStyle = true;
+                            }
+                            else if (clonedStyles) {
+                                clonedStyles.transform = item.value;
+                            }
+                        }
+                    }
                 }
             }
+            if (returnPromise) {
+                if (needSync) {
+                    promise = window.Promise.manage();
+                    if (hasTransitionedStyle) {
+                        newStyles = styles;
+                        vnode.styles[group] = clonedStyles;
+                        instance.setAttr('style', vnode.serializeStyles());
+                    }
+                    // need to call `setAttr` in a next event-cycle, otherwise the eventlistener made
+                    // by `getTransPromise gets blocked.
+                    later(function() {
+                        if (hasTransitionedStyle) {
+                            vnode.styles[group] = newStyles;
+                        }
+                        getTransPromise(instance, hasTransitionedStyle).then(
+                            promise.fulfill,
+                            promise.reject
+                        );
+                        instance.setAttr('style', vnode.serializeStyles());
+                    });
+                    return promise;
+                }
+                else {
+                    return window.Promise.resolve();
+                }
+            }
+            // else
+            needSync && instance.setAttr('style', vnode.serializeStyles());
             return instance;
         };
 
@@ -1956,19 +2214,53 @@ ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
         * @since 0.0.1
         */
         ElementPrototype.removeInlineTransition = function(transitionProperty, pseudo) {
+            return this.removeInlineTransitions({transitionProperty: transitionProperty, pseudo: pseudo});
+        };
+
+       /**
+        * Removes multiple subtype `transform`-css-property of (inline) out of the Element.
+        * This way you can sefely remove partial `transform`-properties while remaining the
+        * other inline `transform` css=properties.
+        * You need to supply an Array of Objects, with the properties:
+        *        <ul>
+        *            <li>transitionProperty  {String}</li>
+        *            <li>pseudo  {String}</li>
+        *        <ul>
+        *
+        * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+        *
+        * @method removeInlineTransition
+        * @param transitionProperty {String} the css-transform property to remove
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @chainable
+        * @since 0.0.1
+        */
+        ElementPrototype.removeInlineTransitions = function(transitionProperties) {
             var instance = this,
                 vnode = instance.vnode,
                 styles = vnode.styles,
-                groupStyle = styles && styles[pseudo || 'element'],
-                transitionStyles = groupStyle && groupStyle[VENDOR_TRANSITION_PROPERTY];
-            if (transitionStyles) {
-                if (transitionStyles[transitionProperty]) {
-                    delete transitionStyles[transitionProperty];
-                    (transitionStyles.size()===0) && (delete groupStyle[VENDOR_TRANSITION_PROPERTY]);
-                    (styles.size()===0) && (delete vnode.styles[pseudo || 'element']);
-                    instance.setAttr('style', vnode.serializeStyles());
+                groupStyle, transitionStyles, i, len, item, needSync, transitionProperty, pseudo;
+
+            if (styles) {
+                Array.isArray(transitionProperties) || (transitionProperties=[transitionProperties]);
+                len = transitionProperties.length;
+                for (i=0; i<len; i++) {
+                    item = transitionProperties[i];
+                    pseudo = item.pseudo;
+                    groupStyle = styles && styles[pseudo || 'element'];
+                    transitionStyles = groupStyle && groupStyle[VENDOR_TRANSITION_PROPERTY];
+                    if (transitionStyles) {
+                        transitionProperty = item.transitionProperty;
+                        if (transitionStyles[transitionProperty]) {
+                            delete transitionStyles[transitionProperty];
+                            (transitionStyles.size()===0) && (delete groupStyle[VENDOR_TRANSITION_PROPERTY]);
+                            (styles.size()===0) && (delete vnode.styles[pseudo || 'element']);
+                            needSync = true;
+                        }
+                    }
                 }
             }
+            needSync && instance.setAttr('style', vnode.serializeStyles());
             return instance;
         };
 
@@ -2016,10 +2308,12 @@ ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
         * @param prevClassName {String} the className to be replaced
         * @param newClassName {String} the className to be set
         * @param [force ] {Boolean} whether the new className should be set, even is the previous className isn't there
+        * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
+        *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.replaceClass = function(prevClassName, newClassName, force) {
+        ElementPrototype.replaceClass = function(prevClassName, newClassName, force, returnPromise) {
             var instance = this;
             if (force || instance.hasClass(prevClassName)) {
                 instance.removeClass(prevClassName).setClass(newClassName);
@@ -2083,10 +2377,12 @@ ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
         *
         * @method setClass
         * @param className {String|Array} className to be added, may be an array of classNames
+        * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
+        *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.setClass = function(className) {
+        ElementPrototype.setClass = function(className, returnPromise) {
             var instance = this;
             instance.getClassList().add(className);
             return instance;
@@ -2149,7 +2445,7 @@ ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
         *
         * Note: no need to camelCase cssProperty: both `margin-left` as well as `marginLeft` are fine
         *
-        * @method setStyle
+        * @method setInlineStyle
         * @param cssProperty {String} the css-property to be set
         * @param value {String} the css-value
         * @param [pseudo] {String} to look inside a pseudo-style
@@ -2159,19 +2455,93 @@ ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
         * @since 0.0.1
         */
         ElementPrototype.setInlineStyle = function(cssProperty, value, pseudo, returnPromise) {
+            return this.setInlineStyles([{property: cssProperty, value: value, pseudo: pseudo}], returnPromise);
+        };
+
+       /**
+        * Sets multiple css-properties (inline) for the Element at once.
+        *
+        * Note: no need to camelCase cssProperty: both `margin-left` as well as `marginLeft` are fine
+        *
+        * @method setInlineStyles
+        * @param cssProperties {Array} the css-properties to be set, specified as an Array of Objects.
+        *        The objects should have the next properties:
+        *        <ul>
+        *            <li>property  {String}</li>
+        *            <li>value  {String}</li>
+        *            <li>pseudo  {String} (optional)</li>
+        *        </ul>
+        * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
+        *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
+        * @chainable
+        * @since 0.0.1
+        */
+        ElementPrototype.setInlineStyles = function(cssProperties, returnPromise) {
             var instance = this,
                 vnode = instance.vnode,
-                styles, group;
-            value || (value='');
-            cssProperty = fromCamelCase(cssProperty);
-            if (value==='') {
-                return instance.removeInlineStyle(cssProperty, pseudo);
+                removal = [],
+                styles, group, i, len, item, promise, removalPromise, hasTransitionedStyle, property,
+                pseudo, clonedStyles, newStyles;
+            Array.isArray(cssProperties) || (cssProperties=[cssProperties]);
+            len = cssProperties.length;
+            for (i=(len-1); i>=0; i--) {
+                item = cssProperties[i];
+                item.value || (item.value='');
+                if (item.value==='') {
+                    // remove the item instead of updating:
+                    removal[removal.length] = item;
+                    cssProperties.remove(item);
+                }
+            }
+            if (removal.length>0) {
+                removalPromise = instance.removeInlineStyles(removal, returnPromise);
+                len = cssProperties.length;
             }
             vnode.styles || (vnode.styles={});
-            group = pseudo || 'element';
-            vnode.styles[group] || (vnode.styles[group]={});
-            styles = vnode.styles[group];
-            styles[cssProperty] = value;
+            for (i=0; i<len; i++) {
+                item = cssProperties[i];
+                pseudo = item.pseudo;
+                group = pseudo || 'element';
+                vnode.styles[group] || (vnode.styles[group]={});
+                styles = vnode.styles[group];
+                property = item.property;
+                styles[property] = item.value;
+                if (returnPromise && (property!==VENDOR_TRANSITION_PROPERTY) && instance.hasTransition(property, pseudo)) {
+                    // ALWAYS set its current calculated value --> this makes transition
+                    // work with a startingpoint of `auto`, or when the page isn't completely loaded
+                    // instance.setInlineStyle(property, instance.getStyle(property, pseudo), pseudo);
+                    // first, clone the style, if it hasn't been done yet:
+                    hasTransitionedStyle || (clonedStyles=styles.shallowClone());
+                    // backup the actual style:
+                    clonedStyles[property] = instance.getStyle(property, pseudo);
+                    hasTransitionedStyle = true;
+                }
+                else if (clonedStyles) {
+                    clonedStyles[property] = item.value;
+                }
+            }
+            if (returnPromise) {
+                promise = window.Promise.manage();
+                if (hasTransitionedStyle) {
+                    newStyles = styles;
+                    vnode.styles[group] = clonedStyles;
+                    instance.setAttr('style', vnode.serializeStyles());
+                }
+                // need to call `setAttr` in a next event-cycle, otherwise the eventlistener made
+                // by `getTransPromise gets blocked.
+                later(function() {
+                    if (hasTransitionedStyle) {
+                        vnode.styles[group] = newStyles;
+                    }
+                    getTransPromise(instance, hasTransitionedStyle, removalPromise).then(
+                        promise.fulfill,
+                        promise.reject
+                    );
+                    instance.setAttr('style', vnode.serializeStyles());
+                });
+                return promise;
+            }
+            // else
             instance.setAttr('style', vnode.serializeStyles());
             return instance;
         };
@@ -2182,37 +2552,118 @@ ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
         * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
         *
         * @method setStyle
-        * @param transformProperty {String} the css-property to be set, f.e. `translateX`
+        * @param transformProperty {String} the css-transform-property to be set, f.e. `translateX`
         * @param value {String} the css-value
         * @param [pseudo] {String} to look inside a pseudo-style
+        * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
+        *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.setInlineTransform = function(transformProperty, value, pseudo) {
+        ElementPrototype.setInlineTransform = function(transformProperty, value, pseudo, returnPromise) {
+            return this.setInlineTransforms({transformProperty: transformProperty, value: value, pseudo: pseudo}, returnPromise);
+        };
+
+       /**
+        * Sets a transform-css-property (inline) for the Element.
+        *
+        * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
+        *
+        * @method setStyle
+        * @param transformProperties {String} the css-properties to be set, f.e. `translateX`
+        * @param transformProperties {Array} the css-tranform-properties to be set, specified as an Array of Objects.
+        *        The objects should have the next properties:
+        *        <ul>
+        *            <li>transformProperty  {String}</li>
+        *            <li>value  {String}</li>
+        *            <li>pseudo  {String} (optional)</li>
+        *        </ul>
+        * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
+        *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
+        * @chainable
+        * @since 0.0.1
+        */
+        ElementPrototype.setInlineTransforms = function(transformProperties, returnPromise) {
             var instance = this,
                 vnode = instance.vnode,
-                transformStyles, group, noneValue;
-            noneValue = (transformProperty.toLowerCase()==='none');
-            if (!noneValue) {
-                value || (value='');
-                if (value==='') {
-                    return instance.removeInlineTransform(transformProperty, pseudo);
+                removal = [],
+                transformStyles, group, len, i, item, promise, removalPromise, hasTransitionedStyle,
+                pseudo, clonedStyles, newStyles, vnodeStylesGroup;
+
+            Array.isArray(transformProperties) || (transformProperties=[transformProperties]);
+            len = transformProperties.length;
+
+            for (i=(len-1); i>=0; i--) {
+                item = transformProperties[i];
+                item.noneValue = (item.transformProperty.toLowerCase()==='none');
+                if (!item.noneValue) {
+                    item.value || (item.value='');
+                    if (item.value==='') {
+                        // remove the item instead of updating:
+                        removal[removal.length] = item;
+                        transformProperties.remove(item);
+                    }
                 }
             }
+            if (removal.length>0) {
+                removalPromise = instance.removeInlineTransforms(removal, returnPromise);
+                len = transformProperties.length;
+            }
+
             vnode.styles || (vnode.styles={});
-            group = pseudo || 'element';
-            vnode.styles[group] || (vnode.styles[group]={});
-            vnode.styles[group][VENDOR_TRANSFORM_PROPERTY] || (vnode.styles[group][VENDOR_TRANSFORM_PROPERTY]={});
-            if (noneValue) {
-                vnode.styles[group][VENDOR_TRANSFORM_PROPERTY] = {
-                    none: true
-                };
+            for (i=0; i<len; i++) {
+                item = transformProperties[i];
+                pseudo = item.pseudo;
+                group = pseudo || 'element';
+                vnode.styles[group] || (vnode.styles[group]={});
+                vnodeStylesGroup = vnode.styles[group];
+                vnodeStylesGroup[VENDOR_TRANSFORM_PROPERTY] || (vnodeStylesGroup[VENDOR_TRANSFORM_PROPERTY]={});
+                if (item.noneValue) {
+                    vnodeStylesGroup[VENDOR_TRANSFORM_PROPERTY] = {
+                        none: true
+                    };
+                }
+                else {
+                    transformStyles = vnodeStylesGroup[VENDOR_TRANSFORM_PROPERTY];
+                    transformStyles[item.transformProperty] = item.value;
+                    delete vnode.styles[group][VENDOR_TRANSFORM_PROPERTY].none;
+                }
+                if (returnPromise && instance.hasTransition('transform', pseudo)) {
+                    // ALWAYS set its current calculated value --> this makes transition
+                    // work with a startingpoint of `auto`, or when the page isn't completely loaded
+                    // instance.setInlineStyle(property, instance.getStyle(property, pseudo), pseudo);
+                    // first, clone the style, if it hasn't been done yet:
+                    hasTransitionedStyle || (clonedStyles=vnodeStylesGroup.shallowClone());
+                    // backup the actual style:
+                    clonedStyles.transform = instance.getStyle('transform', pseudo);
+                    hasTransitionedStyle = true;
+                }
+                else if (clonedStyles) {
+                    clonedStyles.transform = item.value;
+                }
             }
-            else {
-                transformStyles = vnode.styles[group][VENDOR_TRANSFORM_PROPERTY];
-                transformStyles[transformProperty] = value;
-                instance.removeInlineTransform('none', pseudo);
+            if (returnPromise) {
+                promise = window.Promise.manage();
+                if (hasTransitionedStyle) {
+                    newStyles = vnodeStylesGroup;
+                    vnode.styles[group] = clonedStyles;
+                    instance.setAttr('style', vnode.serializeStyles());
+                }
+                // need to call `setAttr` in a next event-cycle, otherwise the eventlistener made
+                // by `getTransPromise gets blocked.
+                later(function() {
+                    if (hasTransitionedStyle) {
+                        vnode.styles[group] = newStyles;
+                    }
+                    getTransPromise(instance, hasTransitionedStyle, removalPromise).then(
+                        promise.fulfill,
+                        promise.reject
+                    );
+                    instance.setAttr('style', vnode.serializeStyles());
+                });
+                return promise;
             }
+            // else
             instance.setAttr('style', vnode.serializeStyles());
             return instance;
         };
@@ -2232,21 +2683,51 @@ ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
         * @since 0.0.1
         */
         ElementPrototype.setInlineTransition = function(transitionProperty, duration, timingFunction, delay, pseudo) {
-//transition: width 2s, height 2s, transform 2s;
+            // transition-example: transition: width 2s, height 2s, transform 2s;
+            return this.setInlineTransitions({transitionProperty: transitionProperty, duration: duration, timingFunction: timingFunction, delay: delay, pseudo: pseudo});
+        };
+
+       /**
+        * Sets a transform-css-property (inline) for the Element.
+        *
+        * See more about transitions: https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Using_CSS_transitions
+        *
+        * @method setStyle
+        * @param transitionProperties {Array} the css-transition-properties to be set, specified as an Array of Objects.
+        *        The objects should have the next properties:
+        *        <ul>
+        *            <li>transitionProperty  {String}</li>
+        *            <li>duration  {Number}</li>
+        *            <li>timingFunction  {String} (optional)</li>
+        *            <li>delay  {Number} (optional)</li>
+        *            <li>pseudo  {String} (optional)</li>
+        *        </ul>
+        * @param [pseudo] {String} to look inside a pseudo-style
+        * @chainable
+        * @since 0.0.1
+        */
+        ElementPrototype.setInlineTransitions = function(transitionProperties) {
+            // transition-example: transition: width 2s, height 2s, transform 2s;
             var instance = this,
                 vnode = instance.vnode,
-                transitionStyles, group, trans;
+                transitionStyles, transitionProperty, group, trans, i, len, item;
+
+            Array.isArray(transitionProperties) || (transitionProperties=[transitionProperties]);
+            len = transitionProperties.length;
             vnode.styles || (vnode.styles={});
-            group = pseudo || 'element';
-            vnode.styles[group] || (vnode.styles[group]={});
-            vnode.styles[group][VENDOR_TRANSITION_PROPERTY] || (vnode.styles[group][VENDOR_TRANSITION_PROPERTY]={});
-            transitionStyles = vnode.styles[group][VENDOR_TRANSITION_PROPERTY];
-            transitionProperty = fromCamelCase(transitionProperty);
-            trans = transitionStyles[transitionProperty] = {
-                duration: duration
-            };
-            timingFunction && (trans.timingFunction=timingFunction);
-            delay && (trans.delay=delay);
+            for (i=0; i<len; i++) {
+                item = transitionProperties[i];
+                group = item.pseudo || 'element';
+                vnode.styles[group] || (vnode.styles[group]={});
+                vnode.styles[group][VENDOR_TRANSITION_PROPERTY] || (vnode.styles[group][VENDOR_TRANSITION_PROPERTY]={});
+                transitionStyles = vnode.styles[group][VENDOR_TRANSITION_PROPERTY];
+                transitionProperty = fromCamelCase(item.transitionProperty);
+                trans = transitionStyles[transitionProperty] = {
+                    duration: item.duration
+                };
+                item.timingFunction && (trans.timingFunction=item.timingFunction);
+                item.delay && (trans.delay=item.delay);
+            }
             instance.setAttr('style', vnode.serializeStyles());
             return instance;
         };
@@ -2518,10 +2999,12 @@ ElementPrototype.hasTransition = function(transitionProperty, pseudo) {
         * @method toggleClass
         * @param className {String|Array} className that should be toggled, may be an array of classNames
         * @param forceState {Boolean} to force toggling into this specific state
+        * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
+        *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.toggleClass = function(className, forceState) {
+        ElementPrototype.toggleClass = function(className, forceState, returnPromise) {
             var instance = this;
             instance.getClassList().toggle(className, forceState);
             return instance;

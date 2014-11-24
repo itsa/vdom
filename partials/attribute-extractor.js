@@ -229,6 +229,7 @@ module.exports = function (window) {
 
         */
             var newStyles = {},
+                instance = this,
                 i, onlyElement, len, character, groupKey, key, value, insideValue, insideKey, hasValue, group;
             if (styles) {
                 i = -1;
@@ -316,7 +317,7 @@ module.exports = function (window) {
                 }
             }
             return {
-                attrStyle: hasValue && this.serializeStyles(newStyles),
+                attrStyle: hasValue && instance.serializeStyles(newStyles),
                 styles: newStyles
             };
         },

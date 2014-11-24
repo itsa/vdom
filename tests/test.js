@@ -10,18 +10,22 @@
     // require('../partials/extend-element.js')(window);
     // require('../partials/extend-document.js')(window);
 
-    var expect = require('chai').expect,
-        should = require('chai').should(),
+    var chai = require('chai'),
+        expect = chai.expect,
+        should = chai.should(),
         NS = require('../partials/vdom-ns.js')(window),
         nodeids = NS.nodeids,
         async = require('utils/lib/timers.js').async,
         node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub, nodeSub3SubText, container, containerSub1, containerSub2, containerSub3;
 
+    chai.use(require('chai-as-promised'));
+
     describe('Methods', function () {
+this.timeout(5000);
 
         // bodyNode looks like this:
         /*
-        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;">
+        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: -9999px; top: -9999px; height: auto; width: 150px; background-color: #F00;">
             <div id="sub1" class="green yellow"></div>
             <div id="sub2" class="green yellow"></div>
             <div id="sub3">
@@ -36,7 +40,7 @@
             node = window.document.createElement('div');
             node.id = 'ITSA';
             node.className = 'red blue';
-            node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
+            node.setAttribute('style', 'position: absolute; z-index: 1; left: 10px; top: 10px; height: auto; width: 150px; background-color: #F00;');
                 nodeSub1 = window.document.createElement('div');
                 nodeSub1.id = 'sub1';
                 nodeSub1.className = 'green yellow';
@@ -67,38 +71,25 @@
             window.document.body.removeChild(node);
         });
 
-        it('getTransform', function () {
-            node.prepend('<style type="text/css">#ITSA div {transform: skewX(30deg);} #ITSA div:before {transform: skewY(100deg);}</style>');
 
-            expect(nodeSub1.getTransform('translateX')===undefined).to.be.true;
-            expect(nodeSub1.getTransform('skewX')).to.be.eql('30deg');
-            expect(nodeSub1.getTransform('skewY', ':before')).to.be.eql('100deg');
-            expect(nodeSub1.getTransform('skewX', ':before')===undefined).to.be.true;
-            expect(nodeSub1.getTransform('skewY')===undefined).to.be.true;
-
-            nodeSub1.setAttr('style', 'transform: rotateX(50deg) translateX(10px); color: #AAA;');
-            expect(nodeSub1.getTransform('rotateX')).to.be.eql('50deg');
-            expect(nodeSub1.getTransform('translateX')).to.be.eql('10px');
-
-            nodeSub1.setAttr('style', 'background-color: #DDD; transform: rotateX(50deg) translateX(10px); color: #AAA;');
-            expect(nodeSub1.getTransform('rotateX')).to.be.eql('50deg');
-            expect(nodeSub1.getTransform('translateX')).to.be.eql('10px');
-
-            nodeSub1.setAttr('style', 'background-color: #DDD; transform: rotateX(50deg) translateX(10px);');
-            expect(nodeSub1.getTransform('rotateX')).to.be.eql('50deg');
-            expect(nodeSub1.getTransform('translateX')).to.be.eql('10px');
-
-            nodeSub1.setAttr('style', '{transform: rotateX(50deg) translateX(10px); color: #AAA;} :before {background-color: #DDD; transform: rotateX(150deg) translateX(110px);}');
-            expect(nodeSub1.getTransform('rotateX')).to.be.eql('50deg');
-            expect(nodeSub1.getTransform('translateX')).to.be.eql('10px');
-            expect(nodeSub1.getTransform('rotateX', ':before')).to.be.eql('150deg');
-            expect(nodeSub1.getTransform('translateX', ':before')).to.be.eql('110px');
-
-            nodeSub1.setAttr('style', '{background-color: #DDD; transform: skewX(50deg) translateX(10px); color: #AAA;} :before {transform: skewY(150deg);}');
-            expect(nodeSub1.getTransform('skewX')).to.be.eql('50deg');
-            expect(nodeSub1.getTransform('skewY', ':before')).to.be.eql('150deg');
+        it('Resolve in case of "auto"-property when there is a transition is defined', function (done) {
+            var delayed = false;
+            // node.setInlineStyle('height', '19.2px');
+            node.setInlineTransition('height', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setInlineStyle('height', '1000px', null, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
         });
-
 
     });
 

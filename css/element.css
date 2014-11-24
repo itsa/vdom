@@ -1,4 +1,6 @@
-.itsa-notrans {
+.itsa-notrans,
+.itsa-notrans:before,
+.itsa-notrans:after {
     -webkit-transition: none !important;
     -moz-transition: none !important;
     -ms-transition: none !important;

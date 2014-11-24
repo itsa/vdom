@@ -10,12 +10,15 @@
     // require('../partials/extend-element.js')(window);
     // require('../partials/extend-document.js')(window);
 
-    var expect = require('chai').expect,
-        should = require('chai').should(),
+    var chai = require('chai'),
+        expect = chai.expect,
+        should = chai.should(),
         NS = require('../partials/vdom-ns.js')(window),
         nodeids = NS.nodeids,
         async = require('utils/lib/timers.js').async,
         node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub, nodeSub3SubText, container, containerSub1, containerSub2, containerSub3;
+
+    chai.use(require('chai-as-promised'));
 
     describe('Properties', function () {
 
@@ -803,7 +806,7 @@
             expect(nodeSub3.getText()).to.eql('extra text');
             expect(nodeSub3Sub.getText()).to.eql('');
         });
-
+/*
         it('getTransform', function () {
             node.prepend('<style type="text/css">#ITSA div {transform: skewX(30deg);} #ITSA div:before {transform: skewY(100deg);}</style>');
 
@@ -835,7 +838,7 @@
             expect(nodeSub1.getTransform('skewX')).to.be.eql('50deg');
             expect(nodeSub1.getTransform('skewY', ':before')).to.be.eql('150deg');
         });
-
+*/
         it('getTransition', function () {
             node.prepend('<style type="text/css">#ITSA div {color: #F00; transition: opacity 2.2s ease-out 3s;} #ITSA div:before {transition: top 2.3s;}</style>');
 
@@ -1594,6 +1597,32 @@
             window.document.body.removeChild(node2);
         });
 
+        it('removeInlineStyles', function () {
+            var node2 = window.document.createElement('div');
+            node2.setAttribute('style', '{color: #F00; top: 30px; height: 75px; width: 150px;}'+
+                ' :before {color: #00F; font-weight: bold; font-style: italic; background-color: #DDD;}');
+            window.document.body.appendChild(node2);
+
+            node2.removeInlineStyles([
+                {property: 'top'},
+                {property: 'width'},
+                {property: 'font-weight', pseudo: ':before'},
+                {property: 'background-color', pseudo: ':before'}
+            ]);
+
+            expect(node2.getInlineStyle('color')).to.be.eql('#F00');
+            expect(node2.getInlineStyle('top')===undefined).to.be.true;
+            expect(node2.getInlineStyle('height')).to.be.eql('75px');
+            expect(node2.getInlineStyle('width')===undefined).to.be.true;
+
+            expect(node2.getInlineStyle('color', ':before')).to.be.eql('#00F');
+            expect(node2.getInlineStyle('font-weight', ':before')===undefined).to.be.true;
+            expect(node2.getInlineStyle('font-style', ':before')).to.be.eql('italic');
+            expect(node2.getInlineStyle('background-color', ':before')===undefined).to.be.true;
+
+            window.document.body.removeChild(node2);
+        });
+
         it('removeInlineTransform', function () {
             nodeSub1.setAttr('style', 'transform: translateX(12px) translateY(15px);');
             nodeSub1.removeInlineTransform('translateX');
@@ -1625,6 +1654,28 @@
 
             nodeSub1.removeInlineTransform('translateY', ':before');
             expect(nodeSub1.getAttr('style')===null).to.be.true;
+        });
+
+        it('removeInlineTransforms', function () {
+            nodeSub1.setAttr('style', '{transform: translateX(12px) translateY(15px) rotate(45deg) skewX(40deg) skewY(70deg);} :before {transform: translateX(112px) translateZ(115px) rotate(145deg) skewX(140deg) skewZ(170deg);}');
+            nodeSub1.removeInlineTransforms([
+                {transformProperty: 'translateX'},
+                {transformProperty: 'rotate'},
+                {transformProperty: 'skewX', pseudo: ':before'},
+                {transformProperty: 'rotate', pseudo: ':before'}
+            ]);
+
+            expect(nodeSub1.getInlineTransform('translateX')===undefined).to.be.true;
+            expect(nodeSub1.getInlineTransform('translateY')).to.be.eql('15px');
+            expect(nodeSub1.getInlineTransform('rotate')===undefined).to.be.true;
+            expect(nodeSub1.getInlineTransform('skewX')).to.be.eql('40deg');
+            expect(nodeSub1.getInlineTransform('skewY')).to.be.eql('70deg');
+
+            expect(nodeSub1.getInlineTransform('translateX', ':before')).to.be.eql('112px');
+            expect(nodeSub1.getInlineTransform('translateZ', ':before')).to.be.eql('115px');
+            expect(nodeSub1.getInlineTransform('rotate', ':before')===undefined).to.be.true;
+            expect(nodeSub1.getInlineTransform('skewX', ':before')===undefined).to.be.true;
+            expect(nodeSub1.getInlineTransform('skewZ', ':before')).to.be.eql('170deg');
         });
 
         it('removeInlineTransition', function () {
@@ -1660,6 +1711,25 @@
 
             nodeSub1.removeInlineTransition('width', ':before');
             expect(nodeSub1.getAttr('style')===null).to.be.true;
+        });
+
+        it('removeInlineTransitions', function () {
+            nodeSub1.setAttr('style', '{transition: width 2s ease-in 4s, height 6s, top 2s;} :before {transition: width 12s ease-out 14s, height 16s, top 12s;}');
+
+            nodeSub1.removeInlineTransitions([
+                {transitionProperty: 'width'},
+                {transitionProperty: 'height'},
+                {transitionProperty: 'height', pseudo: ':before'},
+                {transitionProperty: 'top', pseudo: ':before'}
+            ]);
+
+            expect(nodeSub1.getInlineTransition('width')===undefined).to.be.true;
+            expect(nodeSub1.getInlineTransition('height')===undefined).to.be.true;
+            expect(nodeSub1.getInlineTransition('top')).to.be.eql({duration: 2});
+
+            expect(nodeSub1.getInlineTransition('height', ':before')===undefined).to.be.true;
+            expect(nodeSub1.getInlineTransition('top', ':before')===undefined).to.be.true;
+            expect(nodeSub1.getInlineTransition('width', ':before')).to.be.eql({duration: 12, timingFunction: 'ease-out', delay: 14});
         });
 
         it('replaceClass', function () {
@@ -1807,7 +1877,7 @@
             expect(node.getInlineStyle('font-style', ':before')===undefined).to.be.true;
             expect(node.getInlineStyle('fontStyle', ':before')===undefined).to.be.true;
 
-            node.setInlineStyle('color', '#333');
+            expect(node.setInlineStyle('color', '#333')).to.be.eql(node);
 
             expect(node.getInlineStyle('dummy')===undefined).to.be.true;
             expect(node.getInlineStyle('color')).to.be.eql('#333');
@@ -1879,6 +1949,43 @@
             expect(beforeStyles.indexOf('dummy')!==-1).to.be.false;
         });
 
+
+
+
+
+
+
+
+
+        it('setInlineStyles', function () {
+            nodeSub1.setInlineStyle('opacity', '0.5');
+            nodeSub1.setInlineStyles([
+                {property: 'color', value: '#333'},
+                {property: 'background-color', value: '#AAA'},
+                {property: 'opacity'}, // erasing
+                {property: 'font-weight', value: 'bold', pseudo: ':before'},
+                {property: 'font-style', value: 'italic', pseudo: ':before'}
+            ]);
+
+            expect(nodeSub1.getInlineStyle('color')).to.be.eql('#333');
+            expect(nodeSub1.getInlineStyle('background-color')).to.be.eql('#AAA');
+            expect(nodeSub1.getInlineStyle('opacity')===undefined).to.be.true;
+            expect(nodeSub1.getInlineStyle('font-weight')===undefined).to.be.true;
+            expect(nodeSub1.getInlineStyle('font-style')===undefined).to.be.true;
+
+            expect(nodeSub1.getInlineStyle('color', ':before')===undefined).to.be.true;
+            expect(nodeSub1.getInlineStyle('background-color', ':before')===undefined).to.be.true;
+            expect(nodeSub1.getInlineStyle('opacity', ':before')===undefined).to.be.true;
+            expect(nodeSub1.getInlineStyle('font-weight', ':before')).to.be.eql('bold');
+            expect(nodeSub1.getInlineStyle('font-style', ':before')).to.be.eql('italic');
+
+            nodeSub1.setInlineStyles([
+                {property: 'height', value: '100px'},
+                {property: 'transition', value: 'none'}
+            ]);
+
+        });
+
         it('setInlineTransform', function () {
             var styles, elementStyles, beforeStyles;
 
@@ -1902,13 +2009,28 @@
 
             nodeSub1.setInlineTransform('translateY', '25px');
             nodeSub1.setInlineStyle('color', '#AAA');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('transform: translateX(10px);');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('transform: translateY(25px);');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('transform: translateX(10px);');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('transform: translateY(25px);');
             expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace('transform:; ', '')).to.be.eql('color: #AAA;');
 
             nodeSub1.setInlineTransform('rotateX', '50deg', ':before');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('{transform: translateX(10px); } :before {transform: rotateX(50deg); }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('{transform: translateY(25px); } :before {transform: rotateX(50deg); }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('{transform: translateX(10px); } :before {transform: rotateX(50deg); }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('{transform: translateY(25px); } :before {transform: rotateX(50deg); }');
+            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace('transform:; ', '')).to.be.eql('{color: #AAA; } :before {transform: rotateX(50deg); }');
+        });
+
+        it('setInlineTransforms', function () {
+            var styles, elementStyles, beforeStyles;
+
+            nodeSub1.setInlineTransforms([
+                {transformProperty: 'translateX', value: '10px'},
+                {transformProperty: 'translateY', value: '25px'},
+                {transformProperty: 'rotateX', value: '50deg', pseudo: ':before'}
+            ]);
+
+            nodeSub1.setInlineStyle('color', '#AAA');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('{transform: translateX(10px); } :before {transform: rotateX(50deg); }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('{transform: translateY(25px); } :before {transform: rotateX(50deg); }');
             expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace('transform:; ', '')).to.be.eql('{color: #AAA; } :before {transform: rotateX(50deg); }');
         });
 
@@ -1923,18 +2045,33 @@
             expect(nodeSub1.getAttr('style').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('transition: width 1s;');
 
             nodeSub1.setInlineStyle('color', '#AAA');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('transition: height 2s;');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('transition: width 1s;');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('transition: height 2s;');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('transition: width 1s;');
             expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 2s', '').replace('transition: , ; ', '')).to.be.eql('color: #AAA;');
 
             nodeSub1.setInlineTransition('width', 3, null, null, ':before');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{transition: height 2s; } :before {transition: width 3s; }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('{transition: width 1s; } :before {transition: width 3s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{transition: height 2s; } :before {transition: width 3s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('{transition: width 1s; } :before {transition: width 3s; }');
             expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 2s', '').replace('transition: , ; ', '')).to.be.eql('{color: #AAA; } :before {transition: width 3s; }');
 
             nodeSub1.setInlineTransition('height', 8, 'ease-in', 4);
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{transition: height 8s ease-in 4s; } :before {transition: width 3s; }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql('{transition: width 1s; } :before {transition: width 3s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{transition: height 8s ease-in 4s; } :before {transition: width 3s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql('{transition: width 1s; } :before {transition: width 3s; }');
+            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 8s ease-in 4s', '').replace('transition: , ; ', '')).to.be.eql('{color: #AAA; } :before {transition: width 3s; }');
+        });
+
+        it('setInlineTransitions', function () {
+            var styles, elementStyles, beforeStyles;
+
+            nodeSub1.setInlineTransitions([
+                {transitionProperty: 'width', duration: 1},
+                {transitionProperty: 'height', duration: 8, timingFunction: 'ease-in', delay: 4},
+                {transitionProperty: 'width', duration: 3, pseudo: ':before'}
+            ]);
+            nodeSub1.setInlineStyle('color', '#AAA');
+
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{transition: height 8s ease-in 4s; } :before {transition: width 3s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql('{transition: width 1s; } :before {transition: width 3s; }');
             expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 8s ease-in 4s', '').replace('transition: , ; ', '')).to.be.eql('{color: #AAA; } :before {transition: width 3s; }');
         });
 
@@ -3131,5 +3268,173 @@
 
     });
 
+
+    describe('Promise return values with style transitions', function () {
+
+        this.timeout(5000);
+
+        // bodyNode looks like this:
+        /*
+        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: -9999px; top: -9999px; height: auto; width: 150px; background-color: #F00;">
+            <div id="sub1" class="green yellow"></div>
+            <div id="sub2" class="green yellow"></div>
+            <div id="sub3">
+                <div id="sub3sub" class="green yellow"></div>
+                extra text
+            </div>
+        </div>
+        */
+
+        // Code to execute before every test.
+        beforeEach(function() {
+            node = window.document.createElement('div');
+            node.id = 'ITSA';
+            node.className = 'red blue';
+            node.setAttribute('style', 'position: absolute; z-index: -1; left: -9999px; top: -9999px; height: auto; width: 150px; background-color: #F00;');
+                nodeSub1 = window.document.createElement('div');
+                nodeSub1.id = 'sub1';
+                nodeSub1.className = 'green yellow';
+                node.appendChild(nodeSub1);
+
+                nodeSub2 = window.document.createElement('div');
+                nodeSub2.className = 'green yellow';
+                nodeSub2.id = 'sub2';
+                node.appendChild(nodeSub2);
+
+                nodeSub3 = window.document.createElement('div');
+                nodeSub3.id = 'sub3';
+                node.appendChild(nodeSub3);
+
+                    nodeSub3Sub = window.document.createElement('div');
+                    nodeSub3Sub.className = 'green yellow';
+                    nodeSub3Sub.id = 'sub3sub';
+                    nodeSub3.appendChild(nodeSub3Sub);
+
+                    nodeSub3SubText = window.document.createTextNode('extra text');
+                    nodeSub3.appendChild(nodeSub3SubText);
+
+            window.document.body.appendChild(node);
+        });
+
+        // Code to execute after every test.
+        afterEach(function() {
+            window.document.body.removeChild(node);
+        });
+
+        it('check to return a Promise', function () {
+            expect(node.setInlineStyle('color', '#333', null, true) instanceof window.Promise).to.be.true;
+            expect(node.setInlineStyle('color', '#333', null, true) instanceof window.Node).to.be.false;
+            expect(node.setInlineStyle('color', '#333') instanceof window.Promise).to.be.false;
+            expect(node.setInlineStyle('color', '#333') instanceof window.Node).to.be.true;
+        });
+
+        it('Resolve when no transition is defined', function (done) {
+            var delayed = false;
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setInlineStyle('background-color', '#666', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Resolve when there is a transition is defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('background-color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setInlineStyle('background-color', '#666', null, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+
+        it('Resolve when no initial value is defined and no transition is defined', function (done) {
+            var delayed = false;
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setInlineStyle('color', '#F00', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Resolve when there is no initial value is defined and a transition is defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setInlineStyle('color', '#F00', null, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+
+        it('Resolve in case of "auto"-property when no transition is defined', function (done) {
+            var delayed = false;
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setInlineStyle('height', '100px', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Resolve in case of "auto"-property when there is a transition is defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('height', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setInlineStyle('height', '100px', null, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+    });
 
 }(global.window || require('node-win')));
