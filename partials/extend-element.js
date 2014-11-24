@@ -54,6 +54,8 @@ module.exports = function (window) {
         DOCUMENT = window.document,
         nodeids = NS.nodeids,
         arrayIndexOf = Array.prototype.indexOf,
+        EV_TRANSITION_END_TIMEOUT = 30000, // transition promise will be rejected when transition
+                                           // hasn't finished in time
         POSITION = 'position',
         ITSA_ = 'itsa-',
         BLOCK = ITSA_+'block',
@@ -129,7 +131,7 @@ module.exports = function (window) {
         getTransPromise = function(node, hasTransitionedStyle, removalPromise) {
             var promise;
             if (hasTransitionedStyle) {
-                promise = new window.Promise(function(fulfill) {
+                promise = new window.Promise(function(fulfill, reject) {
                     var afterTrans = function() {
                         node.removeEventListener(EV_TRANSITION_END, afterTrans, true);
                         fulfill();
@@ -140,6 +142,9 @@ module.exports = function (window) {
                     }
                     else {
                         node.addEventListener(EV_TRANSITION_END, afterTrans, true);
+                        later(function(){
+                            reject('transition timeout');
+                        }, EV_TRANSITION_END_TIMEOUT);
                     }
                 });
                 removalPromise && (promise=window.Promise.finishAll([promise, removalPromise]));
