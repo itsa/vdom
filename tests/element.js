@@ -792,6 +792,7 @@
         it('getStyle', function () {
             expect(node.getStyle('left')).to.be.eql('10px');
             expect(node.getStyle('display')).to.be.eql('block');
+            expect(node.getStyle('dummy')===undefined).to.be.true;
         });
 
         it('getTagName', function () {
@@ -1307,6 +1308,7 @@
 
         it('next', function () {
             expect(nodeSub1.next()).to.be.eql(nodeSub2);
+            expect(nodeSub3.next()===undefined).to.be.true;
             expect(nodeSub1.next(':not(.green)')).to.be.eql(nodeSub3);
 
             expect(nodeSub1.next('> div')===null).to.be.true;
@@ -1320,6 +1322,7 @@
         });
 
         it('previous', function () {
+            expect(nodeSub1.previous()===undefined).to.be.true;
             expect(nodeSub3.previous()).to.be.eql(nodeSub2);
             expect(nodeSub3.previous('.green')).to.be.eql(nodeSub2);
             expect(nodeSub3.previous(':not(.green)')===null).to.be.true;
@@ -1619,6 +1622,18 @@
             expect(node2.getInlineStyle('font-weight', ':before')===undefined).to.be.true;
             expect(node2.getInlineStyle('font-style', ':before')).to.be.eql('italic');
             expect(node2.getInlineStyle('background-color', ':before')===undefined).to.be.true;
+
+            node2.setAttribute('style', '{transition: all 2s; transform: translateX(20px);}'+
+                ' :before {transition: all 12s; transform: translateX(120px);}');
+
+            node2.removeInlineStyles([
+                {property: 'transition'},
+                {property: 'transform'},
+                {property: 'transition', pseudo: ':before'},
+                {property: 'transform', pseudo: ':before'}
+            ]);
+
+            expect(node2.getAttr('style')===null).to.be.true;
 
             window.document.body.removeChild(node2);
         });
@@ -1949,14 +1964,6 @@
             expect(beforeStyles.indexOf('dummy')!==-1).to.be.false;
         });
 
-
-
-
-
-
-
-
-
         it('setInlineStyles', function () {
             nodeSub1.setInlineStyle('opacity', '0.5');
             nodeSub1.setInlineStyles([
@@ -1982,6 +1989,11 @@
             nodeSub1.setInlineStyles([
                 {property: 'height', value: '100px'},
                 {property: 'transition', value: 'none'}
+            ]);
+
+            nodeSub1.setInlineStyles([
+                {property: 'height', value: '100px'},
+                {property: 'transform', value: 'none'}
             ]);
 
         });
@@ -3271,7 +3283,7 @@
 
     describe('Promise return values with style transitions', function () {
 
-        this.timeout(5000);
+        this.timeout(3000);
 
         // bodyNode looks like this:
         /*
@@ -3290,7 +3302,7 @@
             node = window.document.createElement('div');
             node.id = 'ITSA';
             node.className = 'red blue';
-            node.setAttribute('style', 'position: absolute; z-index: -1; left: -9999px; top: -9999px; height: auto; width: 150px; background-color: #F00;');
+            node.setAttribute('style', 'position: absolute; z-index: -1; left: -9999px; top: -9999px; height: auto; width: 500px; background-color: #F00;');
                 nodeSub1 = window.document.createElement('div');
                 nodeSub1.id = 'sub1';
                 nodeSub1.className = 'green yellow';
@@ -3363,7 +3375,6 @@
             );
         });
 
-
         it('Resolve when no initial value is defined and no transition is defined', function (done) {
             var delayed = false;
             setTimeout(function() {
@@ -3399,8 +3410,43 @@
             );
         });
 
+        it('Resolve when transitioned to the same value', function (done) {
+            var delayed = false;
+            node.setInlineTransition('width', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setInlineStyle('width', '500px', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
 
-        it('Resolve in case of "auto"-property when no transition is defined', function (done) {
+        it('Resolve when transitioned to the same "auto" value', function (done) {
+            var delayed = false;
+            node.setInlineTransition('height', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setInlineStyle('height', 'auto', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Resolve in case of "auto"-->px property when no transition is defined', function (done) {
             var delayed = false;
             setTimeout(function() {
                 delayed = true;
@@ -3417,7 +3463,7 @@
             );
         });
 
-        it('Resolve in case of "auto"-property when there is a transition is defined', function (done) {
+        it('Resolve in case of "auto"-->px property when there is a transition is defined', function (done) {
             var delayed = false;
             node.setInlineTransition('height', 1);
             setTimeout(function() {
@@ -3435,6 +3481,480 @@
             );
         });
 
+        it('Resolve in case of px-->"auto" property when no transition is defined', function (done) {
+            var delayed = false;
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setInlineStyle('width', 'auto', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Resolve in case of px-->"auto" property when there is a transition is defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('width', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setInlineStyle('width', 'auto', null, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Return when no promise when transitioned to the same value', function () {
+            node.setInlineTransition('width', 1);
+            node.setInlineStyle('width', '500px');
+        });
+
+        it('Return when no promise when transitioned to the same "auto" value', function () {
+            node.setInlineTransition('height', 1);
+            node.setInlineStyle('height', 'auto');
+        });
+
+        it('Return when no promise in case of "auto"-->px property when no transition is defined', function () {
+            node.setInlineStyle('height', '100px');
+        });
+
+        it('Return when no promise in case of "auto"-->px property when there is a transition is defined', function () {
+            node.setInlineTransition('height', 1);
+            node.setInlineStyle('height', '100px');
+        });
+
+        it('Return when no promise in case of px-->"auto" property when no transition is defined', function () {
+            node.setInlineStyle('width', 'auto');
+        });
+
+        it('Resolve in case of px-->"auto" property when there is a transition is defined', function () {
+            node.setInlineTransition('width', 1);
+            node.setInlineStyle('width', 'auto');
+        });
+
     });
+
+
+    describe('Promise return values with transform transitions', function () {
+
+        this.timeout(5000);
+
+        // bodyNode looks like this:
+        /*
+        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: -9999px; top: -9999px; height: auto; width: 150px; background-color: #F00;">
+            <div id="sub1" class="green yellow"></div>
+            <div id="sub2" class="green yellow"></div>
+            <div id="sub3">
+                <div id="sub3sub" class="green yellow"></div>
+                extra text
+            </div>
+        </div>
+        */
+
+        // Code to execute before every test.
+        beforeEach(function() {
+            node = window.document.createElement('div');
+            node.id = 'ITSA';
+            node.className = 'red blue';
+            node.setAttribute('style', 'position: absolute; z-index: -1; left: -9999px; top: -9999px; transform: rotate(30deg);');
+                nodeSub1 = window.document.createElement('div');
+                nodeSub1.id = 'sub1';
+                nodeSub1.className = 'green yellow';
+                node.appendChild(nodeSub1);
+
+                nodeSub2 = window.document.createElement('div');
+                nodeSub2.className = 'green yellow';
+                nodeSub2.id = 'sub2';
+                node.appendChild(nodeSub2);
+
+                nodeSub3 = window.document.createElement('div');
+                nodeSub3.id = 'sub3';
+                node.appendChild(nodeSub3);
+
+                    nodeSub3Sub = window.document.createElement('div');
+                    nodeSub3Sub.className = 'green yellow';
+                    nodeSub3Sub.id = 'sub3sub';
+                    nodeSub3.appendChild(nodeSub3Sub);
+
+                    nodeSub3SubText = window.document.createTextNode('extra text');
+                    nodeSub3.appendChild(nodeSub3SubText);
+
+            window.document.body.appendChild(node);
+        });
+
+        // Code to execute after every test.
+        afterEach(function() {
+            window.document.body.removeChild(node);
+        });
+
+        it('check to return a Promise', function () {
+            expect(node.setInlineTransform('translateX', '10px', null, true) instanceof window.Promise).to.be.true;
+            expect(node.setInlineTransform('translateX', '10px') instanceof window.Promise).to.be.false;
+        });
+
+        it('Resolve when no transition is defined', function (done) {
+            var delayed = false;
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setInlineTransform('translateX', '10px', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Resolve when there is a transition is defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('transform', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setInlineTransform('translateX', '10px', null, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+
+        it('Resolve when no initial value is defined and no transition is defined', function (done) {
+            var delayed = false;
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            nodeSub1.setInlineTransform('translateX', '10px', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Resolve when there is no initial value is defined and a transition is defined', function (done) {
+            var delayed = false;
+            nodeSub1.setInlineTransition('transform', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            nodeSub1.setInlineTransform('translateX', '10px', null, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+    });
+
+
+    describe('Promise return values with removal style transitions', function () {
+
+        this.timeout(5000);
+
+        // bodyNode looks like this:
+        /*
+        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: -9999px; top: -9999px; height: auto; width: 150px; background-color: #F00;">
+            <div id="sub1" class="green yellow"></div>
+            <div id="sub2" class="green yellow"></div>
+            <div id="sub3">
+                <div id="sub3sub" class="green yellow"></div>
+                extra text
+            </div>
+        </div>
+        */
+
+        // Code to execute before every test.
+        beforeEach(function() {
+            node = window.document.createElement('div');
+            node.id = 'ITSA';
+            node.className = 'red blue';
+            node.setAttribute('style', 'position: absolute; z-index: -1; left: -9999px; top: -9999px; height: auto; width: 500px; background-color: #F00;');
+                nodeSub1 = window.document.createElement('div');
+                nodeSub1.id = 'sub1';
+                nodeSub1.className = 'green yellow';
+                node.appendChild(nodeSub1);
+
+                nodeSub2 = window.document.createElement('div');
+                nodeSub2.className = 'green yellow';
+                nodeSub2.id = 'sub2';
+                node.appendChild(nodeSub2);
+
+                nodeSub3 = window.document.createElement('div');
+                nodeSub3.id = 'sub3';
+                node.appendChild(nodeSub3);
+
+                    nodeSub3Sub = window.document.createElement('div');
+                    nodeSub3Sub.className = 'green yellow';
+                    nodeSub3Sub.id = 'sub3sub';
+                    nodeSub3.appendChild(nodeSub3Sub);
+
+                    nodeSub3SubText = window.document.createTextNode('extra text');
+                    nodeSub3.appendChild(nodeSub3SubText);
+
+            window.document.body.appendChild(node);
+        });
+
+        // Code to execute after every test.
+        afterEach(function() {
+            window.document.body.removeChild(node);
+        });
+
+        it('check to return a Promise', function () {
+            expect(node.removeInlineStyle('background-color', null, true) instanceof window.Promise).to.be.true;
+            expect(node.removeInlineStyle('background-color', null, true) instanceof window.Node).to.be.false;
+            expect(node.removeInlineStyle('background-color') instanceof window.Promise).to.be.false;
+            expect(node.removeInlineStyle('background-color') instanceof window.Node).to.be.true;
+        });
+
+        it('Resolve in case of "auto"-->"auto" property when there is a transition is defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('height', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeInlineStyle('height', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Return without Promise in case of "auto"-->"auto" property when there is a transition is defined', function () {
+            node.setInlineTransition('height', 1);
+            node.removeInlineStyle('height');
+        });
+
+        it('Resolve when no transition is defined', function (done) {
+            var delayed = false;
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeInlineStyle('background-color', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Resolve when there is a transition is defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('background-color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeInlineStyle('background-color', null, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Return without Promise when there is a transition is defined', function () {
+            node.setInlineTransition('background-color', 1);
+            node.removeInlineStyle('background-color');
+        });
+
+        it('Resolve when no initial value is defined and no transition is defined', function (done) {
+            var delayed = false;
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeInlineStyle('color', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Resolve when there is no initial value is defined and a transition is defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeInlineStyle('color', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Return without Promise when there is no initial value is defined and a transition is defined', function () {
+            node.setInlineTransition('color', 1);
+            node.removeInlineStyle('color');
+        });
+
+        it('Resolve in case of px-->"auto" property when no transition is defined', function (done) {
+            var delayed = false;
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeInlineStyle('width', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Resolve in case of px-->"auto" property when there is a transition is defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('width', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeInlineStyle('width', null, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Return without Promise in case of px-->"auto" property when there is a transition is defined', function () {
+            node.setInlineTransition('width', 1);
+            node.removeInlineStyle('width');
+        });
+
+        it('Resolve in case of "auto"-->px property when no transition is defined', function (done) {
+            var delayed = false,
+                styleNode = node.prepend('<style>#ITSA {height: 200px;}</style>');
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeInlineStyle('height', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    styleNode.remove();
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    styleNode.remove();
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Resolve in case of "auto"-->px property when there is a transition is defined', function (done) {
+            var delayed = false,
+                styleNode = node.prepend('<style>#ITSA {height: 200px;}</style>');
+            node.setInlineTransition('height', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeInlineStyle('height', null, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    styleNode.remove();
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    styleNode.remove();
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Return without Promise in case of "auto"-->px property when there is a transition is defined', function () {
+            var styleNode = node.prepend('<style>#ITSA {height: 200px;}</style>');
+            node.setInlineTransition('height', 1);
+            node.removeInlineStyle('height');
+        });
+
+        it('Resolve in case of "px"-->"px" property when there is a transition is defined', function (done) {
+            var delayed = false,
+                styleNode = node.prepend('<style>#ITSA {width: 500px;}</style>');
+            node.setInlineTransition('width', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeInlineStyle('width', null, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    styleNode.remove();
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    styleNode.remove();
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('Return without Promise in case of "px"-->"px" property when there is a transition is defined', function () {
+            var styleNode = node.prepend('<style>#ITSA {width: 500px;}</style>');
+            node.setInlineTransition('width', 1);
+            node.removeInlineStyle('width');
+        });
+
+    });
+
 
 }(global.window || require('node-win')));

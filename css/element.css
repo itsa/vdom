@@ -10,6 +10,12 @@
 
 .itsa-invisible {
     visibility: hidden !important;
+    position: absolute !important;
+    z-index: -1;
+}
+
+.itsa-invisible * {
+    visibility: hidden !important;
 }
 
 .itsa-transparent {

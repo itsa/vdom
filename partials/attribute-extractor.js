@@ -322,6 +322,14 @@ module.exports = function (window) {
             };
         },
 
+        toTransitionObject: function(value) {
+            return _parseTransition(value);
+        },
+
+        toTransformObject: function(value) {
+            return _parseTransform(value);
+        },
+
         serializeStyles: function(styles) {
             var serialized = '',
                 onlyElementStyle = ((styles.size()===1) && styles.element);
@@ -339,6 +347,7 @@ module.exports = function (window) {
                     });
                     serialized += '}';
                 });
+                (serialized==='{}') && (serialized='');
             }
             return (serialized[0]===' ') ? serialized.substr(1) : serialized;
         }
