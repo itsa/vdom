@@ -31,9 +31,7 @@ module.exports = function (window) {
         return window._ITSAmodules.AttributeExtractor; // AttributeExtractor was already created
     }
 
-    var TRANSFORM_PROPERTY = require('polyfill/extra/transform.js')(window),
-        TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window),
-        END_OF_VALUE = {
+    var END_OF_VALUE = {
             ';': true,
             '}': true
         },
@@ -41,6 +39,8 @@ module.exports = function (window) {
         TRANSFORM_MUTATIONS = {},
         TRANSITION = 'transition',
         TRANSITION_MUTATIONS = {},
+        TRANSFORM_PROPERTY = require('polyfill/extra/transform.js')(window) || TRANSFORM,
+        TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window) || TRANSITION,
         _serializeTransform, _parseTransform, _serializeTransition, _parseTransition, extractor;
 
     TRANSFORM_MUTATIONS[TRANSFORM] = true;
@@ -56,8 +56,11 @@ module.exports = function (window) {
     TRANSITION_MUTATIONS['-o-'+TRANSITION] = true;
 
     _serializeTransform = function(transformValue) {
-        // transformValue is an Object !!
+        // transformValue should an Object !!
         var serialized = '';
+        if (typeof transformValue==='string') {
+            return transformValue;
+        }
         transformValue.each(function(value, key) {
             serialized += ' '+ key + ((key==='none') ? '' : '(' + value + ')');
         });
@@ -65,9 +68,12 @@ module.exports = function (window) {
     };
 
     _serializeTransition = function(transitionValue) {
-        // transitionValue is an Object !!
+        // transitionValue should an Object !!
         var serialized = '',
             timingFunction, delay;
+        if (typeof transitionValue==='string') {
+            return transitionValue;
+        }
         transitionValue.each(function(value, key) {
             timingFunction = value.timingFunction;
             delay = value.delay;
@@ -165,6 +171,11 @@ module.exports = function (window) {
                         }
                     }
                 }
+
+                // in case `key` equals a variant of `transform`, but non-compatible with the current browser -->
+                // redefine it into a browser-compatible version:
+                TRANSFORM_MUTATIONS[item0] && (item0!==TRANSFORM_PROPERTY) && (item0=TRANSFORM_PROPERTY);
+
                 parsed[item0] = transitionItem;
             }
         }
@@ -261,12 +272,11 @@ module.exports = function (window) {
                     if (insideValue) {
                         hasValue = true;
                         if (END_OF_VALUE[character]) {
-                            group[key] = value.trim();
                             value = value.trim();
                             // in case `key` equals a variant of `transform`, but non-compatible with the current browser -->
                             // redefine it into a browser-compatible version:
-                            TRANSFORM_MUTATIONS[key] && TRANSFORM_PROPERTY && (key!==TRANSFORM_PROPERTY) && (key=TRANSFORM_PROPERTY);
-                            TRANSITION_MUTATIONS[key] && TRANSITION_PROPERTY && (key!==TRANSITION_PROPERTY) && (key=TRANSITION_PROPERTY);
+                            TRANSFORM_MUTATIONS[key] && (key!==TRANSFORM_PROPERTY) && (key=TRANSFORM_PROPERTY);
+                            TRANSITION_MUTATIONS[key] && (key!==TRANSITION_PROPERTY) && (key=TRANSITION_PROPERTY);
                             // store the property:
                             group[key] = ((key===TRANSFORM_PROPERTY) ? _parseTransform(value) : ((key===TRANSITION_PROPERTY) ? _parseTransition(value) : value));
                             key = '';
@@ -310,8 +320,8 @@ module.exports = function (window) {
                     value = value.trim();
                     // in case `key` equals a variant of `transform`, but non-compatible with the current browser -->
                     // redefine it into a browser-compatible version:
-                    TRANSFORM_MUTATIONS[key] && TRANSFORM_PROPERTY && (key!==TRANSFORM_PROPERTY) && (key=TRANSFORM_PROPERTY);
-                    TRANSITION_MUTATIONS[key] && TRANSITION_PROPERTY && (key!==TRANSITION_PROPERTY) && (key=TRANSITION_PROPERTY);
+                    TRANSFORM_MUTATIONS[key] && (key!==TRANSFORM_PROPERTY) && (key=TRANSFORM_PROPERTY);
+                    TRANSITION_MUTATIONS[key] && (key!==TRANSITION_PROPERTY) && (key=TRANSITION_PROPERTY);
                     // store the property:
                     group[key] = ((key===TRANSFORM_PROPERTY) ? _parseTransform(value) : ((key===TRANSITION_PROPERTY) ? _parseTransition(value) : value));
                 }

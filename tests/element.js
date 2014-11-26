@@ -1,4 +1,4 @@
-/*global describe, it, beforeEach, afterEach */
+/*global describe, it, before, after, beforeEach, afterEach */
 /*jshint unused:false */
 (function (window) {
 
@@ -15,8 +15,12 @@
         should = chai.should(),
         NS = require('../partials/vdom-ns.js')(window),
         nodeids = NS.nodeids,
+        TRANSFORM_PROPERTY = require('polyfill/extra/transform.js')(window),
+        VENDOR_TRANSFORM_PROPERTY = TRANSFORM_PROPERTY || 'transform',
+        TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window),
+        VENDOR_TRANSITION_PROPERTY = TRANSITION_PROPERTY || 'transition',
         async = require('utils/lib/timers.js').async,
-        node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub, nodeSub3SubText, container, containerSub1, containerSub2, containerSub3;
+        node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub, nodeSub3SubText, container, containerSub1, containerSub2, containerSub3, cssnode;
 
     chai.use(require('chai-as-promised'));
 
@@ -809,7 +813,7 @@
         });
 /*
         it('getTransform', function () {
-            node.prepend('<style type="text/css">#ITSA div {transform: skewX(30deg);} #ITSA div:before {transform: skewY(100deg);}</style>');
+            node.prepend('<style type="text/css">#ITSA div {'+VENDOR_TRANSFORM_PROPERTY+': skewX(30deg);} #ITSA div:before {'+VENDOR_TRANSFORM_PROPERTY+': skewY(100deg);}</style>');
 
             expect(nodeSub1.getTransform('translateX')===undefined).to.be.true;
             expect(nodeSub1.getTransform('skewX')).to.be.eql('30deg');
@@ -841,35 +845,35 @@
         });
 */
         it('getTransition', function () {
-            node.prepend('<style type="text/css">#ITSA div {color: #F00; transition: opacity 2.2s ease-out 3s;} #ITSA div:before {transition: top 2.3s;}</style>');
+            node.prepend('<style type="text/css">#ITSA div {color: #F00; '+VENDOR_TRANSITION_PROPERTY+': opacity 2.2s ease-out 3s;} #ITSA div:before {'+VENDOR_TRANSITION_PROPERTY+': top 2.3s;}</style>');
 
             expect(nodeSub1.getTransition('width')===undefined).to.be.true;
-            expect(nodeSub1.getTransition('opacity')).to.be.eql({duration: 2.2, timingFunction: 'cubic-bezier(0, 0, 0.58, 1)', delay: 3});
-            expect(nodeSub1.getTransition('top', ':before')).to.be.eql({duration: 2.3, timingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)', delay: 0});
+            expect(nodeSub1.getTransition('opacity').duration).to.be.eql(2.2);
+            expect(nodeSub1.getTransition('top', ':before').duration).to.be.eql(2.3);
             expect(nodeSub1.getTransition('opacity', ':before')===undefined).to.be.true;
             expect(nodeSub1.getTransition('top')===undefined).to.be.true;
 
             nodeSub1.setAttr('style', 'transition: width 1s lineair 2s, height 3s; color: #AAA;');
-            expect(nodeSub1.getTransition('width')).to.be.eql({duration: 1, timingFunction: 'lineair', delay: 2});
-            expect(nodeSub1.getTransition('height')).to.be.eql({duration: 3, timingFunction: 'ease', delay: 0});
-            expect(nodeSub1.getTransition('top', ':before')).to.be.eql({duration: 2.3, timingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)', delay: 0});
+            expect(nodeSub1.getTransition('width').duration).to.be.eql(1);
+            expect(nodeSub1.getTransition('height').duration).to.be.eql(3);
+            expect(nodeSub1.getTransition('top', ':before').duration).to.be.eql(2.3);
             expect(nodeSub1.getTransition('opacity', ':before')===undefined).to.be.true;
         });
 
         it('getTransition with "all"', function () {
-            node.prepend('<style type="text/css">#ITSA div {color: #F00; transition: all 2.2s ease-out 3s;} #ITSA div:before {transition: all 2.3s;}</style>');
+            node.prepend('<style type="text/css">#ITSA div {color: #F00; '+VENDOR_TRANSITION_PROPERTY+': all 2.2s ease-out 3s;} #ITSA div:before {'+VENDOR_TRANSITION_PROPERTY+': all 2.3s;}</style>');
 
-            expect(nodeSub1.getTransition('width')).to.be.eql({duration: 2.2, timingFunction: 'cubic-bezier(0, 0, 0.58, 1)', delay: 3});
-            expect(nodeSub1.getTransition('opacity')).to.be.eql({duration: 2.2, timingFunction: 'cubic-bezier(0, 0, 0.58, 1)', delay: 3});
-            expect(nodeSub1.getTransition('top', ':before')).to.be.eql({duration: 2.3, timingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)', delay: 0});
-            expect(nodeSub1.getTransition('opacity', ':before')).to.be.eql({duration: 2.3, timingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)', delay: 0});
-            expect(nodeSub1.getTransition('top')).to.be.eql({duration: 2.2, timingFunction: 'cubic-bezier(0, 0, 0.58, 1)', delay: 3});
+            expect(nodeSub1.getTransition('width').duration).to.be.eql(2.2);
+            expect(nodeSub1.getTransition('opacity').duration).to.be.eql(2.2);
+            expect(nodeSub1.getTransition('top', ':before').duration).to.be.eql(2.3);
+            expect(nodeSub1.getTransition('opacity', ':before').duration).to.be.eql(2.3);
+            expect(nodeSub1.getTransition('top').duration).to.be.eql(2.2);
 
             nodeSub1.setAttr('style', 'transition: width 1s lineair 2s, height 3s; color: #AAA;');
-            expect(nodeSub1.getTransition('width')).to.be.eql({duration: 1, timingFunction: 'lineair', delay: 2});
-            expect(nodeSub1.getTransition('height')).to.be.eql({duration: 3, timingFunction: 'ease', delay: 0});
-            expect(nodeSub1.getTransition('top', ':before')).to.be.eql({duration: 2.3, timingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)', delay: 0});
-            expect(nodeSub1.getTransition('opacity', ':before')).to.be.eql({duration: 2.3, timingFunction: 'cubic-bezier(0.25, 0.1, 0.25, 1)', delay: 0});
+            expect(nodeSub1.getTransition('width').duration).to.be.eql(1);
+            expect(nodeSub1.getTransition('height').duration).to.be.eql(3);
+            expect(nodeSub1.getTransition('top', ':before').duration).to.be.eql(2.3);
+            expect(nodeSub1.getTransition('opacity', ':before').duration).to.be.eql(2.3);
         });
 
         it('getValue', function () {
@@ -1135,7 +1139,7 @@
         });
 
         it('hasTransition', function () {
-            node.prepend('<style type="text/css">#ITSA div {color: #F00; transition: opacity 2.2s ease-out 3s;} #ITSA div:before {transition: top 2.3s;}</style>');
+            node.prepend('<style type="text/css">#ITSA div {color: #F00; '+VENDOR_TRANSITION_PROPERTY+': opacity 2.2s ease-out 3s;} #ITSA div:before {'+VENDOR_TRANSITION_PROPERTY+': top 2.3s;}</style>');
 
             expect(nodeSub1.hasTransition('width')).to.be.false;
             expect(nodeSub1.hasTransition('opacity')).to.be.true;
@@ -1152,7 +1156,7 @@
         });
 
         it('hasTransition with "all"', function () {
-            node.prepend('<style type="text/css">#ITSA div {color: #F00; transition: all 2.2s ease-out 3s;} #ITSA div:before {transition: all 2.3s;}</style>');
+            node.prepend('<style type="text/css">#ITSA div {color: #F00; '+VENDOR_TRANSITION_PROPERTY+': all 2.2s ease-out 3s;} #ITSA div:before {'+VENDOR_TRANSITION_PROPERTY+': all 2.3s;}</style>');
 
             expect(nodeSub1.hasTransition('width')).to.be.true;
             expect(nodeSub1.hasTransition('opacity')).to.be.true;
@@ -1641,7 +1645,7 @@
         it('removeInlineTransform', function () {
             nodeSub1.setAttr('style', 'transform: translateX(12px) translateY(15px);');
             nodeSub1.removeInlineTransform('translateX');
-            expect(nodeSub1.getAttr('style')).to.be.eql('transform: translateY(15px);');
+            expect(nodeSub1.getAttr('style')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateY(15px);');
             nodeSub1.removeInlineTransform('translateY');
             expect(nodeSub1.getAttr('style')===null).to.be.true;
 
@@ -1651,21 +1655,21 @@
 
             nodeSub1.setAttr('style', 'color:#AAA; transform: translateX(12px);');
             nodeSub1.removeInlineStyle('color');
-            expect(nodeSub1.getAttr('style')).to.be.eql('transform: translateX(12px);');
+            expect(nodeSub1.getAttr('style')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateX(12px);');
 
             nodeSub1.setAttr('style', '{color: #AAA; transform: translateX(12px) translateY(15px);} :before {color: #BBB; transform: skewX(45deg) translateY(15px);}');
             nodeSub1.removeInlineTransform('translateY');
             nodeSub1.removeInlineTransform('skewX', ':before');
-            expect(nodeSub1.getAttr('style').replace('color: #AAA; ', '').replace(' color: #AAA;', '').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{transform: translateX(12px); } :before {transform: translateY(15px); }');
-            expect(nodeSub1.getAttr('style').replace('transform: translateX(12px); ', '').replace(' transform: translateX(12px);', '').replace('transform: translateY(15px); ', '').replace(' transform: translateY(15px);', '')).to.be.eql('{color: #AAA; } :before {color: #BBB; }');
+            expect(nodeSub1.getAttr('style').replace('color: #AAA; ', '').replace(' color: #AAA;', '').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(12px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': translateY(15px); }');
+            expect(nodeSub1.getAttr('style').replace(VENDOR_TRANSFORM_PROPERTY+': translateX(12px); ', '').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateX(12px);', '').replace(VENDOR_TRANSFORM_PROPERTY+': translateY(15px); ', '').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateY(15px);', '')).to.be.eql('{color: #AAA; } :before {color: #BBB; }');
             nodeSub1.removeInlineStyle('color');
-            expect(nodeSub1.getAttr('style').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{transform: translateX(12px); } :before {transform: translateY(15px); }');
-            expect(nodeSub1.getAttr('style').replace('transform: translateX(12px); ', '').replace(' transform: translateX(12px);', '').replace('transform: translateY(15px); ', '').replace(' transform: translateY(15px);', '')).to.be.eql('{} :before {color: #BBB; }');
+            expect(nodeSub1.getAttr('style').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(12px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': translateY(15px); }');
+            expect(nodeSub1.getAttr('style').replace(VENDOR_TRANSFORM_PROPERTY+': translateX(12px); ', '').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateX(12px);', '').replace(VENDOR_TRANSFORM_PROPERTY+': translateY(15px); ', '').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateY(15px);', '')).to.be.eql('{} :before {color: #BBB; }');
             nodeSub1.removeInlineStyle('color', ':before');
-            expect(nodeSub1.getAttr('style')).to.be.eql('{transform: translateX(12px); } :before {transform: translateY(15px); }');
+            expect(nodeSub1.getAttr('style')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(12px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': translateY(15px); }');
 
             nodeSub1.removeInlineTransform('translateX');
-            expect(nodeSub1.getAttr('style')).to.be.eql('{} :before {transform: translateY(15px); }');
+            expect(nodeSub1.getAttr('style')).to.be.eql('{} :before {'+VENDOR_TRANSFORM_PROPERTY+': translateY(15px); }');
 
             nodeSub1.removeInlineTransform('translateY', ':before');
             expect(nodeSub1.getAttr('style')===null).to.be.true;
@@ -1696,10 +1700,10 @@
         it('removeInlineTransition', function () {
             nodeSub1.setAttr('style', 'transition: width 2s ease-in 4s, height 6s;');
             nodeSub1.removeInlineTransition('width');
-            expect(nodeSub1.getAttr('style')).to.be.eql('transition: height 6s;');
+            expect(nodeSub1.getAttr('style')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': height 6s;');
             nodeSub1.setAttr('style', 'transition: width 2s ease-in 4s, height 6s;');
             nodeSub1.removeInlineTransition('height');
-            expect(nodeSub1.getAttr('style')).to.be.eql('transition: width 2s ease-in 4s;');
+            expect(nodeSub1.getAttr('style')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s;');
             nodeSub1.removeInlineTransition('width');
             expect(nodeSub1.getAttr('style')===null).to.be.true;
             nodeSub1.setAttr('style', 'color:#AAA; transition: width 2s ease-in 4s;');
@@ -1708,21 +1712,21 @@
 
             nodeSub1.setAttr('style', 'color:#AAA; transition: width 2s ease-in 4s;');
             nodeSub1.removeInlineStyle('color');
-            expect(nodeSub1.getAttr('style')).to.be.eql('transition: width 2s ease-in 4s;');
+            expect(nodeSub1.getAttr('style')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s;');
 
             nodeSub1.setAttr('style', '{color:#AAA; transition: width 2s ease-in 4s;} :before {color: #BBB; transition: width 12s ease-in 14s, opacity 25s;}');
 
             nodeSub1.removeInlineTransition('opacity', ':before');
-            expect(nodeSub1.getAttr('style').replace('color: #AAA; ', '').replace(' color: #AAA;', '').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{transition: width 2s ease-in 4s; } :before {transition: width 12s ease-in 14s; }');
-            expect(nodeSub1.getAttr('style').replace('transition: width 2s ease-in 4s; ', '').replace(' transition: width 2s ease-in 4s;', '').replace('transition: width 12s ease-in 14s; ', '').replace(' transition: width 12s ease-in 14s;', '')).to.be.eql('{color: #AAA; } :before {color: #BBB; }');
+            expect(nodeSub1.getAttr('style').replace('color: #AAA; ', '').replace(' color: #AAA;', '').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; }');
+            expect(nodeSub1.getAttr('style').replace(VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; ', '').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s;', '').replace(VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; ', '').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s;', '')).to.be.eql('{color: #AAA; } :before {color: #BBB; }');
             nodeSub1.removeInlineStyle('color');
-            expect(nodeSub1.getAttr('style').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{transition: width 2s ease-in 4s; } :before {transition: width 12s ease-in 14s; }');
-            expect(nodeSub1.getAttr('style').replace('transition: width 2s ease-in 4s; ', '').replace(' transition: width 2s ease-in 4s;', '').replace('transition: width 12s ease-in 14s; ', '').replace(' transition: width 12s ease-in 14s;', '')).to.be.eql('{} :before {color: #BBB; }');
+            expect(nodeSub1.getAttr('style').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; }');
+            expect(nodeSub1.getAttr('style').replace(VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; ', '').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s;', '').replace(VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; ', '').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s;', '')).to.be.eql('{} :before {color: #BBB; }');
             nodeSub1.removeInlineStyle('color', ':before');
-            expect(nodeSub1.getAttr('style')).to.be.eql('{transition: width 2s ease-in 4s; } :before {transition: width 12s ease-in 14s; }');
+            expect(nodeSub1.getAttr('style')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; }');
 
             nodeSub1.removeInlineTransition('width');
-            expect(nodeSub1.getAttr('style')).to.be.eql('{} :before {transition: width 12s ease-in 14s; }');
+            expect(nodeSub1.getAttr('style')).to.be.eql('{} :before {'+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; }');
 
             nodeSub1.removeInlineTransition('width', ':before');
             expect(nodeSub1.getAttr('style')===null).to.be.true;
@@ -1787,13 +1791,13 @@
 
             cont2.setAttr('style', 'position:absolute; transform: translateX(12px) translateY(15px); width: 150px;');
             window.document.body.appendChild(cont2);
-            expect(cont2.getAttr('style')).to.be.eql('position: absolute; transform: translateX(12px) translateY(15px); width: 150px;');
-            expect(cont2.outerHTML).to.be.eql('<div style="position: absolute; transform: translateX(12px) translateY(15px); width: 150px;"></div>');
+            expect(cont2.getAttr('style')).to.be.eql('position: absolute; '+VENDOR_TRANSFORM_PROPERTY+': translateX(12px) translateY(15px); width: 150px;');
+            expect(cont2.outerHTML).to.be.eql('<div style="position: absolute; '+VENDOR_TRANSFORM_PROPERTY+': translateX(12px) translateY(15px); width: 150px;"></div>');
 
             cont3.setAttr('style', 'transform: translateX(12px) translateY(15px);');
             window.document.body.appendChild(cont3);
-            expect(cont3.getAttr('style')).to.be.eql('transform: translateX(12px) translateY(15px);');
-            expect(cont3.outerHTML).to.be.eql('<div style="transform: translateX(12px) translateY(15px);"></div>');
+            expect(cont3.getAttr('style')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateX(12px) translateY(15px);');
+            expect(cont3.outerHTML).to.be.eql('<div style="'+VENDOR_TRANSFORM_PROPERTY+': translateX(12px) translateY(15px);"></div>');
 
             window.document.body.removeChild(cont);
             window.document.body.removeChild(cont2);
@@ -2002,33 +2006,33 @@
             var styles, elementStyles, beforeStyles;
 
             nodeSub1.setInlineTransform('translateX', '10px');
-            expect(nodeSub1.getAttr('style')).to.be.eql('transform: translateX(10px);');
+            expect(nodeSub1.getAttr('style')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateX(10px);');
 
             nodeSub1.setInlineTransform('translateY', '25px');
-            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '')).to.be.eql('transform: translateY(25px);');
-            expect(nodeSub1.getAttr('style').replace(' translateY(25px)', '')).to.be.eql('transform: translateX(10px);');
+            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateY(25px);');
+            expect(nodeSub1.getAttr('style').replace(' translateY(25px)', '')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateX(10px);');
 
             nodeSub1.setInlineTransform('skewX', '30deg');
-            expect(nodeSub1.getAttr('style').replace(' skewX(30deg)', '').replace(' translateY(25px)', '')).to.be.eql('transform: translateX(10px);');
-            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '')).to.be.eql('transform: skewX(30deg);');
-            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' skewX(30deg)', '')).to.be.eql('transform: translateY(25px);');
+            expect(nodeSub1.getAttr('style').replace(' skewX(30deg)', '').replace(' translateY(25px)', '')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateX(10px);');
+            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': skewX(30deg);');
+            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' skewX(30deg)', '')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateY(25px);');
 
             nodeSub1.setInlineTransform('none');
-            expect(nodeSub1.getAttr('style')).to.be.eql('transform: none;');
+            expect(nodeSub1.getAttr('style')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': none;');
 
             nodeSub1.setInlineTransform('translateX', '10px');
-            expect(nodeSub1.getAttr('style')).to.be.eql('transform: translateX(10px);');
+            expect(nodeSub1.getAttr('style')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateX(10px);');
 
             nodeSub1.setInlineTransform('translateY', '25px');
             nodeSub1.setInlineStyle('color', '#AAA');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('transform: translateX(10px);');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('transform: translateY(25px);');
-            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace('transform:; ', '')).to.be.eql('color: #AAA;');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateX(10px);');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateY(25px);');
+            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace(VENDOR_TRANSFORM_PROPERTY+':; ', '')).to.be.eql('color: #AAA;');
 
             nodeSub1.setInlineTransform('rotateX', '50deg', ':before');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('{transform: translateX(10px); } :before {transform: rotateX(50deg); }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('{transform: translateY(25px); } :before {transform: rotateX(50deg); }');
-            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace('transform:; ', '')).to.be.eql('{color: #AAA; } :before {transform: rotateX(50deg); }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(10px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateY(25px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
+            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace(VENDOR_TRANSFORM_PROPERTY+':; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
         });
 
         it('setInlineTransforms', function () {
@@ -2041,35 +2045,35 @@
             ]);
 
             nodeSub1.setInlineStyle('color', '#AAA');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('{transform: translateX(10px); } :before {transform: rotateX(50deg); }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('{transform: translateY(25px); } :before {transform: rotateX(50deg); }');
-            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace('transform:; ', '')).to.be.eql('{color: #AAA; } :before {transform: rotateX(50deg); }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(10px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateY(25px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
+            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace(VENDOR_TRANSFORM_PROPERTY+':; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
         });
 
         it('setInlineTransition', function () {
             var styles, elementStyles, beforeStyles;
 
             nodeSub1.setInlineTransition('width', 1);
-            expect(nodeSub1.getAttr('style')).to.be.eql('transition: width 1s;');
+            expect(nodeSub1.getAttr('style')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': width 1s;');
 
             nodeSub1.setInlineTransition('height', 2);
-            expect(nodeSub1.getAttr('style').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('transition: height 2s;');
-            expect(nodeSub1.getAttr('style').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('transition: width 1s;');
+            expect(nodeSub1.getAttr('style').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': height 2s;');
+            expect(nodeSub1.getAttr('style').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': width 1s;');
 
             nodeSub1.setInlineStyle('color', '#AAA');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('transition: height 2s;');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('transition: width 1s;');
-            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 2s', '').replace('transition: , ; ', '')).to.be.eql('color: #AAA;');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': height 2s;');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': width 1s;');
+            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 2s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('color: #AAA;');
 
             nodeSub1.setInlineTransition('width', 3, null, null, ':before');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{transition: height 2s; } :before {transition: width 3s; }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('{transition: width 1s; } :before {transition: width 3s; }');
-            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 2s', '').replace('transition: , ; ', '')).to.be.eql('{color: #AAA; } :before {transition: width 3s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': height 2s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 1s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 2s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
 
             nodeSub1.setInlineTransition('height', 8, 'ease-in', 4);
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{transition: height 8s ease-in 4s; } :before {transition: width 3s; }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql('{transition: width 1s; } :before {transition: width 3s; }');
-            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 8s ease-in 4s', '').replace('transition: , ; ', '')).to.be.eql('{color: #AAA; } :before {transition: width 3s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': height 8s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 1s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 8s ease-in 4s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
         });
 
         it('setInlineTransitions', function () {
@@ -2082,9 +2086,9 @@
             ]);
             nodeSub1.setInlineStyle('color', '#AAA');
 
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{transition: height 8s ease-in 4s; } :before {transition: width 3s; }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql('{transition: width 1s; } :before {transition: width 3s; }');
-            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 8s ease-in 4s', '').replace('transition: , ; ', '')).to.be.eql('{color: #AAA; } :before {transition: width 3s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': height 8s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 1s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 8s ease-in 4s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
         });
 
         /*
@@ -4094,6 +4098,431 @@
         it('Return without Promise when there is no initial value is defined and a transition is defined', function () {
             nodeSub1.setInlineTransition('transform', 1);
             expect(nodeSub1.removeInlineTransform('rotate')).to.be.eql(nodeSub1);
+        });
+
+    });
+
+    describe('Classes and Promise return-values', function () {
+
+        this.timeout(3000);
+
+        before(function() {
+            var inlineClass = '.red {background-color: #F00;} .blue {background-color: #00F;} .small {width: 50px;} .wide {width: 750px;}';
+            cssnode = window.document.createElement('style');
+            cssnode.setAttribute('type', 'text/css');
+            cssnode.appendChild(window.document.createTextNode(inlineClass));
+            window.document.body.appendChild(cssnode);
+        });
+
+        after(function() {
+            window.document.body.removeChild(cssnode);
+        });
+
+        // Code to execute before every test.
+        beforeEach(function() {
+            node = window.document.createElement('div');
+            node.setAttribute('style', 'position: absolute; z-index: -1; left: -9999px; top: -9999px;');
+            window.document.body.appendChild(node);
+        });
+
+        // Code to execute after every test.
+        afterEach(function() {
+            window.document.body.removeChild(node);
+        });
+
+        it('check to return a Promise', function () {
+            expect(node.setClass('blue', true) instanceof window.Promise).to.be.true;
+            expect(node.setClass('blue') instanceof window.Promise).to.be.false;
+
+            expect(node.removeClass('blue', true) instanceof window.Promise).to.be.true;
+            expect(node.removeClass('blue') instanceof window.Promise).to.be.false;
+            expect(node.toggleClass('blue', true, true) instanceof window.Promise).to.be.true;
+            expect(node.toggleClass('blue', true) instanceof window.Promise).to.be.false;
+            expect(node.toggleClass('blue', null, true) instanceof window.Promise).to.be.true;
+            expect(node.toggleClass('blue') instanceof window.Promise).to.be.false;
+
+
+            expect(node.replaceClass('blue', 'red', true, true) instanceof window.Promise).to.be.true;
+            expect(node.replaceClass('blue', 'red', true) instanceof window.Promise).to.be.false;
+            expect(node.replaceClass('blue', 'red', true, true) instanceof window.Promise).to.be.true;
+            expect(node.replaceClass('blue', 'red', true) instanceof window.Promise).to.be.false;
+
+            expect(node.replaceClass('blue', 'red', false, true) instanceof window.Promise).to.be.true;
+            expect(node.replaceClass('blue', 'red', false) instanceof window.Promise).to.be.false;
+            expect(node.replaceClass('blue', 'red', false, true) instanceof window.Promise).to.be.true;
+            expect(node.replaceClass('blue', 'red', false) instanceof window.Promise).to.be.false;
+
+        });
+
+        it('setClass Transition delay and resolved promise from defined --> defined', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('background-color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass Transition delay and resolved promise from undefined --> defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('background-color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass general Transition delay and resolved promise from defined --> defined', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('all', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass general Transition delay and resolved promise from undefined --> defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('all', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass otherTransition delay and resolved promise from defined --> defined', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass other Transition delay and resolved promise from undefined --> defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass without Transition delay and resolved promise from defined --> defined', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass without Transition delay and resolved promise from undefined --> defined', function (done) {
+            var delayed = false;
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('removeClass with Transition all', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('all', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeClass('red', true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('removeClass with Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('background-color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeClass('red', true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('removeClass with wrong Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeClass('red', true).then(
+                function() {
+                    expect(delayed).to.be.dalse;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('removeClass without Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeClass('red', true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('replaceClass with Transition all', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('all', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.replaceClass('red', 'blue', false, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('replaceClass with Transition property', function (done) {
+            var delayed = false;
+            node.setClass(['red', 'wide']);
+            node.setInlineTransition('background-color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.replaceClass('red', 'blue', false, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('replaceClass with wrong Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.replaceClass('red', 'blue', false, true).then(
+                function() {
+                    expect(delayed).to.be.dalse;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('replaceClass without Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.replaceClass('red', 'blue', false, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('toggleClass with Transition all', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('all', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.toggleClass('red', false, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('toggleClass with Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('background-color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.toggleClass('red', false, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('toggleClass with wrong Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.toggleClass('red', false, true).then(
+                function() {
+                    expect(delayed).to.be.dalse;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('toggleClass without Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.toggleClass('red', false, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
         });
 
     });
