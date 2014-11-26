@@ -2175,7 +2175,7 @@ module.exports = function (window) {
                 vnode = instance.vnode,
                 styles = vnode.styles,
                 groupStyle, transformStyles, needSync, i, item, len, hasTransitionedStyle, promise,
-                pseudo, clonedStyles, newStyles, group;
+                pseudo, clonedStyles, newStyles, group, value;
 
             if (styles) {
                 Array.isArray(transformProperties) || (transformProperties=[transformProperties]);
@@ -2199,7 +2199,8 @@ module.exports = function (window) {
                                 // first, clone the style, if it hasn't been done yet:
                                 hasTransitionedStyle || (clonedStyles=styles.deepClone());
                                 // backup the actual style:
-                                clonedStyles[group].transform = instance.getStyle('transform', pseudo);
+                                value = instance.getStyle('transform', pseudo);
+                                value ? (clonedStyles[group].transform=value) : (delete clonedStyles[group].transform);
                                 hasTransitionedStyle = true;
                             }
                             else if (clonedStyles) {
