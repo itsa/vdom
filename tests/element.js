@@ -20,6 +20,7 @@
         TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window),
         VENDOR_TRANSITION_PROPERTY = TRANSITION_PROPERTY || 'transition',
         async = require('utils/lib/timers.js').async,
+        SUPPORT_INLINE_PSEUDO_STYLES = window.document._supportInlinePseudoStyles,
         node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub, nodeSub3SubText, container, containerSub1, containerSub2, containerSub3, cssnode;
 
     chai.use(require('chai-as-promised'));
@@ -71,6 +72,7 @@
     });
 
     describe('Methods', function () {
+        this.timeout(5000);
 
         // bodyNode looks like this:
         /*
@@ -678,9 +680,16 @@
             expect(node2.getInlineStyle('font-weight')===undefined).to.be.true;
             expect(node2.getInlineStyle('fontWeight')===undefined).to.be.true;
 
-            expect(node2.getInlineStyle('color', ':before')).to.be.eql('#00F');
-            expect(node2.getInlineStyle('font-weight', ':before')).to.be.eql('bold');
-            expect(node2.getInlineStyle('fontWeight', ':before')).to.be.eql('bold');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(node2.getInlineStyle('color', ':before')).to.be.eql('#00F');
+                expect(node2.getInlineStyle('font-weight', ':before')).to.be.eql('bold');
+                expect(node2.getInlineStyle('fontWeight', ':before')).to.be.eql('bold');
+            }
+            else {
+                expect(node2.getInlineStyle('color', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('font-weight', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('fontWeight', ':before')===undefined).to.be.true;
+            }
 
             node3 = window.document.createElement('div');
             node3.setAttribute('style', ':before {color: #00F; font-weight: bold;}');
@@ -690,9 +699,16 @@
             expect(node3.getInlineStyle('font-weight')===undefined).to.be.true;
             expect(node3.getInlineStyle('fontWeight')===undefined).to.be.true;
 
-            expect(node3.getInlineStyle('color', ':before')).to.be.eql('#00F');
-            expect(node3.getInlineStyle('font-weight', ':before')).to.be.eql('bold');
-            expect(node3.getInlineStyle('fontWeight', ':before')).to.be.eql('bold');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(node3.getInlineStyle('color', ':before')).to.be.eql('#00F');
+                expect(node3.getInlineStyle('font-weight', ':before')).to.be.eql('bold');
+                expect(node3.getInlineStyle('fontWeight', ':before')).to.be.eql('bold');
+            }
+            else {
+                expect(node3.getInlineStyle('color', ':before')===undefined).to.be.true;
+                expect(node3.getInlineStyle('font-weight', ':before')===undefined).to.be.true;
+                expect(node3.getInlineStyle('fontWeight', ':before')===undefined).to.be.true;
+            }
 
             window.document.body.removeChild(node2);
             window.document.body.removeChild(node3);
@@ -721,9 +737,16 @@
             expect(nodeSub1.getInlineTransform('rotateX')).to.be.eql('50deg');
             expect(nodeSub1.getInlineTransform('translateX')).to.be.eql('10px');
             expect(nodeSub1.getInlineStyle('color')).to.be.eql('#AAA');
-            expect(nodeSub1.getInlineTransform('rotateX', ':before')).to.be.eql('150deg');
-            expect(nodeSub1.getInlineTransform('translateX', ':before')).to.be.eql('110px');
-            expect(nodeSub1.getInlineStyle('background-color', ':before')).to.be.eql('#DDD');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(nodeSub1.getInlineTransform('rotateX', ':before')).to.be.eql('150deg');
+                expect(nodeSub1.getInlineTransform('translateX', ':before')).to.be.eql('110px');
+                expect(nodeSub1.getInlineStyle('background-color', ':before')).to.be.eql('#DDD');
+            }
+            else {
+                expect(nodeSub1.getInlineTransform('rotateX', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineTransform('translateX', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineStyle('background-color', ':before')===undefined).to.be.true;
+            }
         });
 
         it('getInlineTransition', function () {
@@ -749,9 +772,16 @@
             expect(nodeSub1.getInlineTransition('width')).to.be.eql({duration: 1, timingFunction: 'lineair', delay: 2});
             expect(nodeSub1.getInlineTransition('height')).to.be.eql({duration: 3});
             expect(nodeSub1.getInlineStyle('background-color')).to.be.eql('#DDD');
-            expect(nodeSub1.getInlineTransition('width', ':before')).to.be.eql({duration: 4, timingFunction: 'ease-in', delay: 6});
-            expect(nodeSub1.getInlineTransition('height', ':before')).to.be.eql({duration: 10});
-            expect(nodeSub1.getInlineStyle('color', ':before')).to.be.eql('#FF0');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(nodeSub1.getInlineTransition('width', ':before')).to.be.eql({duration: 4, timingFunction: 'ease-in', delay: 6});
+                expect(nodeSub1.getInlineTransition('height', ':before')).to.be.eql({duration: 10});
+                expect(nodeSub1.getInlineStyle('color', ':before')).to.be.eql('#FF0');
+            }
+            else {
+                expect(nodeSub1.getInlineTransition('width', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineTransition('height', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineStyle('color', ':before')===undefined).to.be.true;
+            }
         });
 
         it('getOuterHTML', function () {
@@ -1084,11 +1114,20 @@
             expect(nodeSub1.hasInlineTransform('skewX')).to.be.false;
             expect(nodeSub1.hasInlineStyle('font-size')).to.be.false;
 
-            expect(nodeSub1.hasInlineTransform('rotateX', ':before')).to.be.true;
-            expect(nodeSub1.hasInlineTransform('translateX', ':before')).to.be.true;
-            expect(nodeSub1.hasInlineStyle('background-color', ':before')).to.be.true;
-            expect(nodeSub1.hasInlineTransform('skewX', ':before')).to.be.false;
-            expect(nodeSub1.hasInlineStyle('font-size', ':before')).to.be.false;
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(nodeSub1.hasInlineTransform('rotateX', ':before')).to.be.true;
+                expect(nodeSub1.hasInlineTransform('translateX', ':before')).to.be.true;
+                expect(nodeSub1.hasInlineStyle('background-color', ':before')).to.be.true;
+                expect(nodeSub1.hasInlineTransform('skewX', ':before')).to.be.false;
+                expect(nodeSub1.hasInlineStyle('font-size', ':before')).to.be.false;
+            }
+            else {
+                expect(nodeSub1.hasInlineTransform('rotateX', ':before')).to.be.false;
+                expect(nodeSub1.hasInlineTransform('translateX', ':before')).to.be.false;
+                expect(nodeSub1.hasInlineStyle('background-color', ':before')).to.be.false;
+                expect(nodeSub1.hasInlineTransform('skewX', ':before')).to.be.false;
+                expect(nodeSub1.hasInlineStyle('font-size', ':before')).to.be.false;
+            }
         });
 
         it('hasInlineTransition', function () {
@@ -1129,13 +1168,24 @@
             expect(nodeSub1.hasInlineTransition('opacity')).to.be.false;
             expect(nodeSub1.hasInlineStyle('font-size')).to.be.false;
 
-            expect(nodeSub1.hasInlineTransition('width', ':before')).to.be.true;
-            expect(nodeSub1.hasInlineTransition('margin-top', ':before')).to.be.true;
-            expect(nodeSub1.hasInlineTransition('marginTop', ':before')).to.be.true;
-            expect(nodeSub1.hasInlineStyle('color', ':before')).to.be.false;
-            expect(nodeSub1.hasInlineStyle('background-color', ':before')).to.be.true;
-            expect(nodeSub1.hasInlineTransition('opacity', ':before')).to.be.false;
-            expect(nodeSub1.hasInlineStyle('font-size', ':before')).to.be.false;
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(nodeSub1.hasInlineTransition('width', ':before')).to.be.true;
+                expect(nodeSub1.hasInlineTransition('margin-top', ':before')).to.be.true;
+                expect(nodeSub1.hasInlineTransition('marginTop', ':before')).to.be.true;
+                expect(nodeSub1.hasInlineStyle('color', ':before')).to.be.false;
+                expect(nodeSub1.hasInlineStyle('background-color', ':before')).to.be.true;
+                expect(nodeSub1.hasInlineTransition('opacity', ':before')).to.be.false;
+                expect(nodeSub1.hasInlineStyle('font-size', ':before')).to.be.false;
+            }
+            else {
+                expect(nodeSub1.hasInlineTransition('width', ':before')).to.be.false;
+                expect(nodeSub1.hasInlineTransition('margin-top', ':before')).to.be.false;
+                expect(nodeSub1.hasInlineTransition('marginTop', ':before')).to.be.false;
+                expect(nodeSub1.hasInlineStyle('color', ':before')).to.be.false;
+                expect(nodeSub1.hasInlineStyle('background-color', ':before')).to.be.false;
+                expect(nodeSub1.hasInlineTransition('opacity', ':before')).to.be.false;
+                expect(nodeSub1.hasInlineStyle('font-size', ':before')).to.be.false;
+            }
         });
 
         it('hasTransition', function () {
@@ -1549,13 +1599,22 @@
             expect(node2.getInlineStyle('top')).to.be.eql('30px');
             expect(node2.getInlineStyle('height')).to.be.eql('75px');
             expect(node2.getInlineStyle('width')).to.be.eql('150px');
-
-            expect(node2.getInlineStyle('color', ':before')).to.be.eql('#00F');
-            expect(node2.getInlineStyle('font-weight', ':before')).to.be.eql('bold');
-            expect(node2.getInlineStyle('fontWeight', ':before')).to.be.eql('bold');
-            expect(node2.getInlineStyle('font-style', ':before')).to.be.eql('italic');
-            expect(node2.getInlineStyle('fontStyle', ':before')).to.be.eql('italic');
-            expect(node2.getInlineStyle('top', ':before')===undefined).to.be.true;
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(node2.getInlineStyle('color', ':before')).to.be.eql('#00F');
+                expect(node2.getInlineStyle('font-weight', ':before')).to.be.eql('bold');
+                expect(node2.getInlineStyle('fontWeight', ':before')).to.be.eql('bold');
+                expect(node2.getInlineStyle('font-style', ':before')).to.be.eql('italic');
+                expect(node2.getInlineStyle('fontStyle', ':before')).to.be.eql('italic');
+                expect(node2.getInlineStyle('top', ':before')===undefined).to.be.true;
+            }
+            else {
+                expect(node2.getInlineStyle('color', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('font-weight', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('fontWeight', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('font-style', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('fontStyle', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('top', ':before')===undefined).to.be.true;
+            }
 
             node2.removeInlineStyle('top');
             node2.removeInlineStyle('dummytop'); // removal unexisting property
@@ -1573,18 +1632,32 @@
             expect(node2.getInlineStyle('height')).to.be.eql('75px');
             expect(node2.getInlineStyle('width')).to.be.eql('150px');
 
-            expect(node2.getInlineStyle('color', ':before')).to.be.eql('#00F');
-            expect(node2.getInlineStyle('font-weight', ':before')===undefined).to.be.true;
-            expect(node2.getInlineStyle('fontWeight', ':before')===undefined).to.be.true;
-            expect(node2.getInlineStyle('font-style', ':before')===undefined).to.be.true;
-            expect(node2.getInlineStyle('fontStyle', ':before')===undefined).to.be.true;
-            expect(node2.getInlineStyle('top', ':before')===undefined).to.be.true;
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(node2.getInlineStyle('color', ':before')).to.be.eql('#00F');
+                expect(node2.getInlineStyle('font-weight', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('fontWeight', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('font-style', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('fontStyle', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('top', ':before')===undefined).to.be.true;
+            }
+            else {
+                expect(node2.getInlineStyle('color', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('font-weight', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('fontWeight', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('font-style', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('fontStyle', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('top', ':before')===undefined).to.be.true;
+            }
 
             styles = node2._getAttribute('style');
-            styles = styles.substr(1, styles.length-4).split('; } :before {');
-
-            elementStyles = styles[0].split('; ');
-            beforeStyles = styles[1].split('; ');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                styles = styles.substr(1, styles.length-4).split('; } :before {');
+                elementStyles = styles[0].split('; ');
+            }
+            else {
+                styles = styles.substr(0, styles.length-1);
+                elementStyles = styles.split('; ');
+            }
             expect(elementStyles.length).to.be.eql(6);
             expect(elementStyles.indexOf('color: #F00')!==-1).to.be.true;
             expect(elementStyles.indexOf('position: absolute')!==-1).to.be.true;
@@ -1595,16 +1668,18 @@
             expect(elementStyles.indexOf('height: 75px')!==-1).to.be.true;
             expect(elementStyles.indexOf('width: 150px')!==-1).to.be.true;
 
-            expect(beforeStyles.length).to.be.eql(1);
-            expect(beforeStyles.indexOf('color: #00F')!==-1).to.be.true;
-            expect(beforeStyles.indexOf('font-weight: bold')!==-1).to.be.false;
-            expect(beforeStyles.indexOf('font-style: italic')!==-1).to.be.false;
-            expect(beforeStyles.indexOf('dummy')!==-1).to.be.false;
-
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                beforeStyles = styles[1].split('; ');
+                expect(beforeStyles.length).to.be.eql(1);
+                expect(beforeStyles.indexOf('color: #00F')!==-1).to.be.true;
+                expect(beforeStyles.indexOf('font-weight: bold')!==-1).to.be.false;
+                expect(beforeStyles.indexOf('font-style: italic')!==-1).to.be.false;
+                expect(beforeStyles.indexOf('dummy')!==-1).to.be.false;
+            }
             window.document.body.removeChild(node2);
         });
 
-        it('removeInlineStyles', function () {
+        it('removeInlineStyles', function (done) {
             var node2 = window.document.createElement('div');
             node2.setAttribute('style', '{color: #F00; top: 30px; height: 75px; width: 150px;}'+
                 ' :before {color: #00F; font-weight: bold; font-style: italic; background-color: #DDD;}');
@@ -1622,10 +1697,18 @@
             expect(node2.getInlineStyle('height')).to.be.eql('75px');
             expect(node2.getInlineStyle('width')===undefined).to.be.true;
 
-            expect(node2.getInlineStyle('color', ':before')).to.be.eql('#00F');
-            expect(node2.getInlineStyle('font-weight', ':before')===undefined).to.be.true;
-            expect(node2.getInlineStyle('font-style', ':before')).to.be.eql('italic');
-            expect(node2.getInlineStyle('background-color', ':before')===undefined).to.be.true;
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(node2.getInlineStyle('color', ':before')).to.be.eql('#00F');
+                expect(node2.getInlineStyle('font-weight', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('font-style', ':before')).to.be.eql('italic');
+                expect(node2.getInlineStyle('background-color', ':before')===undefined).to.be.true;
+            }
+            else {
+                expect(node2.getInlineStyle('color', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('font-weight', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('font-style', ':before')===undefined).to.be.true;
+                expect(node2.getInlineStyle('background-color', ':before')===undefined).to.be.true;
+            }
 
             node2.setAttribute('style', '{transition: all 2s; transform: translateX(20px);}'+
                 ' :before {transition: all 12s; transform: translateX(120px);}');
@@ -1635,11 +1718,15 @@
                 {property: 'transform'},
                 {property: 'transition', pseudo: ':before'},
                 {property: 'transform', pseudo: ':before'}
-            ]);
-
-            expect(node2.getAttr('style')===null).to.be.true;
-
-            window.document.body.removeChild(node2);
+            ], true).finally(
+                function() {
+                    expect(node2.getAttr('style')===null).to.be.true;
+                    window.document.body.removeChild(node2);
+                    done();
+                }
+            ).catch(function(err) {
+                done(err);
+            });
         });
 
         it('removeInlineTransform', function () {
@@ -1657,21 +1744,40 @@
             nodeSub1.removeInlineStyle('color');
             expect(nodeSub1.getAttr('style')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateX(12px);');
 
-            nodeSub1.setAttr('style', '{color: #AAA; transform: translateX(12px) translateY(15px);} :before {color: #BBB; transform: skewX(45deg) translateY(15px);}');
-            nodeSub1.removeInlineTransform('translateY');
-            nodeSub1.removeInlineTransform('skewX', ':before');
-            expect(nodeSub1.getAttr('style').replace('color: #AAA; ', '').replace(' color: #AAA;', '').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(12px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': translateY(15px); }');
-            expect(nodeSub1.getAttr('style').replace(VENDOR_TRANSFORM_PROPERTY+': translateX(12px); ', '').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateX(12px);', '').replace(VENDOR_TRANSFORM_PROPERTY+': translateY(15px); ', '').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateY(15px);', '')).to.be.eql('{color: #AAA; } :before {color: #BBB; }');
-            nodeSub1.removeInlineStyle('color');
-            expect(nodeSub1.getAttr('style').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(12px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': translateY(15px); }');
-            expect(nodeSub1.getAttr('style').replace(VENDOR_TRANSFORM_PROPERTY+': translateX(12px); ', '').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateX(12px);', '').replace(VENDOR_TRANSFORM_PROPERTY+': translateY(15px); ', '').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateY(15px);', '')).to.be.eql('{} :before {color: #BBB; }');
-            nodeSub1.removeInlineStyle('color', ':before');
-            expect(nodeSub1.getAttr('style')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(12px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': translateY(15px); }');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                nodeSub1.setAttr('style', '{color: #AAA; transform: translateX(12px) translateY(15px);} :before {color: #BBB; transform: skewX(45deg) translateY(15px);}');
+                nodeSub1.removeInlineTransform('translateY');
+                nodeSub1.removeInlineTransform('skewX', ':before');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA; ', '').replace('color: #AAA;', '').replace(' color: #BBB; ', '').replace('color: #BBB;', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(12px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': translateY(15px); }');
+                expect(nodeSub1.getAttr('style').replace(VENDOR_TRANSFORM_PROPERTY+': translateX(12px); ', '').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateX(12px);', '').replace(VENDOR_TRANSFORM_PROPERTY+': translateY(15px); ', '').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateY(15px);', '')).to.be.eql('{color: #AAA; } :before {color: #BBB; }');
+                nodeSub1.removeInlineStyle('color');
+                expect(nodeSub1.getAttr('style').replace(' color: #BBB; ', '').replace('color: #BBB;', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(12px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': translateY(15px); }');
+                expect(nodeSub1.getAttr('style').replace(VENDOR_TRANSFORM_PROPERTY+': translateX(12px); ', '').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateX(12px);', '').replace(VENDOR_TRANSFORM_PROPERTY+': translateY(15px); ', '').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateY(15px);', '')).to.be.eql('{} :before {color: #BBB; }');
+                nodeSub1.removeInlineStyle('color', ':before');
+                expect(nodeSub1.getAttr('style')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(12px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': translateY(15px); }');
 
-            nodeSub1.removeInlineTransform('translateX');
-            expect(nodeSub1.getAttr('style')).to.be.eql('{} :before {'+VENDOR_TRANSFORM_PROPERTY+': translateY(15px); }');
+                nodeSub1.removeInlineTransform('translateX');
+                expect(nodeSub1.getAttr('style')).to.be.eql('{} :before {'+VENDOR_TRANSFORM_PROPERTY+': translateY(15px); }');
 
-            nodeSub1.removeInlineTransform('translateY', ':before');
+                nodeSub1.removeInlineTransform('translateY', ':before');
+            }
+            else {
+                nodeSub1.setAttr('style', '{color: #AAA; transform: translateX(12px) translateY(15px);} :before {color: #BBB; transform: skewX(45deg) translateY(15px);}');
+                nodeSub1.removeInlineTransform('translateY');
+                nodeSub1.removeInlineTransform('skewX', ':before');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA; ', '').replace('color: #AAA;', '').trim()).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateX(12px);');
+                expect(nodeSub1.getAttr('style').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateX(12px); ', '').replace(VENDOR_TRANSFORM_PROPERTY+': translateX(12px);', '').trim()).to.be.eql('color: #AAA;');
+                nodeSub1.removeInlineStyle('color');
+                expect(nodeSub1.getAttr('style').trim()).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateX(12px);');
+                expect(nodeSub1.getAttr('style').replace(' '+VENDOR_TRANSFORM_PROPERTY+': translateX(12px); ', '').replace(VENDOR_TRANSFORM_PROPERTY+': translateX(12px);', '').trim()).to.be.eql('');
+                nodeSub1.removeInlineStyle('color', ':before');
+                expect(nodeSub1.getAttr('style').trim()).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateX(12px);');
+
+                nodeSub1.removeInlineTransform('translateX');
+                expect(nodeSub1.getAttr('style')===null).to.be.true;
+
+                nodeSub1.removeInlineTransform('translateY', ':before');
+            }
             expect(nodeSub1.getAttr('style')===null).to.be.true;
         });
 
@@ -1690,11 +1796,20 @@
             expect(nodeSub1.getInlineTransform('skewX')).to.be.eql('40deg');
             expect(nodeSub1.getInlineTransform('skewY')).to.be.eql('70deg');
 
-            expect(nodeSub1.getInlineTransform('translateX', ':before')).to.be.eql('112px');
-            expect(nodeSub1.getInlineTransform('translateZ', ':before')).to.be.eql('115px');
-            expect(nodeSub1.getInlineTransform('rotate', ':before')===undefined).to.be.true;
-            expect(nodeSub1.getInlineTransform('skewX', ':before')===undefined).to.be.true;
-            expect(nodeSub1.getInlineTransform('skewZ', ':before')).to.be.eql('170deg');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(nodeSub1.getInlineTransform('translateX', ':before')).to.be.eql('112px');
+                expect(nodeSub1.getInlineTransform('translateZ', ':before')).to.be.eql('115px');
+                expect(nodeSub1.getInlineTransform('rotate', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineTransform('skewX', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineTransform('skewZ', ':before')).to.be.eql('170deg');
+            }
+            else {
+                expect(nodeSub1.getInlineTransform('translateX', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineTransform('translateZ', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineTransform('rotate', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineTransform('skewX', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineTransform('skewZ', ':before')===undefined).to.be.true;
+            }
         });
 
         it('removeInlineTransition', function () {
@@ -1716,39 +1831,61 @@
 
             nodeSub1.setAttr('style', '{color:#AAA; transition: width 2s ease-in 4s;} :before {color: #BBB; transition: width 12s ease-in 14s, opacity 25s;}');
 
-            nodeSub1.removeInlineTransition('opacity', ':before');
-            expect(nodeSub1.getAttr('style').replace('color: #AAA; ', '').replace(' color: #AAA;', '').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; }');
-            expect(nodeSub1.getAttr('style').replace(VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; ', '').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s;', '').replace(VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; ', '').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s;', '')).to.be.eql('{color: #AAA; } :before {color: #BBB; }');
-            nodeSub1.removeInlineStyle('color');
-            expect(nodeSub1.getAttr('style').replace('color: #BBB; ', '').replace(' color: #BBB;', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; }');
-            expect(nodeSub1.getAttr('style').replace(VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; ', '').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s;', '').replace(VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; ', '').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s;', '')).to.be.eql('{} :before {color: #BBB; }');
-            nodeSub1.removeInlineStyle('color', ':before');
-            expect(nodeSub1.getAttr('style')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; }');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                nodeSub1.removeInlineTransition('opacity', ':before');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA; ', '').replace('color: #AAA;', '').replace(' color: #BBB; ', '').replace('color: #BBB;', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; }');
+                expect(nodeSub1.getAttr('style').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; ', '').replace(VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s;', '').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; ', '').replace(VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s;', '')).to.be.eql('{color: #AAA; } :before {color: #BBB; }');
+                nodeSub1.removeInlineStyle('color');
+                expect(nodeSub1.getAttr('style').replace(' color: #BBB; ', '').replace('color: #BBB;', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; }');
+                expect(nodeSub1.getAttr('style').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; ', '').replace(VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s;', '').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; ', '').replace(VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s;', '')).to.be.eql('{} :before {color: #BBB; }');
+                nodeSub1.removeInlineStyle('color', ':before');
+                expect(nodeSub1.getAttr('style')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; }');
 
-            nodeSub1.removeInlineTransition('width');
-            expect(nodeSub1.getAttr('style')).to.be.eql('{} :before {'+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; }');
+                nodeSub1.removeInlineTransition('width');
+                expect(nodeSub1.getAttr('style')).to.be.eql('{} :before {'+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; }');
+            }
+            else {
+                nodeSub1.removeInlineTransition('opacity', ':before');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA; ', '').replace('color: #AAA;', '').replace(' color: #BBB; ', '').replace('color: #BBB;', '').trim()).to.be.eql(VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s;');
+                expect(nodeSub1.getAttr('style').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; ', '').replace(VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s;', '').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; ', '').replace(VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s;', '').trim()).to.be.eql('color: #AAA;');
+                nodeSub1.removeInlineStyle('color');
+                expect(nodeSub1.getAttr('style').replace(' color: #BBB; ', '').replace('color: #BBB;', '').trim()).to.be.eql(VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s;');
+                expect(nodeSub1.getAttr('style').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s; ', '').replace(VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s;', '').replace(' '+VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s; ', '').replace(VENDOR_TRANSITION_PROPERTY+': width 12s ease-in 14s;', '').trim()).to.be.eql('');
+                nodeSub1.removeInlineStyle('color', ':before');
+                expect(nodeSub1.getAttr('style').trim()).to.be.eql(VENDOR_TRANSITION_PROPERTY+': width 2s ease-in 4s;');
 
+                nodeSub1.removeInlineTransition('width');
+                expect(nodeSub1.getAttr('style')===null).to.be.true;
+            }
             nodeSub1.removeInlineTransition('width', ':before');
             expect(nodeSub1.getAttr('style')===null).to.be.true;
         });
+
 
         it('removeInlineTransitions', function () {
             nodeSub1.setAttr('style', '{transition: width 2s ease-in 4s, height 6s, top 2s;} :before {transition: width 12s ease-out 14s, height 16s, top 12s;}');
 
             nodeSub1.removeInlineTransitions([
-                {transitionProperty: 'width'},
-                {transitionProperty: 'height'},
-                {transitionProperty: 'height', pseudo: ':before'},
-                {transitionProperty: 'top', pseudo: ':before'}
+                {property: 'width'},
+                {property: 'height'},
+                {property: 'height', pseudo: ':before'},
+                {property: 'top', pseudo: ':before'}
             ]);
 
             expect(nodeSub1.getInlineTransition('width')===undefined).to.be.true;
             expect(nodeSub1.getInlineTransition('height')===undefined).to.be.true;
             expect(nodeSub1.getInlineTransition('top')).to.be.eql({duration: 2});
 
-            expect(nodeSub1.getInlineTransition('height', ':before')===undefined).to.be.true;
-            expect(nodeSub1.getInlineTransition('top', ':before')===undefined).to.be.true;
-            expect(nodeSub1.getInlineTransition('width', ':before')).to.be.eql({duration: 12, timingFunction: 'ease-out', delay: 14});
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(nodeSub1.getInlineTransition('height', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineTransition('top', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineTransition('width', ':before')).to.be.eql({duration: 12, timingFunction: 'ease-out', delay: 14});
+            }
+            else {
+                expect(nodeSub1.getInlineTransition('height', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineTransition('top', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineTransition('width', ':before')===undefined).to.be.true;
+            }
         });
 
         it('replaceClass', function () {
@@ -1947,10 +2084,15 @@
             expect(node.getInlineStyle('fontStyle', ':before')).to.be.eql('italic');
 
             styles = node._getAttribute('style');
-            styles = styles.substr(1, styles.length-4).split('; } :before {');
 
-            elementStyles = styles[0].split('; ');
-            beforeStyles = styles[1].split('; ');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                styles = styles.substr(1, styles.length-4).split('; } :before {');
+                elementStyles = styles[0].split('; ');
+            }
+            else {
+                styles = styles.substr(0, styles.length-1);
+                elementStyles = styles.split('; ');
+            }
             expect(elementStyles.length).to.be.eql(7);
             expect(elementStyles.indexOf('color: #333')!==-1).to.be.true;
             expect(elementStyles.indexOf('position: absolute')!==-1).to.be.true;
@@ -1961,11 +2103,14 @@
             expect(elementStyles.indexOf('height: 75px')!==-1).to.be.true;
             expect(elementStyles.indexOf('width: 150px')!==-1).to.be.true;
 
-            expect(beforeStyles.length).to.be.eql(3);
-            expect(beforeStyles.indexOf('color: #AAA')!==-1).to.be.true;
-            expect(beforeStyles.indexOf('font-weight: bold')!==-1).to.be.true;
-            expect(beforeStyles.indexOf('font-style: italic')!==-1).to.be.true;
-            expect(beforeStyles.indexOf('dummy')!==-1).to.be.false;
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                beforeStyles = styles[1].split('; ');
+                expect(beforeStyles.length).to.be.eql(3);
+                expect(beforeStyles.indexOf('color: #AAA')!==-1).to.be.true;
+                expect(beforeStyles.indexOf('font-weight: bold')!==-1).to.be.true;
+                expect(beforeStyles.indexOf('font-style: italic')!==-1).to.be.true;
+                expect(beforeStyles.indexOf('dummy')!==-1).to.be.false;
+            }
         });
 
         it('setInlineStyles', function () {
@@ -1984,11 +2129,20 @@
             expect(nodeSub1.getInlineStyle('font-weight')===undefined).to.be.true;
             expect(nodeSub1.getInlineStyle('font-style')===undefined).to.be.true;
 
-            expect(nodeSub1.getInlineStyle('color', ':before')===undefined).to.be.true;
-            expect(nodeSub1.getInlineStyle('background-color', ':before')===undefined).to.be.true;
-            expect(nodeSub1.getInlineStyle('opacity', ':before')===undefined).to.be.true;
-            expect(nodeSub1.getInlineStyle('font-weight', ':before')).to.be.eql('bold');
-            expect(nodeSub1.getInlineStyle('font-style', ':before')).to.be.eql('italic');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(nodeSub1.getInlineStyle('color', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineStyle('background-color', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineStyle('opacity', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineStyle('font-weight', ':before')).to.be.eql('bold');
+                expect(nodeSub1.getInlineStyle('font-style', ':before')).to.be.eql('italic');
+            }
+            else {
+                expect(nodeSub1.getInlineStyle('color', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineStyle('background-color', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineStyle('opacity', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineStyle('font-weight', ':before')===undefined).to.be.true;
+                expect(nodeSub1.getInlineStyle('font-style', ':before')===undefined).to.be.true;
+            }
 
             nodeSub1.setInlineStyles([
                 {property: 'height', value: '100px'},
@@ -2030,9 +2184,16 @@
             expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace(VENDOR_TRANSFORM_PROPERTY+':; ', '')).to.be.eql('color: #AAA;');
 
             nodeSub1.setInlineTransform('rotateX', '50deg', ':before');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(10px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateY(25px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
-            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace(VENDOR_TRANSFORM_PROPERTY+':; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(10px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateY(25px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
+                expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace(VENDOR_TRANSFORM_PROPERTY+':; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
+            }
+            else {
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateX(10px);');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateY(25px);');
+                expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace(VENDOR_TRANSFORM_PROPERTY+':; ', '')).to.be.eql('color: #AAA;');
+            }
         });
 
         it('setInlineTransforms', function () {
@@ -2045,9 +2206,16 @@
             ]);
 
             nodeSub1.setInlineStyle('color', '#AAA');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(10px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateY(25px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
-            expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace(VENDOR_TRANSFORM_PROPERTY+':; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateX(10px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql('{'+VENDOR_TRANSFORM_PROPERTY+': translateY(25px); } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
+                expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace(VENDOR_TRANSFORM_PROPERTY+':; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSFORM_PROPERTY+': rotateX(50deg); }');
+            }
+            else {
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateY(25px)', '')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateX(10px);');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' translateX(10px)', '')).to.be.eql(VENDOR_TRANSFORM_PROPERTY+': translateY(25px);');
+                expect(nodeSub1.getAttr('style').replace(' translateX(10px)', '').replace(' translateY(25px)', '').replace(VENDOR_TRANSFORM_PROPERTY+':; ', '')).to.be.eql('color: #AAA;');
+            }
         });
 
         it('setInlineTransition', function () {
@@ -2066,29 +2234,50 @@
             expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 2s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('color: #AAA;');
 
             nodeSub1.setInlineTransition('width', 3, null, null, ':before');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': height 2s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 1s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
-            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 2s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': height 2s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 1s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+                expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 2s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+            }
+            else {
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': height 2s;');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 2s,', '').replace(', height 2s', '')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': width 1s;');
+                expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 2s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('color: #AAA;');
+            }
 
             nodeSub1.setInlineTransition('height', 8, 'ease-in', 4);
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': height 8s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 1s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
-            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 8s ease-in 4s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': height 8s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 1s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+                expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 8s ease-in 4s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+            }
+            else {
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': height 8s ease-in 4s;');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': width 1s;');
+                expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 8s ease-in 4s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('color: #AAA;');
+            }
         });
 
         it('setInlineTransitions', function () {
             var styles, elementStyles, beforeStyles;
 
             nodeSub1.setInlineTransitions([
-                {transitionProperty: 'width', duration: 1},
-                {transitionProperty: 'height', duration: 8, timingFunction: 'ease-in', delay: 4},
-                {transitionProperty: 'width', duration: 3, pseudo: ':before'}
+                {property: 'width', duration: 1},
+                {property: 'height', duration: 8, timingFunction: 'ease-in', delay: 4},
+                {property: 'width', duration: 3, pseudo: ':before'}
             ]);
             nodeSub1.setInlineStyle('color', '#AAA');
 
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': height 8s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
-            expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 1s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
-            expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 8s ease-in 4s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+            if (SUPPORT_INLINE_PSEUDO_STYLES) {
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': height 8s ease-in 4s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql('{'+VENDOR_TRANSITION_PROPERTY+': width 1s; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+                expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 8s ease-in 4s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('{color: #AAA; } :before {'+VENDOR_TRANSITION_PROPERTY+': width 3s; }');
+            }
+            else {
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' width 1s,', '').replace(', width 1s', '')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': height 8s ease-in 4s;');
+                expect(nodeSub1.getAttr('style').replace(' color: #AAA;', '').replace('color: #AAA;', '').replace(' height 8s ease-in 4s,', '').replace(', height 8s ease-in 4s', '')).to.be.eql(VENDOR_TRANSITION_PROPERTY+': width 1s;');
+                expect(nodeSub1.getAttr('style').replace('width 1s', '').replace('height 8s ease-in 4s', '').replace(VENDOR_TRANSITION_PROPERTY+': , ; ', '')).to.be.eql('color: #AAA;');
+            }
         });
 
         /*
@@ -4104,7 +4293,7 @@
 
     describe('Classes and Promise return-values', function () {
 
-        this.timeout(3000);
+        this.timeout(5000);
 
         before(function() {
             var inlineClass = '.red {background-color: #F00;} .blue {background-color: #00F;} .small {width: 50px;} .wide {width: 750px;}';

@@ -1,10 +1,10 @@
-.itsa-notrans,
-.itsa-notrans:before,
-.itsa-notrans:after {
+.itsa-notrans, .itsa-notrans2,
+.itsa-notrans:before, .itsa-notrans2:before,
+.itsa-notrans:after, .itsa-notrans2:after {
     -webkit-transition: none !important;
     -moz-transition: none !important;
     -ms-transition: none !important;
-    -o-transition: top 0s ease-out, left 0s ease-out !important; /* opera doesn't support none */
+    -o-transition: all 0s !important; /* opera doesn't support none */
     transition: none !important;
 }
 

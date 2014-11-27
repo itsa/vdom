@@ -31,7 +31,8 @@ module.exports = function (window) {
         return window._ITSAmodules.AttributeExtractor; // AttributeExtractor was already created
     }
 
-    var END_OF_VALUE = {
+    var SUPPORT_INLINE_PSEUDO_STYLES = false, // current browsers don't support this. When tey do, set this value `true`
+        END_OF_VALUE = {
             ';': true,
             '}': true
         },
@@ -42,6 +43,8 @@ module.exports = function (window) {
         TRANSFORM_PROPERTY = require('polyfill/extra/transform.js')(window) || TRANSFORM,
         TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window) || TRANSITION,
         _serializeTransform, _parseTransform, _serializeTransition, _parseTransition, extractor;
+
+    window.document._supportInlinePseudoStyles = SUPPORT_INLINE_PSEUDO_STYLES;
 
     TRANSFORM_MUTATIONS[TRANSFORM] = true;
     TRANSFORM_MUTATIONS['-webkit-'+TRANSFORM] = true;
@@ -58,9 +61,6 @@ module.exports = function (window) {
     _serializeTransform = function(transformValue) {
         // transformValue should an Object !!
         var serialized = '';
-        if (typeof transformValue==='string') {
-            return transformValue;
-        }
         transformValue.each(function(value, key) {
             serialized += ' '+ key + ((key==='none') ? '' : '(' + value + ')');
         });
@@ -71,9 +71,6 @@ module.exports = function (window) {
         // transitionValue should an Object !!
         var serialized = '',
             timingFunction, delay;
-        if (typeof transitionValue==='string') {
-            return transitionValue;
-        }
         transitionValue.each(function(value, key) {
             timingFunction = value.timingFunction;
             delay = value.delay;
@@ -278,7 +275,9 @@ module.exports = function (window) {
                             TRANSFORM_MUTATIONS[key] && (key!==TRANSFORM_PROPERTY) && (key=TRANSFORM_PROPERTY);
                             TRANSITION_MUTATIONS[key] && (key!==TRANSITION_PROPERTY) && (key=TRANSITION_PROPERTY);
                             // store the property:
-                            group[key] = ((key===TRANSFORM_PROPERTY) ? _parseTransform(value) : ((key===TRANSITION_PROPERTY) ? _parseTransition(value) : value));
+                            if (SUPPORT_INLINE_PSEUDO_STYLES || (groupKey==='element')) {
+                                group[key] = ((key===TRANSFORM_PROPERTY) ? _parseTransform(value) : ((key===TRANSITION_PROPERTY) ? _parseTransition(value) : value));
+                            }
                             key = '';
                             insideValue = false;
                             insideKey = (character===';');
@@ -323,7 +322,9 @@ module.exports = function (window) {
                     TRANSFORM_MUTATIONS[key] && (key!==TRANSFORM_PROPERTY) && (key=TRANSFORM_PROPERTY);
                     TRANSITION_MUTATIONS[key] && (key!==TRANSITION_PROPERTY) && (key=TRANSITION_PROPERTY);
                     // store the property:
-                    group[key] = ((key===TRANSFORM_PROPERTY) ? _parseTransform(value) : ((key===TRANSITION_PROPERTY) ? _parseTransition(value) : value));
+                    if (SUPPORT_INLINE_PSEUDO_STYLES || (groupKey==='element')) {
+                        group[key] = ((key===TRANSFORM_PROPERTY) ? _parseTransform(value) : ((key===TRANSITION_PROPERTY) ? _parseTransition(value) : value));
+                    }
                 }
             }
             return {
@@ -340,11 +341,19 @@ module.exports = function (window) {
             return _parseTransform(value);
         },
 
+        serializeTransition: function(value) {
+            return _serializeTransition(value);
+        },
+
+        serializeTransform: function(value) {
+            return _serializeTransform(value);
+        },
+
         serializeStyles: function(styles) {
             var serialized = '',
                 onlyElementStyle = ((styles.size()===1) && styles.element);
-            if (onlyElementStyle) {
-                styles.element.each(function(value, key) {
+            if (onlyElementStyle || !SUPPORT_INLINE_PSEUDO_STYLES) {
+                styles.element && styles.element.each(function(value, key) {
                     serialized += ' '+ key + ': ' + ((key===TRANSFORM_PROPERTY) ? _serializeTransform(value) : ((key===TRANSITION_PROPERTY) ? _serializeTransition(value) : value)) + ';';
                 });
             }
