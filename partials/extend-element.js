@@ -581,9 +581,79 @@ node._getEvtTransEndCount();
 
     (function(ElementPrototype) {
 
-        ElementPrototype._getEvtTransEndCount = function() {
-            var transition = this.getStyle(TRANSITION);
-            console.info(transition);
+        /**
+        * Determines the number of transitionend-events there will occur
+        * @method _getEvtTransEndCount
+        * @private
+        * @since 0.0.1
+        */
+        ElementPrototype._getEvtTransEndCount = function(cssProperties) {
+            var transitions = this.getStyle(TRANSITION),
+                timing = {},
+                duration, delay, time;
+            transitions.each(function(transition) {
+                if (!cssProperties || (cssProperties[transition.property])) {
+                    duration = transition.duration || 0;
+                    delay = transition.delay || 0;
+                    time = (duration+delay);
+                    timing[time] = true;
+                }
+            });
+            return timing.size();
+        };
+
+        /**
+        * Returns cascaded "transition" style of all transition-properties. `Cascaded` means: the actual present style,
+        * the way it is visible (calculated through the DOM-tree).
+        *
+        * Note1: When "transition" is set inline, ONLY inline transtition is active!
+        * Thus, if parentNode has "transition: width 2s" and inline has "transition: height 3s", then the transition
+        * will be "transition: height 3s" --> returning "undefined" for transitionProperty=width.
+        * Note2: in case of "transition: all" --> these values will be returned for every "transitionProperty" (even when querying "width")
+        *
+        * @method _getTransitionAll
+        * @param transitionProperty {String} transform property that is queried, f.e. "width", or "all"
+        * @param [pseudo] {String} to query pseudo-element, fe: `:before` or `:first-line`
+        * @return {Object} the transition-object, with the properties:
+        * <ul>
+        *     <li>duration {Number}</li>
+        *     <li>timingFunction {String}</li>
+        *     <li>delay {Number}</li>
+        * </ul>
+        * @private
+        * @since 0.0.1
+        */
+        ElementPrototype._getTransitionAll = function(pseudo) {
+            var instance = this,
+                transProperty, transDuration, transTimingFunction, transDelay, transPropertySplitted, property,
+                transitions, transDurationSplitted, transTimingFunctionSplitted, transDelaySplitted, i, len;
+            // first look at inline transition:
+            transitions = instance.getInlineTransition(null, pseudo);
+            if (transitions) {
+                return transitions;
+            }
+            // no inline transitions over here --> calculate using getStyle
+            transitions = {};
+            transProperty = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'Property', pseudo);
+            transDuration = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'Duration', pseudo);
+            transTimingFunction = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'TimingFunction', pseudo);
+            transDelay = instance.getStyle(VENDOR_TRANSITION_PROPERTY+'Delay', pseudo);
+            if (transProperty) {
+                transPropertySplitted = transProperty && transProperty.split(',');
+                transDurationSplitted = transDuration.split(',');
+                transTimingFunctionSplitted = transTimingFunction.split(',');
+                transDelaySplitted = transDelay.split(',');
+                len = transPropertySplitted.length;
+                for (i=0; i<len; i++) {
+                    property = transPropertySplitted[i];
+                    (property!=='none') && (transitions[property]={
+                        duration: parseFloat(transDurationSplitted[i]),
+                        timingFunction: transTimingFunctionSplitted[i],
+                        delay: parseFloat(transDelaySplitted[i])
+                    });
+                }
+            }
+            return transitions;
         };
 
        /**
@@ -1176,14 +1246,12 @@ node._getEvtTransEndCount();
         };
 
        /**
-        * Returns inline transform-css-property. `Inline` means: what is set directly on the Element,
-        * this doesn't mean necesairy how it is looked like: when no css is set inline, the Element might still have
-        * an appearance because of other CSS-rules.
+        * Returns inline transition-css-property. `Inline` means: what is set directly on the Element,
+        * When `transition` is set inline, no `parent` transition-rules apply.
         *
-        * See more about tranform-properties: https://developer.mozilla.org/en-US/docs/Web/CSS/transform
         *
-        * @method getInlineTransform
-        * @param transitionProperty {String} the css-property to look for
+        * @method getInlineTransition
+        * @param [transitionProperty] {String} the css-property to look for
         * @param [pseudo] {String} to look inside a pseudo-style
         * @return {Object} the transition-object, with the properties:
         * <ul>
@@ -1198,7 +1266,7 @@ node._getEvtTransEndCount();
                 groupStyle = styles && styles[pseudo || 'element'],
                 transitionStyles = groupStyle && groupStyle[VENDOR_TRANSITION_PROPERTY];
             if (transitionStyles) {
-                return transitionStyles[fromCamelCase(transitionProperty)];
+                return transitionProperty ? transitionStyles[fromCamelCase(transitionProperty)] : transitionStyles;
             }
         };
 
@@ -1231,14 +1299,18 @@ node._getEvtTransEndCount();
         * Returns cascaded style of the specified property. `Cascaded` means: the actual present style,
         * the way it is visible (calculated through the DOM-tree).
         *
-        * Note1: values are absolute: percentages and points are converted to absolute values, sizes are in pixels, colors in rgb/rgba-format.
-        * Note2: you cannot query shotcut-properties: use `margin-left` instead of `margin`.
-        * Note3: no need to camelCase cssProperty: both `margin-left` as well as `marginLeft` are fine.
+        * <ul>
+        *     <li>Note1: values are absolute: percentages and points are converted to absolute values, sizes are in pixels, colors in rgb/rgba-format.</li>
+        *     <li>Note2: you cannot query shotcut-properties: use `margin-left` instead of `margin`.</li>
+        *     <li>Note3: no need to camelCase cssProperty: both `margin-left` as well as `marginLeft` are fine.</li>
+        *     <li>Note4: you can query `transition` or `transform` instead of their vendor-specific properties.</li>
+        *     <li>Note5: `transition` or `transform` return an Object instead of a String.</li>
+        * </ul>
         *
         * @method getCascadeStyle
         * @param cssProperty {String} property that is queried
         * @param [pseudo] {String} to query pseudo-element, fe: `:before` or `:first-line`
-        * @return {String} value for the css-property
+        * @return {String|Object} value for the css-property: this is an Object for the properties `transition` or `transform`
         * @since 0.0.1
         */
         ElementPrototype.getStyle = function(cssProperty, pseudo) {
@@ -1252,15 +1324,9 @@ node._getEvtTransEndCount();
             (cssProperty===TRANSITION) && (cssProperty=VENDOR_TRANSITION_PROPERTY);
             (cssProperty===TRANSFORM) && (cssProperty=VENDOR_TRANSITION_PROPERTY);
 
-            if (cssProperty===VENDOR_TRANSITION_PROPERTY) {
-
-                // look for `ElementPrototype.getTransition`
-
-                // (cssProperty===VENDOR_TRANSITION_PROPERTY) && style && (style=extractor.toTransitionObject(style));
-            }
-            else {
-                style = window.getComputedStyle(instance, pseudo)[toCamelCase(cssProperty)];
-            }
+            style = (cssProperty===VENDOR_TRANSITION_PROPERTY) ?
+                    instance._getTransitionAll(pseudo) :
+                    window.getComputedStyle(instance, pseudo)[toCamelCase(cssProperty)];
 
             //==========================================
             // TODO: revert transform matrices into a full string --> only then it can be Transformed into an object
@@ -2293,6 +2359,7 @@ node._getEvtTransEndCount();
             var instance = this,
                 vnode = instance.vnode,
                 removed = [],
+                afterTransEventsNeeded = instance._getEvtTransEndCount(cssProperties),
                 needSync, prop, styles, i, len, item, hasTransitionedStyle, promise, vnodeStyles, hasChanged, timer,
                 pseudo, group, clonedElement, fromStyles, toStylesExact, setFinalStyle, value, backedUpTransform;
             setFinalStyle = function() {
@@ -2426,7 +2493,7 @@ if (prop===VENDOR_TRANSFORM_PROPERTY) {
                         else {
                             vnode.styles = vnodeStyles; // finally values, not exactly calculated, but as is passed through
                         }
-                        getTransPromise(instance, hasTransitionedStyle).then(
+                        getTransPromise(instance, hasTransitionedStyle, null, afterTransEventsNeeded).then(
                             promise.fulfill
                         ).catch(promise.reject);
                         instance.setAttr('style', vnode.serializeStyles());
@@ -2862,8 +2929,9 @@ if (prop===VENDOR_TRANSFORM_PROPERTY) {
             var instance = this,
                 vnode = instance.vnode,
                 transitionedProps = [],
-                afterTransEventsNeeded = arguments[2], // hidden feature --> used by node.transition()
-                styles, group, i, len, item, promise, removalPromise, hasTransitionedStyle, property, hasChanged,
+                // third argument is a hidden feature --> used by node.transition()
+                afterTransEventsNeeded = arguments[2] || instance._getEvtTransEndCount(cssProperties),
+                styles, group, i, len, item, promise, hasTransitionedStyle, property, hasChanged,
                 pseudo, fromStyles, value, vnodeStyles, setFinalStyle, timer, toStylesExact, clonedElement, backedUpTransform;
             setFinalStyle = function() {
                 timer.cancel();
@@ -2994,7 +3062,7 @@ if (property===VENDOR_TRANSFORM_PROPERTY) {
                     else {
                         vnode.styles = vnodeStyles; // finally values, not exactly calculated, but as is passed through
                     }
-                    getTransPromise(instance, hasTransitionedStyle, removalPromise, afterTransEventsNeeded).then(
+                    getTransPromise(instance, hasTransitionedStyle, null, afterTransEventsNeeded).then(
                         function() {
                             promise.fulfill();
                         }
