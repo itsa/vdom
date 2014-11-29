@@ -69,12 +69,14 @@ module.exports = function (window) {
         _BEFORE = ':before',
         _AFTER = ':before',
         extractor = require('./attribute-extractor.js')(window),
-        later = require('utils').later,
-        async = require('utils').async,
+        UTILS = require('utils'),
+        later = UTILS.later,
+        async = UTILS.async,
+        idGenerator = UTILS.idGenerator,
         DOCUMENT = window.document,
         nodeids = NS.nodeids,
         arrayIndexOf = Array.prototype.indexOf,
-        EV_TRANSITION_END_TIMEOUT = 530000, // transition promise will be rejected when transition
+        EV_TRANSITION_END_TIMEOUT = 30000, // transition promise will be rejected when transition
                                            // hasn't finished in time
         POSITION = 'position',
         ITSA_ = 'itsa-',
@@ -136,6 +138,7 @@ module.exports = function (window) {
             marginRight: true,
             stopColor: true
         },
+        // CSS_PROPS_TO_CALCULATE.transform is set later on by the vendor specific transform-property
         htmlToVFragments = function(html) {
             var vnodes = htmlToVNodes(html, vNodeProto),
                 len = vnodes.length,
@@ -181,10 +184,17 @@ module.exports = function (window) {
             afterTransEventsNeeded || (afterTransEventsNeeded=1);
             if (hasTransitionedStyle) {
                 promise = new window.Promise(function(fulfill, reject) {
-                    var afterTrans = function() {
-                        if (--afterTransEventsNeeded<=0) {
-                            node.removeEventListener(EV_TRANSITION_END, afterTrans, true);
-                            fulfill();
+                    var afterTrans = function(e) {
+                        var finishedProperty = e.propertyName;
+                        if (false || finishedProperty) {
+                            // some browsers support this feature: now we can exactly determine what promise to fulfill
+                        }
+                        else {
+                            // in cae the browser doesn't support e.propertyName, we need to countdown:
+                            if (--afterTransEventsNeeded<=0) {
+                                node.removeEventListener(EV_TRANSITION_END, afterTrans, true);
+                                fulfill();
+                            }
                         }
                     };
                     if (EV_TRANSITION_END===undefined) {
@@ -211,41 +221,19 @@ module.exports = function (window) {
             // if there is any who changes its calculated value. If not, then return as fulfilled. If so, then setup
             // the evenlistener
             var resolvedPromise = window.Promise.resolve(),
-                allTrans = {
-                    element: false,
-                    _BEFORE: false,
-                    _AFTER: false
-                },
                 currentInlineCSS = [],
                 finalInlineCSS = [],
                 finalNode, getsTransitioned, originalCSS, finalCSS, transPropertiesElement, transPropertiesBefore, transPropertiesAfter,
-                promise, finalTransitionProperties, finalTransitionDurations, nodeInlineCSS, finalCSS_before, finalCSS_after, searchTransition,
-                originalCSS_before, originalCSS_after, searchTrans, generateInlineCSS;
+                promise, finalNodeCreated, finalCSS_before, finalCSS_after,
+                originalCSS_before, originalCSS_after, searchTrans, generateInlineCSS, transitionRun;
             if (EV_TRANSITION_END===undefined) {
                 return resolvedPromise;
             }
-            searchTransition = function(computedStyles, pseudo) {
-                var transProperties = [],
-                    len, i, transProp, duration;
-                finalTransitionProperties = computedStyles[VENDOR_TRANSITION_PROPERTY+'Property'];
-                finalTransitionDurations = computedStyles[VENDOR_TRANSITION_PROPERTY+'Duration'];
-                finalTransitionProperties = finalTransitionProperties.split(',');
-                finalTransitionDurations = finalTransitionDurations.split(',');
-                len = finalTransitionProperties.length;
-                for (i=0; (i<len) && !allTrans[pseudo]; i++) {
-                    transProp = finalTransitionProperties[i].trimLeft();
-                    duration = finalTransitionDurations[i] || '0s';
-                    if (duration!=='0s') {
-                        allTrans[pseudo] = (transProp==='all');
-                        allTrans[pseudo] || transProperties.push(toCamelCase(transProp));
-                    }
-                }
-                return transProperties;
-            };
-            searchTrans = function(CSS1, CSS2, allTrans, transProperties) {
-                var searchObject = allTrans ? CSS_PROPS_TO_CALCULATE : transProperties,
+            searchTrans = function(CSS1, CSS2, transProperties) {
+                var allTrans = !!transProperties.all,
+                    searchObject = allTrans ? CSS_PROPS_TO_CALCULATE : transProperties,
                     notEqual;
-                // NOTE: transProperties is an Array, CSS_PROPS_TO_CALCULATE is an Object, but they both support .some()
+
                 searchObject.some(function(transProp, key) {
                     notEqual = (CSS1[allTrans ? key : transProp]!==CSS2[allTrans ? key : transProp]);
                     return notEqual;
@@ -264,9 +252,16 @@ module.exports = function (window) {
                     finalInlineCSS[finalInlineCSS.length] = prop2;
                 });
             };
-node._getEvtTransEndCount();
-            finalNode = node.cloneNode(true);
-            finalNode.setClass(INVISIBLE);
+
+            finalNode = node.getData('_bkpNode');
+            if (!finalNode) {
+                finalNode = node.cloneNode(true);
+                finalNode.setClass(NO_TRANS2);
+                finalNode.setClass(INVISIBLE);
+                node.setData('_bkpNode', finalNode);
+                finalNodeCreated = true;
+            }
+
             switch(method) {
                 case 'set':
                     finalNode.setClass(className);
@@ -281,54 +276,53 @@ node._getEvtTransEndCount();
                     finalNode.toggleClass(className, extraData1);
                 break;
             }
-            // insert n the dom, to make its style calculatable:
-            DOCUMENT.body.append(finalNode);
-            // check the css-property `transition`
-            finalCSS = window.getComputedStyle(finalNode);
-            finalCSS_before = window.getComputedStyle(finalNode, _BEFORE);
-            finalCSS_after = window.getComputedStyle(finalNode, _AFTER);
+            // insert in the dom, to make its style calculatable:
+            finalNodeCreated && DOCUMENT.body.append(finalNode);
 
-            transPropertiesElement = searchTransition(finalCSS, 'element');
-            transPropertiesBefore = searchTransition(finalCSS_before, _BEFORE);
-            transPropertiesAfter = searchTransition(finalCSS_after, _AFTER);
+            // check the css-property `transition`
+            finalNode.removeClass(NO_TRANS2);
+            transPropertiesElement = finalNode.getStyle(TRANSITION);
+            transPropertiesBefore = finalNode.getStyle(TRANSITION, _BEFORE);
+            transPropertiesAfter = finalNode.getStyle(TRANSITION, _AFTER);
+            finalNode.setClass(NO_TRANS2);
 
             getsTransitioned = false;
-            if (allTrans.element || allTrans[_BEFORE] || allTrans[_AFTER] || (transPropertiesElement.length>0) || (transPropertiesBefore.length>0) || (transPropertiesAfter.length>0)) {
+            if ((transPropertiesElement.size()>0) || (transPropertiesBefore.size()>0) || (transPropertiesAfter.size()>0)) {
                 // when code comes here, there are one or more properties that can be transitioned
-                // first backup the current inline css:
-                nodeInlineCSS = node.getAttr('style');
-
                 // check if their values differ from the original node
                 originalCSS = window.getComputedStyle(node);
                 originalCSS_before = window.getComputedStyle(node, _BEFORE);
                 originalCSS_after = window.getComputedStyle(node, _AFTER);
-
-                if (searchTrans(originalCSS, finalCSS, allTrans.element, transPropertiesElement)) {
+                finalCSS = window.getComputedStyle(finalNode);
+                finalCSS_before = window.getComputedStyle(finalNode, _BEFORE);
+                finalCSS_after = window.getComputedStyle(finalNode, _AFTER);
+                if (searchTrans(originalCSS, finalCSS, transPropertiesElement)) {
                     getsTransitioned = true;
                     generateInlineCSS(null, originalCSS, finalCSS);
                 }
-                if (searchTrans(originalCSS_before, finalCSS_before, allTrans[_BEFORE], transPropertiesBefore)) {
+                if (searchTrans(originalCSS_before, finalCSS_before, transPropertiesBefore)) {
                     getsTransitioned = true;
                     generateInlineCSS(_BEFORE, originalCSS_before, finalCSS_before);
                 }
-                if (searchTrans(originalCSS_after, finalCSS_after, allTrans[_AFTER], transPropertiesAfter)) {
+                if (searchTrans(originalCSS_after, finalCSS_after, transPropertiesAfter)) {
                     getsTransitioned = true;
                     generateInlineCSS(_AFTER, originalCSS_after, finalCSS_after);
                 }
             }
-
-            finalNode.remove();
             if (getsTransitioned) {
+                transitionRun = idGenerator('getClassTransPromise');
+                // only make ready on the last run
+                finalNode.setData('readyOnRun', transitionRun);
                 // to force the transitioned items to work, we will set their calculated inline values for both at the start as well
                 // as on the end of the transition.
                 // set the original css inline:
                 promise = window.Promise.manage();
 
                 node.setClass(NO_TRANS2);
-                node.setInlineStyles(currentInlineCSS);
+                node.setInlineStyles(currentInlineCSS, false, false, true);
                 async(function() {
                     node.removeClass(NO_TRANS2);
-                    node.setInlineStyles(finalInlineCSS, true).finally(function() {
+                    node.setInlineStyles(finalInlineCSS, true, false, true).finally(function() {
                         // async `setAttr` --> only fulfill when the DOM has been updated
                         async(function() {
                             // we manipulate the classes as they should be, before returning the original inline style:
@@ -347,20 +341,47 @@ node._getEvtTransEndCount();
                                     node.toggleClass(className, extraData1);
                                 break;
                             }
-
-                            // reset the inline css:
-                            node.setClass(NO_TRANS2);
-                            node.setAttr('style', nodeInlineCSS);
-                            async(function() {
-                                node.removeClass(NO_TRANS2);
+                            if (finalNode.getData('readyOnRun')===transitionRun) {
+                                // last transitionrun: reset the inline css:
+                                node.setClass(NO_TRANS2);
+                                node.setAttr('style', finalNode.getAttr('style'));
+                                node.removeData('_bkpNode');
+                                finalNode.remove();
+                                async(function() {
+                                    node.removeClass(NO_TRANS2);
+                                    promise.fulfill();
+                                });
+                            }
+                            else {
                                 promise.fulfill();
-                            });
+                            }
                         });
                     });
 
                 });
 
                 return promise;
+            }
+            else {
+                switch(method) {
+                    case 'set':
+                        node.setClass(className);
+                    break;
+                    case 'replace':
+                        node.replaceClass(extraData1, className, extraData2);
+                    break;
+                    case 'remove':
+                        node.removeClass(className);
+                    break;
+                    case 'toggle':
+                        node.toggleClass(className, extraData1);
+                    break;
+                }
+                // if finalNode was created inside this cycle, then remove it
+                if (finalNodeCreated) {
+                    node.removeData('_bkpNode');
+                    finalNode.remove();
+                }
             }
 
             return resolvedPromise;
@@ -579,6 +600,8 @@ node._getEvtTransEndCount();
         set: function() {} // NOOP but needs to be there, otherwise we could clone any domNodes
     });
 
+    CSS_PROPS_TO_CALCULATE[VENDOR_TRANSFORM_PROPERTY] = true;
+
     (function(ElementPrototype) {
 
         /**
@@ -626,7 +649,7 @@ node._getEvtTransEndCount();
         ElementPrototype._getTransitionAll = function(pseudo) {
             var instance = this,
                 transProperty, transDuration, transTimingFunction, transDelay, transPropertySplitted, property,
-                transitions, transDurationSplitted, transTimingFunctionSplitted, transDelaySplitted, i, len;
+                transitions, transDurationSplitted, transTimingFunctionSplitted, transDelaySplitted, i, len, duration;
             // first look at inline transition:
             transitions = instance.getInlineTransition(null, pseudo);
             if (transitions) {
@@ -646,11 +669,14 @@ node._getEvtTransEndCount();
                 len = transPropertySplitted.length;
                 for (i=0; i<len; i++) {
                     property = transPropertySplitted[i];
-                    (property!=='none') && (transitions[property]={
-                        duration: parseFloat(transDurationSplitted[i]),
-                        timingFunction: transTimingFunctionSplitted[i],
-                        delay: parseFloat(transDelaySplitted[i])
-                    });
+                    duration = transTimingFunctionSplitted[i];
+                    if ((property!=='none') && ((property!=='all') || (duration!=='0s'))) {
+                        transitions[property] = {
+                            duration: parseFloat(transDurationSplitted[i]),
+                            timingFunction: duration,
+                            delay: parseFloat(transDelaySplitted[i])
+                        };
+                    }
                 }
             }
             return transitions;
@@ -2359,8 +2385,7 @@ node._getEvtTransEndCount();
             var instance = this,
                 vnode = instance.vnode,
                 removed = [],
-                afterTransEventsNeeded = instance._getEvtTransEndCount(cssProperties),
-                needSync, prop, styles, i, len, item, hasTransitionedStyle, promise, vnodeStyles, hasChanged, timer,
+                afterTransEventsNeeded, needSync, prop, styles, i, len, item, hasTransitionedStyle, promise, vnodeStyles, hasChanged, timer,
                 pseudo, group, clonedElement, fromStyles, toStylesExact, setFinalStyle, value, backedUpTransform;
             setFinalStyle = function() {
                 timer.cancel();
@@ -2420,6 +2445,7 @@ if (prop===VENDOR_TRANSFORM_PROPERTY) {
             }
 
             if (hasTransitionedStyle) {
+                afterTransEventsNeeded = instance._getEvtTransEndCount(cssProperties);
                 // fix the current style with what is actual calculated:
                 vnode.styles = fromStyles; // exactly styles, so we can transition well
                 instance.setClass(NO_TRANS);
@@ -2930,9 +2956,16 @@ if (prop===VENDOR_TRANSFORM_PROPERTY) {
                 vnode = instance.vnode,
                 transitionedProps = [],
                 // third argument is a hidden feature --> used by node.transition()
-                afterTransEventsNeeded = arguments[2] || instance._getEvtTransEndCount(cssProperties),
-                styles, group, i, len, item, promise, hasTransitionedStyle, property, hasChanged,
+                afterTransEventsNeeded = arguments[2],
+                // fourth argument is a hidden feature --> used by getClassTransPromise()
+                avoidBackup = arguments[3],
+                styles, group, i, len, item, promise, hasTransitionedStyle, property, hasChanged, finalNode,
                 pseudo, fromStyles, value, vnodeStyles, setFinalStyle, timer, toStylesExact, clonedElement, backedUpTransform;
+
+            // if there is a class-transition going on (initiated by getClassTransPromise),
+            // the we might need to update the internal bkpNode:
+            !avoidBackup && (finalNode=instance.getData('_bkpNode')) && finalNode.setInlineStyles(cssProperties);
+
             setFinalStyle = function() {
                 timer.cancel();
                 instance.removeEventListener(EV_TRANSITION_END, setFinalStyle, true);
@@ -2989,6 +3022,7 @@ if (property===VENDOR_TRANSFORM_PROPERTY) {
                 }
             }
             if (hasTransitionedStyle) {
+                afterTransEventsNeeded || (afterTransEventsNeeded=instance._getEvtTransEndCount(cssProperties));
                 // we forced set the exact initial css inline --> this is the only way to make a right transition
                 // under all circumstances
                 toStylesExact = vnodeStyles.deepClone();
@@ -3549,15 +3583,25 @@ if (property===VENDOR_TRANSFORM_PROPERTY) {
         */
         ElementPrototype.transition = function(to, from) {
             var instance = this,
-                transitionGroups = {},
-                currentInlineTransition, transitions;
+                currentInlineTransition, transitions, transitionRun;
             to || (to={});
+
+            transitionRun = idGenerator('nodeTransition');
+            // only make ready on the last run
+            instance.setData('_readyOnRun', transitionRun);
+
             if (from) {
                 instance.setClass(NO_TRANS2);
                 instance.setInlineStyles(from);
                 instance.removeClass(NO_TRANS2);
             }
-            currentInlineTransition = instance.getInlineStyle(TRANSITION);
+
+            currentInlineTransition = instance.getData('_bkpTransition');
+            if (currentInlineTransition===undefined) {
+                currentInlineTransition = instance.getInlineStyle(TRANSITION) || '';
+                instance.setData('_bkpTransition', currentInlineTransition);
+            }
+
             // we could use the `to` object and pass into `setInlineTransitions` directly,
             // however, in case `duration` is not specified, we will define them to 1 sec.
             transitions = Array.isArray(to) ? to.deepClone() : [to.shallowClone()];
@@ -3569,19 +3613,22 @@ if (property===VENDOR_TRANSFORM_PROPERTY) {
             transitions.forEach(function(item) {
                 item.duration || (item.duration=1);
                 item.delay || (item.delay=0);
-                item.transTime = item.duration + item.delay;
-                // now put them into the right subArray:
-                transitionGroups[item.transTime] || (transitionGroups[item.transTime]=true);
             });
 
             instance.setInlineTransitions(transitions);
-            return instance.setInlineStyles(to, true, transitionGroups.size()).finally(
+            return instance.setInlineStyles(to, true, transitions.size()).finally(
+            // return instance.setInlineStyles(to, true, transitions.size()).finally(
                 function() {
                     // to prevent `transitionend` events biting each other when chaining `transition`,
                     // and reset the inline transition in time,
                     // we need to resolve the Promise after the eventstack:
                     async(function() {
-                        currentInlineTransition ? instance.setInlineStyle(TRANSITION, currentInlineTransition) : instance.removeInlineStyle(TRANSITION);
+                        if (instance.getData('_readyOnRun')==transitionRun) {
+                            currentInlineTransition = instance.getData('_bkpTransition');
+                            currentInlineTransition ? instance.setInlineStyle(TRANSITION, currentInlineTransition) : instance.removeInlineStyle(TRANSITION);
+                            instance.removeData('_bkpTransition');
+                            instance.removeData('_readyOnRun');
+                        }
                     });
                 }
             );
