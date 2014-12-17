@@ -36,21 +36,21 @@ module.exports = function (window) {
             ';': true,
             '}': true
         },
-        TRANSFORM = 'transform',
-        TRANSFORM_MUTATIONS = {},
         TRANSITION = 'transition',
+        TRANSFORM = 'transform',
+        PERSPECTIVE = 'perspective',
+        _ORIGIN = '-origin',
         TRANSITION_MUTATIONS = {},
-        TRANSFORM_PROPERTY = require('polyfill/extra/transform.js')(window) || TRANSFORM,
-        TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window) || TRANSITION,
-        _serializeTransform, _parseTransform, _serializeTransition, _parseTransition, extractor;
+        TRANSFORM_MUTATIONS = {},
+        TRANSFORM_ORIGIN_MUTATIONS = {},
+        PERSPECTIVE_MUTATIONS = {},
+        TRANSITION_PROPERTY = require('polyfill/extra/'+TRANSITION+'.js')(window) || TRANSITION,
+        TRANSFORM_PROPERTY = require('polyfill/extra/'+TRANSFORM+'.js')(window) || TRANSFORM,
+        PERSPECTIVE_PROPERTY = require('polyfill/extra/'+PERSPECTIVE+'.js')(window) || PERSPECTIVE,
+        TRANSFORM_ORIGIN_PROPERTY = TRANSFORM_PROPERTY+_ORIGIN,
+        _serializeTransition, _parseTransition, extractor;
 
     window.document._supportInlinePseudoStyles = SUPPORT_INLINE_PSEUDO_STYLES;
-
-    TRANSFORM_MUTATIONS[TRANSFORM] = true;
-    TRANSFORM_MUTATIONS['-webkit-'+TRANSFORM] = true;
-    TRANSFORM_MUTATIONS['-moz-'+TRANSFORM] = true;
-    TRANSFORM_MUTATIONS['-ms-'+TRANSFORM] = true;
-    TRANSFORM_MUTATIONS['-o-'+TRANSFORM] = true;
 
     TRANSITION_MUTATIONS[TRANSITION] = true;
     TRANSITION_MUTATIONS['-webkit-'+TRANSITION] = true;
@@ -58,14 +58,23 @@ module.exports = function (window) {
     TRANSITION_MUTATIONS['-ms-'+TRANSITION] = true;
     TRANSITION_MUTATIONS['-o-'+TRANSITION] = true;
 
-    _serializeTransform = function(transformValue) {
-        // transformValue should an Object !!
-        var serialized = '';
-        transformValue.each(function(value, key) {
-            serialized += ' '+ key + ((key==='none') ? '' : '(' + value + ')');
-        });
-        return (serialized[0]===' ') ? serialized.substr(1) : serialized;
-    };
+    TRANSFORM_MUTATIONS[TRANSFORM] = true;
+    TRANSFORM_MUTATIONS['-webkit-'+TRANSFORM] = true;
+    TRANSFORM_MUTATIONS['-moz-'+TRANSFORM] = true;
+    TRANSFORM_MUTATIONS['-ms-'+TRANSFORM] = true;
+    TRANSFORM_MUTATIONS['-o-'+TRANSFORM] = true;
+
+    TRANSFORM_ORIGIN_MUTATIONS[TRANSFORM+_ORIGIN] = true;
+    TRANSFORM_ORIGIN_MUTATIONS['-webkit-'+TRANSFORM+_ORIGIN] = true;
+    TRANSFORM_ORIGIN_MUTATIONS['-moz-'+TRANSFORM+_ORIGIN] = true;
+    TRANSFORM_ORIGIN_MUTATIONS['-ms-'+TRANSFORM+_ORIGIN] = true;
+    TRANSFORM_ORIGIN_MUTATIONS['-o-'+TRANSFORM+_ORIGIN] = true;
+
+    PERSPECTIVE_MUTATIONS[PERSPECTIVE] = true;
+    PERSPECTIVE_MUTATIONS['-webkit-'+PERSPECTIVE] = true;
+    PERSPECTIVE_MUTATIONS['-moz-'+PERSPECTIVE] = true;
+    PERSPECTIVE_MUTATIONS['-ms-'+PERSPECTIVE] = true;
+    PERSPECTIVE_MUTATIONS['-o-'+PERSPECTIVE] = true;
 
     _serializeTransition = function(transitionValue) {
         // transitionValue should an Object !!
@@ -84,51 +93,7 @@ module.exports = function (window) {
         return (serialized[0]===',') ? serialized.substr(2) : serialized;
     };
 
-    _parseTransform = function(transformValueSerialised) {
-        //transformValueSerialised might be: translateX(10px) matrix(1.0, 2.0, 3.0, 4.0, 5.0, 6.0) translateY(5px)
-        var parsed = {},
-            i, len, character, key, insideValue, value;
-        if (transformValueSerialised) {
-            i = -1;
-            len = transformValueSerialised.length;
-            key = '';
-            insideValue = false;
-            while ((++i<len) && (character=transformValueSerialised[i])) {
-                if (insideValue) {
-                    if (character===')') {
-                        parsed[key] = value;
-                        key = '';
-                        insideValue = false;
-                        // eliminate next leading spaces, so we get a clean next `key`:
-                        while (((i+1)<len) && (transformValueSerialised[i+1]===' ')) {
-                            i++;
-                        }
-                    }
-                    else {
-                        value += character;
-                    }
-                }
-                else {
-                    if (character==='('){
-                        insideValue = true;
-                        value = '';
-                    }
-                    else {
-                        key += character;
-                        if (key==='none') {
-                            return {
-                                none: true
-                            };
-                        }
-                    }
-                }
-            }
-        }
-        return parsed;
-    };
-
     _parseTransition = function(transitionValueSerialised) {
-        //transformValueSerialised might be: translateX(10px) matrix(1.0, 2.0, 3.0, 4.0, 5.0, 6.0) translateY(5px)
         var parsed = {},
             i, len, transitionItem, item, items, value, properties, item0, item1, item2, item3;
         if (transitionValueSerialised) {
@@ -169,9 +134,11 @@ module.exports = function (window) {
                     }
                 }
 
-                // in case `key` equals a variant of `transform`, but non-compatible with the current browser -->
+                // in case `key` equals a variant of `transition`, but non-compatible with the current browser -->
                 // redefine it into a browser-compatible version:
-                TRANSFORM_MUTATIONS[item0] && (item0!==TRANSFORM_PROPERTY) && (item0=TRANSFORM_PROPERTY);
+                TRANSFORM_MUTATIONS[item0] && (item0=TRANSFORM_PROPERTY);
+                PERSPECTIVE_MUTATIONS[item0] && (item0=PERSPECTIVE_PROPERTY);
+                TRANSFORM_ORIGIN_MUTATIONS[item0] && (item0=TRANSFORM_ORIGIN_PROPERTY);
 
                 parsed[item0] = transitionItem;
             }
@@ -272,11 +239,13 @@ module.exports = function (window) {
                             value = value.trim();
                             // in case `key` equals a variant of `transform`, but non-compatible with the current browser -->
                             // redefine it into a browser-compatible version:
-                            TRANSFORM_MUTATIONS[key] && (key!==TRANSFORM_PROPERTY) && (key=TRANSFORM_PROPERTY);
-                            TRANSITION_MUTATIONS[key] && (key!==TRANSITION_PROPERTY) && (key=TRANSITION_PROPERTY);
+                            TRANSFORM_MUTATIONS[key] && (key=TRANSFORM_PROPERTY);
+                            PERSPECTIVE_MUTATIONS[key] && (key=PERSPECTIVE_PROPERTY);
+                            TRANSFORM_ORIGIN_MUTATIONS[key] && (key=TRANSFORM_ORIGIN_PROPERTY);
+                            TRANSITION_MUTATIONS[key] && (key=TRANSITION_PROPERTY);
                             // store the property:
                             if ((SUPPORT_INLINE_PSEUDO_STYLES || (groupKey==='element')) && (value.length>0)) {
-                                group[key] = ((key===TRANSFORM_PROPERTY) ? _parseTransform(value) : ((key===TRANSITION_PROPERTY) ? _parseTransition(value) : value));
+                                group[key] = ((key===TRANSITION_PROPERTY) ? _parseTransition(value) : value);
                             }
                             key = '';
                             insideValue = false;
@@ -317,13 +286,12 @@ module.exports = function (window) {
                 }
                 if (insideValue) {
                     value = value.trim();
-                    // in case `key` equals a variant of `transform`, but non-compatible with the current browser -->
+                    // in case `key` equals a variant of `transition`, but non-compatible with the current browser -->
                     // redefine it into a browser-compatible version:
-                    TRANSFORM_MUTATIONS[key] && (key!==TRANSFORM_PROPERTY) && (key=TRANSFORM_PROPERTY);
                     TRANSITION_MUTATIONS[key] && (key!==TRANSITION_PROPERTY) && (key=TRANSITION_PROPERTY);
                     // store the property:
                     if ((SUPPORT_INLINE_PSEUDO_STYLES || (groupKey==='element')) && (value.length>0)) {
-                        group[key] = ((key===TRANSFORM_PROPERTY) ? _parseTransform(value) : ((key===TRANSITION_PROPERTY) ? _parseTransition(value) : value));
+                        group[key] = ((key===TRANSITION_PROPERTY) ? _parseTransition(value) : value);
                     }
                 }
             }
@@ -337,16 +305,8 @@ module.exports = function (window) {
             return _parseTransition(value);
         },
 
-        toTransformObject: function(value) {
-            return _parseTransform(value);
-        },
-
         serializeTransition: function(value) {
             return _serializeTransition(value);
-        },
-
-        serializeTransform: function(value) {
-            return _serializeTransform(value);
         },
 
         serializeStyles: function(styles) {
@@ -354,7 +314,7 @@ module.exports = function (window) {
                 onlyElementStyle = ((styles.size()===1) && styles.element);
             if (onlyElementStyle || !SUPPORT_INLINE_PSEUDO_STYLES) {
                 styles.element && styles.element.each(function(value, key) {
-                    serialized += ' '+ key + ': ' + ((key===TRANSFORM_PROPERTY) ? _serializeTransform(value) : ((key===TRANSITION_PROPERTY) ? _serializeTransition(value) : value)) + ';';
+                    serialized += ' '+ key + ': ' + ((key===TRANSITION_PROPERTY) ? _serializeTransition(value) : value) + ';';
                 });
             }
             else {
@@ -362,7 +322,7 @@ module.exports = function (window) {
                     (groupKey==='element') || (serialized += ' '+groupKey+' ');
                     serialized += '{';
                     groupValue.each(function(value, key) {
-                        serialized += key + ': ' + ((key===TRANSFORM_PROPERTY) ? _serializeTransform(value) : ((key===TRANSITION_PROPERTY) ? _serializeTransition(value) : value)) + '; ';
+                        serialized += key + ': ' + ((key===TRANSITION_PROPERTY) ? _serializeTransition(value) : value) + '; ';
                     });
                     serialized += '}';
                 });

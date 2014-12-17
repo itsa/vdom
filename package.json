@@ -31,7 +31,7 @@
         "polyfill": "itsa/polyfill",
         "js-ext": "itsa/js-ext",
         "utils": "itsa/utils",
-        "window-ext": "window-ext"
+        "window-ext": "itsa/window-ext"
     },
     "devDependencies": {
         "chai": "^1.9.1",

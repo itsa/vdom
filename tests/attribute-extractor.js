@@ -359,7 +359,7 @@
                                 delay: 4.5
                             },
                             height: {
-                                duration: 6,
+                                duration: 6
                             }
                         },
                         border: 'solid 1px #000'
@@ -419,7 +419,7 @@
                                 delay: 4.5
                             },
                             height: {
-                                duration: 6,
+                                duration: 6
                             }
                         },
                         border: 'solid 1px #000'
@@ -428,7 +428,7 @@
                         color: '#FF0',
                         transition: {
                             opacity: {
-                                duration: 8,
+                                duration: 8
                             }
                         },
                         'font-weight': 'bold'
@@ -458,7 +458,7 @@
                             delay: 4.5
                         },
                         height: {
-                            duration: 6,
+                            duration: 6
                         }
                     },
                     border: 'solid 1px #000'
@@ -478,7 +478,7 @@
                             delay: 4.5
                         },
                         height: {
-                            duration: 6,
+                            duration: 6
                         }
                     },
                     border: 'solid 1px #000'

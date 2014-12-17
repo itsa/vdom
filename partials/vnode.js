@@ -44,7 +44,7 @@ module.exports = function (window) {
         nodeids = NS.nodeids,
         htmlToVNodes = require('./html-parser.js')(window),
         async = require('utils/lib/timers.js').async,
-        NTH_CHILD_REGEXP = /(?:(\d*)[n|N])?([+|-])?(\d*)/, // an+b
+        NTH_CHILD_REGEXP = /^(?:(\d*)[n|N])([\+|\-](\d+))?$/, // an+b
         STRING = 'string',
         CLASS = 'class',
         STYLE = 'style',
@@ -1132,15 +1132,11 @@ module.exports = function (window) {
         _insertBefore: function(newVNode, refVNode) {
             var instance = this,
                 domNode = newVNode.domNode,
-                index = instance.vChildNodes.indexOf(refVNode),
-                size;
+                index = instance.vChildNodes.indexOf(refVNode);
             if (index!==-1) {
                 newVNode._moveToParent(instance, index);
                 instance.domNode._insertBefore(domNode, refVNode.domNode);
-                if (newVNode.nodeType===3) {
-                    size = instance.vChildNodes.length;
-                    instance._normalize();
-                }
+                (newVNode.nodeType===3) && instance._normalize();
             }
             return domNode;
         },
@@ -1381,12 +1377,11 @@ module.exports = function (window) {
         _setAttrs: function(newAttrs) {
             // does sync the DOM
             var instance = this,
-                attrsObj, domNode, attr, attrs, i, key, keys, len, value;
+                attrsObj, attr, attrs, i, key, keys, len, value;
             if (instance.nodeType!==1) {
                 return;
             }
             instance._noSync();
-            domNode = instance.domNode;
             attrs = instance.attrs;
             attrs.id && (delete nodeids[attrs.id]);
 
