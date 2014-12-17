@@ -24,11 +24,25 @@
     "engines": {
         "node": "*"
     },
+    "directories": {
+        "partials": "./partials"
+    },
+    "dependencies": {
+        "polyfill": "itsa/polyfill",
+        "js-ext": "itsa/js-ext",
+        "utils": "itsa/utils",
+        "window-ext": "itsa/window-ext"
+    },
     "devDependencies": {
         "chai": "^1.9.1",
+        "chai-as-promised": "^4.1.1",
         "istanbul": "^0.3.0",
         "jshint": "^2.5.5",
-        "mocha": "^1.21.4"
+        "mocha": "^1.21.4",
+        "js-ext": "itsa/js-ext",
+        "utils": "itsa/utils",
+        "window-ext": "itsa/window-ext",
+        "node-win": "itsa/node-win"
     },
     "scripts": {
         "pretest": "jshint  ./lib/*.js",
