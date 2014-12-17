@@ -44,9 +44,9 @@ module.exports = function (window) {
         TRANSFORM_MUTATIONS = {},
         TRANSFORM_ORIGIN_MUTATIONS = {},
         PERSPECTIVE_MUTATIONS = {},
-        TRANSITION_PROPERTY = require('polyfill/extra/'+TRANSITION+'.js')(window) || TRANSITION,
-        TRANSFORM_PROPERTY = require('polyfill/extra/'+TRANSFORM+'.js')(window) || TRANSFORM,
-        PERSPECTIVE_PROPERTY = require('polyfill/extra/'+PERSPECTIVE+'.js')(window) || PERSPECTIVE,
+        TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window) || TRANSITION, // DO NOT use TRANSFORM-variable here --> browserify cannot deal this
+        TRANSFORM_PROPERTY = require('polyfill/extra/transform.js')(window) || TRANSFORM,
+        PERSPECTIVE_PROPERTY = require('polyfill/extra/perspective.js')(window) || PERSPECTIVE,
         TRANSFORM_ORIGIN_PROPERTY = TRANSFORM_PROPERTY+_ORIGIN,
         _serializeTransition, _parseTransition, extractor;
 
