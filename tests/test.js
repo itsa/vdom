@@ -27,7 +27,7 @@
 
 
 
-    describe('Node-transitions', function () {
+    describe('Classes and Promise return-values', function () {
 
         this.timeout(5000);
 
@@ -79,7 +79,380 @@
 
         });
 
+        it('setClass Transition delay and resolved promise from defined --> defined', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('background-color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass Transition delay and resolved promise from undefined --> defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('background-color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass general Transition delay and resolved promise from defined --> defined', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('all', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass general Transition delay and resolved promise from undefined --> defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('all', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass otherTransition delay and resolved promise from defined --> defined', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass other Transition delay and resolved promise from undefined --> defined', function (done) {
+            var delayed = false;
+            node.setInlineTransition('color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass without Transition delay and resolved promise from defined --> defined', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('setClass without Transition delay and resolved promise from undefined --> defined', function (done) {
+            var delayed = false;
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.setClass(['blue', 'wide'], true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('removeClass with Transition all', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('all', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeClass('red', true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('removeClass with Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('background-color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeClass('red', true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('removeClass with wrong Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeClass('red', true).then(
+                function() {
+                    expect(delayed).to.be.dalse;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('removeClass without Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.removeClass('red', true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('replaceClass with Transition all', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('all', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.replaceClass('red', 'blue', false, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('replaceClass with Transition property', function (done) {
+            var delayed = false;
+            node.setClass(['red', 'wide']);
+            node.setInlineTransition('background-color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.replaceClass('red', 'blue', false, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('replaceClass with wrong Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.replaceClass('red', 'blue', false, true).then(
+                function() {
+                    expect(delayed).to.be.dalse;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('replaceClass without Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.replaceClass('red', 'blue', false, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('toggleClass with Transition all', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('all', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.toggleClass('red', false, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('toggleClass with Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('background-color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.toggleClass('red', false, true).then(
+                function() {
+                    expect(delayed).to.be.true;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('toggleClass with wrong Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            node.setInlineTransition('color', 1);
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.toggleClass('red', false, true).then(
+                function() {
+                    expect(delayed).to.be.dalse;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
+        it('toggleClass without Transition property', function (done) {
+            var delayed = false;
+            node.setClass('red');
+            setTimeout(function() {
+                delayed = true;
+            }, 500);
+            node.toggleClass('red', false, true).then(
+                function() {
+                    expect(delayed).to.be.false;
+                    done();
+                }
+            ).catch(
+                function(err) {
+                    done(new Error(err));
+                }
+            );
+        });
+
     });
+
+
 
 
 }(global.window || require('node-win')));

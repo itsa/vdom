@@ -295,6 +295,10 @@ module.exports = function (window) {
                     }
                 }
             }
+            if (!SUPPORT_INLINE_PSEUDO_STYLES) {
+                delete newStyles[':before'];
+                delete newStyles[':after'];
+            }
             return {
                 attrStyle: hasValue && instance.serializeStyles(newStyles),
                 styles: newStyles
