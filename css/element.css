@@ -1,6 +1,6 @@
-.itsa-notrans, .itsa-notrans2, .itsa-notrans3,
-.itsa-notrans:before, .itsa-notrans2:before, .itsa-notrans3:before,
-.itsa-notrans:after, .itsa-notrans2:after, .itsa-notrans3:after {
+.itsa-notrans, .itsa-notrans2,
+.itsa-notrans:before, .itsa-notrans2:before,
+.itsa-notrans:after, .itsa-notrans2:after {
     -webkit-transition: none !important;
     -moz-transition: none !important;
     -ms-transition: none !important;
@@ -25,8 +25,8 @@
 .itsa-hidden {
     visibility: hidden !important;
     position: absolute !important;
-    left: -9999px;
-    top: -9999px;
+    left: -9999px !important;
+    top: -9999px !important;
 }
 
 .itsa-block {
