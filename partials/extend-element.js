@@ -97,7 +97,6 @@ module.exports = function (window) {
         DOCUMENT = window.document,
         nodeids = NS.nodeids,
         arrayIndexOf = Array.prototype.indexOf,
-        WEBKIT_TRANSFORM_ORIGIN = '-webkit-transform-origin',
         POSITION = 'position',
         ITSA_ = 'itsa-',
         BLOCK = ITSA_+'block',
@@ -252,7 +251,7 @@ module.exports = function (window) {
             var promise, fallback;
             afterTransEventsNeeded || (afterTransEventsNeeded=1);
             if (hasTransitionedStyle) {
-                promise = new window.Promise(function(fulfill, reject) {
+                promise = new window.Promise(function(fulfill) {
                     var afterTrans = function(e) {
                         var finishedProperty = e.propertyName,
                             index;
@@ -2397,7 +2396,7 @@ module.exports = function (window) {
                 transitionProperties = {},
                 maxtranstime = 0,
                 needSync, prop, styles, i, len, item, hasTransitionedStyle, promise, vnodeStyles,
-                pseudo, group, clonedElement, fromStyles, toStylesExact, value, transproperty;
+                pseudo, group, clonedElement, fromStyles, toStylesExact, value, transproperty, transtime;
 
             Array.isArray(cssProperties) || (cssProperties=[cssProperties]);
             len = cssProperties.length;
@@ -2474,12 +2473,15 @@ module.exports = function (window) {
                     // look if we really have a change in the value:
 
                     if (toStylesExact[group] && (toStylesExact[group][prop]!==fromStyles[group][prop])) {
-                        transCount++;
-                        // TODO: transitionProperties supposes that we DO NOT have pseudo transitions!
-                        // as soon we do, we need to split this object for each 'group'
-                        transitionProperties[prop] = true;
                         transproperty = instance.getTransition(prop, (group==='element') ? null : group);
-                        maxtranstime = Math.max(maxtranstime, transproperty.delay+transproperty.duration);
+                        transtime = transproperty.delay+transproperty.duration;
+                        maxtranstime = Math.max(maxtranstime, transtime);
+                        if (transtime>0) {
+                            transCount++;
+                            // TODO: transitionProperties supposes that we DO NOT have pseudo transitions!
+                            // as soon we do, we need to split this object for each 'group'
+                            transitionProperties[prop] = true;
+                        }
                     }
                 }
                 hasTransitionedStyle = (transCount>0);
@@ -2835,7 +2837,7 @@ module.exports = function (window) {
                 transitionProperties = {},
                 // third argument is a hidden feature --> used by getClassTransPromise()
                 avoidBackup = arguments[2],
-                styles, group, i, len, item, promise, hasTransitionedStyle, property, hasChanged,
+                styles, group, i, len, item, promise, hasTransitionedStyle, property, hasChanged, transtime,
                 pseudo, fromStyles, value, vnodeStyles, toStylesExact, clonedElement, transproperty;
 
             // if there is a class-transition going on (initiated by getClassTransPromise),
@@ -2883,19 +2885,22 @@ module.exports = function (window) {
                     fromStyles[group] || (fromStyles[group]={});
                     (property===VENDOR_TRANSFORM_PROPERTY) || (fromStyles[group][property]=instance.getStyle(property, pseudo));
                     if (fromStyles[group][property]!==value) {
-                        hasTransitionedStyle = true;
-                        transCount++;
-                        // TODO: transitionProperties supposes that we DO NOT have pseudo transitions!
-                        // as soon we do, we need to split this object for each 'group'
-                        transitionProperties[property] = true;
                         transproperty = instance.getTransition(property, (group==='element') ? null : group);
-                        maxtranstime = Math.max(maxtranstime, transproperty.delay+transproperty.duration);
-                        transitionedProps[transitionedProps.length] = {
-                            group: group,
-                            property: property,
-                            value: value,
-                            pseudo: pseudo
-                        };
+                        transtime = transproperty.delay+transproperty.duration;
+                        maxtranstime = Math.max(maxtranstime, transtime);
+                        if (transtime>0) {
+                            hasTransitionedStyle = true;
+                            transCount++;
+                            // TODO: transitionProperties supposes that we DO NOT have pseudo transitions!
+                            // as soon we do, we need to split this object for each 'group'
+                            transitionProperties[property] = true;
+                            transitionedProps[transitionedProps.length] = {
+                                group: group,
+                                property: property,
+                                value: value,
+                                pseudo: pseudo
+                            };
+                        }
                     }
                 }
             }
@@ -2950,6 +2955,7 @@ module.exports = function (window) {
                         // reset
                         vnode.styles = toStylesExact;
                         promise.then(function() {
+
                             vnode.styles = vnodeStyles; // finally values, not exactly calculated, but as is passed through
                             instance.setClass(NO_TRANS);
                             instance.setAttr(STYLE, vnode.serializeStyles());
