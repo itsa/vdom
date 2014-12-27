@@ -9,12 +9,21 @@
 }
 
 .itsa-invisible {
-    visibility: hidden !important;
     position: absolute !important;
+}
+
+.itsa-invisible-relative {
+    position: relative !important;
+}
+
+.itsa-invisible,
+.itsa-invisible-relative {
+    visibility: hidden !important;
     z-index: -1;
 }
 
-.itsa-invisible * {
+.itsa-invisible *,
+.itsa-invisible-relative * {
     visibility: hidden !important;
 }
 

@@ -241,7 +241,6 @@
                         done();
                     })
                 .catch(function(err) {
-                    alert(err);
                     done(err);
                 });
         });

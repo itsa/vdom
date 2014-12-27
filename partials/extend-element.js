@@ -45,17 +45,17 @@ module.exports = function (window) {
         htmlToVNodes = require('./html-parser.js')(window),
         vNodeProto = require('./vnode.js')(window),
         NS = require('./vdom-ns.js')(window),
-        RUNNING_ON_NODE = (typeof global !== 'undefined'),
+        RUNNING_ON_NODE = (typeof global !== 'undefined') && (global.window!==window),
         TRANSITION = 'transition',
         TRANSFORM = 'transform',
         BROWSERS_SUPPORT_PSEUDO_TRANS = false, // set true as soon as they do
         SUPPORTS_PSEUDO_TRANS = null, // is a life check --> is irrelevant as long BROWSERS_SUPPORT_PSEUDO_TRANS === false
-        VENDOR_TRANSFORM_PROPERTY = require('polyfill/extra/transform.js')(window), // DO NOT use TRANSFORM-variable here --> browserify cannot deal this
-        VENDOR_TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window),
-        EV_TRANSITION_END = require('polyfill/extra/transitionend.js')(window),
         VENDOR_CSS = require('polyfill/extra/vendorCSS.js')(window),
-        VENDOR_CSS_PROP_GENERATOR = VENDOR_CSS.generator,
-        VENDOR_CSS_PROPERTIES = VENDOR_CSS_PROP_GENERATOR.cssProps,
+        generateVendorCSSProp = VENDOR_CSS.generator,
+        VENDOR_CSS_PROPERTIES = VENDOR_CSS.cssProps,
+        VENDOR_TRANSFORM_PROPERTY = generateVendorCSSProp(TRANSFORM),
+        VENDOR_TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window), // DO NOT use TRANSITION-variable here --> browserify cannot deal this
+        EV_TRANSITION_END = require('polyfill/extra/transitionend.js')(window),
         _BEFORE = ':before',
         _AFTER = ':before',
         extractor = require('./attribute-extractor.js')(window),
@@ -73,6 +73,7 @@ module.exports = function (window) {
         NO_TRANS = ITSA_+'notrans',
         NO_TRANS2 = NO_TRANS+'2', // needed to prevent removal of NO_TRANS when still needed `notrans`
         INVISIBLE = ITSA_+'invisible',
+        INVISIBLE_RELATIVE = INVISIBLE+'-relative',
         HIDDEN = ITSA_+'hidden',
         REGEXP_NODE_ID = /^#\S+$/,
         LEFT = 'left',
@@ -96,8 +97,6 @@ module.exports = function (window) {
         REPLACE = 'replace',
         REMOVE = 'remove',
         _STARTSTYLE = '_startStyle',
-        REGEXP_TRX = /translateX\((-?\d+)/,
-        REGEXP_TRY = /translateY\((-?\d+)/,
         setupObserver,
         SIBLING_MATCH_CHARACTER = {
             '+': true,
@@ -197,27 +196,26 @@ module.exports = function (window) {
         },
         getVendorCSS = function(cssProperties) {
             var uniqueProps = {},
-                i, len, prop, safeProperty;
+                i, len, prop, safeProperty, uniqueSafeProperty;
             len = cssProperties.length;
             for (i=len-1; i>=0; i--) {
                 // set the right property, but also dedupe when there are multiple same vendor-properties
                 prop = cssProperties[i];
-                safeProperty = fromCamelCase(prop.property);
-                VENDOR_CSS_PROPERTIES[safeProperty] || (safeProperty=generateVendorCSSProp(safeProperty));
-                if (uniqueProps[safeProperty]) {
-                    cssProperties.splice(i, 1);
-                }
-                else {
-                    uniqueProps[safeProperty] = true;
-                    prop.property = safeProperty;
+                safeProperty = prop.property;
+                if (safeProperty) {
+                    safeProperty = fromCamelCase(safeProperty);
+                    uniqueSafeProperty = safeProperty+'#'+prop.pseudo;
+                    VENDOR_CSS_PROPERTIES[safeProperty] || (safeProperty=generateVendorCSSProp(safeProperty));
+                    if (uniqueProps[uniqueSafeProperty]) {
+                        cssProperties.splice(i, 1);
+                    }
+                    else {
+                        uniqueProps[uniqueSafeProperty] = true;
+                        prop.property = safeProperty;
+                    }
                 }
             }
-        },
-        generateVendorCSSProp = function(key) {
-            if (!RUNNING_ON_NODE && !VENDOR_CSS_PROPERTIES[key]) {
-                key = VENDOR_CSS_PROP_GENERATOR(key);
-            }
-            return key;
+            return cssProperties;
         },
         vendorSupportsPseudoTrans = function() {
             // DO NOT CHANGE THIS FUNCTION!
@@ -1547,7 +1545,7 @@ module.exports = function (window) {
             // In those cases, we need a patch and look up the tree ourselves
             //  Also: we will return separate value, NOT matrices
             var instance = this;
-            cssProperty = VENDOR_CSS_PROPERTIES[cssProperty] || generateVendorCSSProp(cssProperty);
+            VENDOR_CSS_PROPERTIES[cssProperty] || (cssProperty=generateVendorCSSProp(cssProperty));
             return (cssProperty===VENDOR_TRANSITION_PROPERTY) ?
                         instance._getTransitionAll(pseudo) :
                         window.getComputedStyle(instance, pseudo)[toCamelCase(cssProperty)];
@@ -3145,24 +3143,28 @@ module.exports = function (window) {
          * @param [notransition=false] {Boolean} set true if you are sure positioning is without transition.
          *        this isn't required, but it speeds up positioning. Only use when no transition is used:
          *        when there is a transition, setting this argument `true` would miscalculate the position.
-         * @chainable
+         *        The return-value will be `this` in case `notransition`===true, making setXY to be chainable.
+         * @return {Promise|this}
          * @since 0.0.1
          */
         ElementPrototype.setXY = function(x, y, constrain, notransition) {
             console.log(NAME, 'setXY '+x+','+y);
             var instance = this,
-                transformXY = arguments[4], // hidden feature: is used by the `drag`-module to get smoother dragging
-                // transformXY = arguments[4] && TRANSFORM_PROPERTY, // hidden feature: is used by the `drag`-module to get smoother dragging
-                dif, match, constrainNode, byExactId, parent, clone, currentT, extract,
-                containerTop, containerRight, containerLeft, containerBottom, requestedX, requestedY;
+                dif, match, constrainNode, byExactId, parent, clone, promise,
+                containerTop, containerRight, containerLeft, containerBottom, requestedX, requestedY,
+                transObject, xtrans, ytrans, inlinePosition, globalPosition, invisibleClass;
 
-            // default position to relative: check first inlinestye because this goes quicker
-            (instance.getInlineStyle(POSITION)==='relative') || (instance.getStyle(POSITION)!=='static') || instance.setInlineStyle(POSITION, 'relative');
+            // default position to relative: check first inlinestyle because this goes quicker
+            inlinePosition = instance.getInlineStyle(POSITION);
+            inlinePosition || (globalPosition=instance.getStyle(POSITION));
+            if ((inlinePosition==='static') || (inlinePosition==='fixed') || (globalPosition==='static') || (globalPosition==='fixed')) {
+                inlinePosition = 'relative';
+                instance.setInlineStyle(POSITION, inlinePosition);
+            }
+            invisibleClass = (inlinePosition==='absolute') ? INVISIBLE : INVISIBLE_RELATIVE;
             // make sure it has sizes and can be positioned
-            instance.setClass(INVISIBLE).setClass(BORDERBOX);
+            instance.setClass([invisibleClass, BORDERBOX]);
             (instance.getInlineStyle('display')==='none') && instance.setClass(BLOCK);
-            // transformXY need display `block` or `inline-block`
-            transformXY && instance.setInlineStyle('display', BLOCK); // goes through the vdom: won't update when already set
             constrain || (constrain=instance.getAttr('xy-constrain'));
             if (constrain) {
                 if (constrain==='window') {
@@ -3224,76 +3226,56 @@ module.exports = function (window) {
                     }
                 }
             }
-            if (typeof x === NUMBER) {
+            xtrans = (typeof x === NUMBER);
+            ytrans = (typeof y === NUMBER);
+            if (xtrans || ytrans) {
                 // check if there is a transition:
                 if (notransition) {
-                    if (transformXY) {
-                        dif = (x-instance.left);
-                        currentT = instance.getInlineStyle(transformXY) || '';
-                        if (currentT.indexOf('translateX(')!==-1) {
-                            extract = currentT.match(REGEXP_TRX);
-                            currentT = currentT.replace(REGEXP_TRX, 'translateX('+(parseInt(extract[1], 10) + dif));
-                        }
-                        else {
-                            currentT += ' translateX('+dif+'px)';
-                        }
-                        instance.setInlineStyle(transformXY, currentT);
-                    }
-                    else {
-                        instance.setClass(INVISIBLE);
-                        instance.setInlineStyle(LEFT, x + PX);
+                    instance.setClass([NO_TRANS2, invisibleClass]);
+                    transObject = [];
+                    xtrans && (transObject[0]={property: LEFT, value: x + PX});
+                    ytrans && (transObject[xtrans ? 1 : 0]={property: TOP, value: y + PX});
+                    instance.setInlineStyles(transObject);
+                    // reset transObject and maybe it will be filled when there is a difference
+                    // between the set value and the true value (which could appear due to different `position` properties)
+                    transObject = [];
+                    if (xtrans) {
                         dif = (instance.left-x);
-                        (dif!==0) && (instance.setInlineStyle(LEFT, (x - dif) + PX));
-                        instance.removeClass(INVISIBLE);
+                        (dif!==0) && (transObject[0]={property: LEFT, value: (x - dif) + PX});
                     }
-                }
-                else {
-                    // we will clone the node, make it invisible and without transitions and look what its correction should be
-                    clone = instance.cloneNode();
-                    clone.setClass(NO_TRANS).setClass(INVISIBLE);
-                    parent = instance.getParent() || DOCUMENT.body;
-                    parent.prepend(clone, null, instance);
-                    clone.setInlineStyle(LEFT, x+PX);
-                    dif = (clone.left-x);
-                    clone.remove();
-                    instance.setInlineStyle(LEFT, (x - dif) + PX);
-                }
-            }
-            if (typeof y === NUMBER) {
-                if (notransition) {
-                    if (transformXY) {
-                        dif = (y-instance.top);
-                        currentT = instance.getInlineStyle(transformXY) || '';
-                        if (currentT.indexOf('translateY(')!==-1) {
-                            extract = currentT.match(REGEXP_TRY);
-                            currentT = currentT.replace(REGEXP_TRY, 'translateY('+(parseInt(extract[1], 10) + dif));
-                        }
-                        else {
-                            currentT += ' translateY('+dif+'px)';
-                        }
-                        instance.setInlineStyle(transformXY, currentT);
-                    }
-                    else {
-                        instance.setClass(INVISIBLE);
-                        instance.setInlineStyle(TOP, y + PX);
+                    if (ytrans) {
                         dif = (instance.top-y);
-                        (dif!==0) && (instance.setInlineStyle(TOP, (y - dif) + PX));
-                        instance.removeClass(INVISIBLE);
+                        (dif!==0) && (transObject[transObject.length]={property: TOP, value: (y - dif) + PX});
                     }
+                    (transObject.length>0) && instance.setInlineStyles(transObject);
+                    instance.removeClass([NO_TRANS2, invisibleClass]);
                 }
                 else {
                     // we will clone the node, make it invisible and without transitions and look what its correction should be
                     clone = instance.cloneNode();
-                    clone.setClass(NO_TRANS).setClass(INVISIBLE);
+                    clone.setClass([NO_TRANS2, invisibleClass]);
                     parent = instance.getParent() || DOCUMENT.body;
                     parent.prepend(clone, null, instance);
-                    clone.setInlineStyle(TOP, y+PX);
-                    dif = (clone.top-y);
+
+                    transObject = [];
+                    xtrans && (transObject[0]={property: LEFT, value: x + PX});
+                    ytrans && (transObject[xtrans ? 1 : 0]={property: TOP, value: y + PX});
+
+                    clone.setInlineStyles(transObject);
+
+                    // reset transObject and fill it with the final true values
+                    transObject = [];
+                    xtrans && (transObject[0]={property: LEFT, value: (2*x-clone.left) + PX});
+                    ytrans && (transObject[xtrans ? 1 : 0]={property: TOP, value: (2*y-clone.top) + PX});
                     clone.remove();
-                    instance.setInlineStyle(TOP, (y - dif) + PX);
+                    promise = instance.setInlineStyles(transObject, true);
                 }
             }
-            return instance.removeClass(BLOCK).removeClass(BORDERBOX).removeClass(INVISIBLE);
+            else if (!notransition) {
+                promise = window.Promise.resolve();
+            }
+            instance.removeClass([BLOCK, BORDERBOX, invisibleClass]);
+            return promise || instance;
         };
 
        /**
@@ -3510,8 +3492,6 @@ module.exports = function (window) {
                     });
 
                     instance.setInlineTransitions(transitions);
-
-
                     transpromise = instance.setInlineStyles(to, true);
                     transpromise.catch(
                         function(err) {
