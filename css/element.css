@@ -8,6 +8,10 @@
     transition: none !important;
 }
 
+.itsa-no-overflow {
+    overflow: hidden !important;
+}
+
 .itsa-invisible {
     position: absolute !important;
 }

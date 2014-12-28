@@ -347,8 +347,10 @@ module.exports = function (window) {
                     else {
                         unfreezePromise = resolvedPromise;
                     }
-                    node.removeData(bkpFreezed);
-                    node.removeData(bkpFreezedData1);
+                    async(function() {
+                        node.removeData(bkpFreezed);
+                        node.removeData(bkpFreezedData1);
+                    });
                     if (finish || cancel) {
                         finalStyle = finalNode.getAttr(STYLE);
                         node.setAttr(STYLE, finalStyle);
@@ -455,7 +457,7 @@ module.exports = function (window) {
                         transprops[key] = true;
                     }
                 });
-                return transprops;
+                return (transprops.size()>0) ? transprops : null;
             };
             generateInlineCSS = function(group, transProperties, CSS1, CSS2) {
                 transProperties.each(function(value, key) {
@@ -892,8 +894,10 @@ module.exports = function (window) {
                 for (i=0; i<len; i++) {
                     property = transPropertySplitted[i];
                     duration = transTimingFunctionSplitted[i];
-                    if ((property!=='none') && ((property!=='all') || (duration!=='0s'))) {
-                        property = VENDOR_CSS_PROPERTIES[property] || generateVendorCSSProp(property);
+                    if ((property!=='none') && (duration!=='0s')) {
+                        if (property!=='all') {
+                            property = VENDOR_CSS_PROPERTIES[property] || generateVendorCSSProp(property);
+                        }
                         transitions[property] = {
                             duration: parseFloat(transDurationSplitted[i]),
                             timingFunction: duration,
@@ -1545,10 +1549,11 @@ module.exports = function (window) {
             // In those cases, we need a patch and look up the tree ourselves
             //  Also: we will return separate value, NOT matrices
             var instance = this;
+            if (cssProperty===VENDOR_TRANSITION_PROPERTY) {
+                return instance._getTransitionAll(pseudo);
+            }
             VENDOR_CSS_PROPERTIES[cssProperty] || (cssProperty=generateVendorCSSProp(cssProperty));
-            return (cssProperty===VENDOR_TRANSITION_PROPERTY) ?
-                        instance._getTransitionAll(pseudo) :
-                        window.getComputedStyle(instance, pseudo)[toCamelCase(cssProperty)];
+            return window.getComputedStyle(instance, pseudo)[toCamelCase(cssProperty)];
         };
 
         /**
@@ -2767,7 +2772,9 @@ module.exports = function (window) {
        /**
         * Sets a css-property (inline) for the Element.
         *
-        * Note: no need to camelCase cssProperty: both `margin-left` as well as `marginLeft` are fine
+        * Note1: Do not use vendor-specific properties, but general (like `transform` instead of `-webkit-transform`)
+        *        This method will use the appropriate css-property.
+        * Note2: no need to camelCase cssProperty: both `margin-left` as well as `marginLeft` are fine
         *
         * @method setInlineStyle
         * @param cssProperty {String} the css-property to be set
@@ -2775,7 +2782,7 @@ module.exports = function (window) {
         * @param [pseudo] {String} to look inside a pseudo-style
         * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
         *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
-        * @chainable
+        * @return {Promise|this}
         * @since 0.0.1
         */
         ElementPrototype.setInlineStyle = function(cssProperty, value, pseudo, returnPromise) {
@@ -2789,7 +2796,9 @@ module.exports = function (window) {
        /**
         * Sets multiple css-properties (inline) for the Element at once.
         *
-        * Note: no need to camelCase cssProperty: both `margin-left` as well as `marginLeft` are fine
+        * Note1: Do not use vendor-specific properties, but general (like `transform` instead of `-webkit-transform`)
+        *        This method will use the appropriate css-property.
+        * Note2: no need to camelCase cssProperty: both `margin-left` as well as `marginLeft` are fine
         *
         * @method setInlineStyles
         * @param cssProperties {Array|Object} the css-properties to be set, specified as an Array of Objects, or 1 Object.
@@ -2801,7 +2810,7 @@ module.exports = function (window) {
         *        </ul>
         * @param [returnPromise] {Boolean} whether to return a Promise instead of `this`, which might be useful in case of
         *        transition-properties. The promise will fullfil when the transition is ready, or immediately when no transitioned.
-        * @chainable
+        * @return {Promise|this}
         * @since 0.0.1
         */
         ElementPrototype.setInlineStyles = function(cssProperties, returnPromise) {
