@@ -306,8 +306,9 @@ module.exports = function (window) {
                 finalNode, getsTransitioned, originalCSS, finalCSS, transPropertiesElement, transPropertiesBefore, transPropertiesAfter, bkpFreezedData1, endIntermediate,
                 promise, finalCSS_before, finalCSS_after, transpromise, manipulated, getCurrentProperties, currentProperties, bkpNodeData, bkpFreezed, cleanup,
                 originalCSS_before, originalCSS_after, searchTrans, generateInlineCSS, finalStyle, unFreeze, freezedExtraData1, startStyle, unfreezePromise,
-                transprops, transpropsBefore, transpropsAfter;
+                transprops, transpropsBefore, transpropsAfter, time1, time2;
 
+            time1 = Date.now();
             bkpNodeData = idGenerator('bkpNode');
             bkpFreezed = idGenerator('bkpFreezed');
             bkpFreezedData1 = idGenerator('bkpFreezedData1');
@@ -365,7 +366,7 @@ module.exports = function (window) {
             };
 
             resolvedPromise.cancel = function() { /* NOOP for compatibility */ };
-            resolvedPromise.freeze = function() { /* NOOP for compatibility */ };
+            resolvedPromise.freeze = function() { return window.Promise.resolve(0); /* compatibility */ };
             resolvedPromise.unfreeze = unFreeze;
             resolvedPromise.finish = function() { /* NOOP for compatibility */ };
             if (EV_TRANSITION_END===undefined) {
@@ -444,6 +445,12 @@ module.exports = function (window) {
                         });
                     }
                 }
+                time2 || (time2=Date.now());
+                return new window.Promise(function(resolve) {
+                    async(function() {
+                        resolve(time2-time1);
+                    });
+                });
             };
             searchTrans = function(CSS1, CSS2, transProperties) {
                 var allTrans = !!transProperties.all,
@@ -556,6 +563,9 @@ module.exports = function (window) {
                 // as on the end of the transition.
                 // set the original css inline:
                 promise = window.Promise.manage();
+                promise.finally(function() {
+                    time2 || (time2=Date.now());
+                });
                 node.setClass(NO_TRANS2);
                 node.setInlineStyles(currentInlineCSS, false, true);
                 async(function() {
@@ -572,15 +582,15 @@ module.exports = function (window) {
                 });
 
                 promise.cancel = function() {
-                    endIntermediate('cancelled');
+                    return endIntermediate('cancelled');
                 };
 
                 promise.freeze = function() {
-                    endIntermediate('frozen');
+                    return endIntermediate('frozen');
                 };
 
                 promise.finish = function() {
-                    endIntermediate('finished');
+                    return endIntermediate('finished');
                 };
 
                 promise.unfreeze = unFreeze;
@@ -2287,7 +2297,14 @@ module.exports = function (window) {
         *        Setting this parameter, will calculate the true css of the transitioned properties and set this temporarely inline, to fix the issue.
         *        Don't use it when not needed, it has a slightly performancehit.
         *        No need to set when `returnPromise` is set --> returnPromise always handles the transitionFix.
-        * @chainable
+        * @return {Promise|this} In case `returnPromise` is set, a Promise returns with the next handles:
+        *        <ul>
+        *            <li>cancel() {Promise}</li>
+        *            <li>freeze() {Promise}</li>
+        *            <li>unfreeze()</li>
+        *            <li>finish() {Promise}</li>
+        *        </ul>
+        *        These handles resolve with the `elapsed-time` as first argument of the callbackFn
         * @since 0.0.1
         */
         ElementPrototype.removeClass = function(className, returnPromise, transitionFix) {
@@ -2627,7 +2644,14 @@ module.exports = function (window) {
         *        Setting this parameter, will calculate the true css of the transitioned properties and set this temporarely inline, to fix the issue.
         *        Don't use it when not needed, it has a slightly performancehit.
         *        No need to set when `returnPromise` is set --> returnPromise always handles the transitionFix.
-        * @chainable
+        * @return {Promise|this} In case `returnPromise` is set, a Promise returns with the next handles:
+        *        <ul>
+        *            <li>cancel() {Promise}</li>
+        *            <li>freeze() {Promise}</li>
+        *            <li>unfreeze()</li>
+        *            <li>finish() {Promise}</li>
+        *        </ul>
+        *        These handles resolve with the `elapsed-time` as first argument of the callbackFn
         * @since 0.0.1
         */
         ElementPrototype.replaceClass = function(prevClassName, newClassName, force, returnPromise, transitionFix) {
@@ -2704,7 +2728,14 @@ module.exports = function (window) {
         *        Setting this parameter, will calculate the true css of the transitioned properties and set this temporarely inline, to fix the issue.
         *        Don't use it when not needed, it has a slightly performancehit.
         *        No need to set when `returnPromise` is set --> returnPromise always handles the transitionFix.
-        * @chainable
+        * @return {Promise|this} In case `returnPromise` is set, a Promise returns with the next handles:
+        *        <ul>
+        *            <li>cancel() {Promise}</li>
+        *            <li>freeze() {Promise}</li>
+        *            <li>unfreeze()</li>
+        *            <li>finish() {Promise}</li>
+        *        </ul>
+        *        These handles resolve with the `elapsed-time` as first argument of the callbackFn
         * @since 0.0.1
         */
         ElementPrototype.setClass = function(className, returnPromise, transitionFix) {
@@ -3371,7 +3402,14 @@ module.exports = function (window) {
         *            <li>delay  {String} (optional)</li>
         *            <li>pseudo  {String} (optional) --> not: not supported yet in browsers</li>
         *        </ul>
-        * @return {Promise}
+        * @return {Promise} The promise has the handles:
+        *        <ul>
+        *            <li>cancel() {Promise}</li>
+        *            <li>freeze() {Promise}</li>
+        *            <li>unfreeze()</li>
+        *            <li>finish() {Promise}</li>
+        *        </ul>
+        *        These handles resolve with the `elapsed-time` as first argument of the callbackFn
         * @since 0.0.1
         */
         ElementPrototype.transition = function(to, from) {
@@ -3463,7 +3501,11 @@ module.exports = function (window) {
                     resolveHandle();
                 }
                 time2 || (time2=Date.now());
-                return (time2-time1);
+                return new window.Promise(function(resolve) {
+                    async(function() {
+                        resolve(time2-time1);
+                    });
+                });
             };
             promise = new window.Promise(function(resolve, reject) {
                 async(function() {
@@ -3559,7 +3601,14 @@ module.exports = function (window) {
         *        Setting this parameter, will calculate the true css of the transitioned properties and set this temporarely inline, to fix the issue.
         *        Don't use it when not needed, it has a slightly performancehit.
         *        No need to set when `returnPromise` is set --> returnPromise always handles the transitionFix.
-        * @chainable
+        * @return {Promise|this} In case `returnPromise` is set, a Promise returns with the next handles:
+        *        <ul>
+        *            <li>cancel() {Promise}</li>
+        *            <li>freeze() {Promise}</li>
+        *            <li>unfreeze()</li>
+        *            <li>finish() {Promise}</li>
+        *        </ul>
+        *        These handles resolve with the `elapsed-time` as first argument of the callbackFn
         * @since 0.0.1
         */
         ElementPrototype.toggleClass = function(className, forceState, returnPromise, transitionFix) {
