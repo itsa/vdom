@@ -1,4 +1,4 @@
-/*global describe, it, before, after, beforeEach, afterEach */
+/*global describe, it, beforeEach, afterEach */
 /*jshint unused:false */
 (function (window) {
 
@@ -6,79 +6,129 @@
 
     require("js-ext/lib/object.js");
     require("window-ext");
-    require("../vdom.js")(window);
     // require('../partials/extend-element.js')(window);
     // require('../partials/extend-document.js')(window);
 
-    var chai = require('chai'),
-        expect = chai.expect,
-        should = chai.should(),
+    var expect = require('chai').expect,
+        should = require('chai').should(),
+        plugins = require("../vdom.js")(window).Plugins,
         NS = require('../partials/vdom-ns.js')(window),
         nodeids = NS.nodeids,
-        TRANSFORM_PROPERTY = require('polyfill/extra/transform.js')(window),
-        VENDOR_TRANSFORM_PROPERTY = TRANSFORM_PROPERTY || 'transform',
-        TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window),
-        VENDOR_TRANSITION_PROPERTY = TRANSITION_PROPERTY || 'transition',
         async = require('utils/lib/timers.js').async,
-        SUPPORT_INLINE_PSEUDO_STYLES = window.document._supportInlinePseudoStyles,
-        node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub, nodeSub3SubText, container, containerSub1, containerSub2, containerSub3, cssnode;
-
-    chai.use(require('chai-as-promised'));
+        node, nodeSub1, nodeSub2;
 
 
+    describe('SetXY with transition', function () {
 
-    describe('Node-transitions', function () {
-
-        this.timeout(5000);
-
-        before(function() {
-            var inlineClass = '.red {background-color: #F00;} .blue {background-color: #00F;} .small {width: 50px;} .wide {width: 750px;}';
-            cssnode = window.document.createElement('style');
-            cssnode.setAttribute('type', 'text/css');
-            cssnode.appendChild(window.document.createTextNode(inlineClass));
-            window.document.body.appendChild(cssnode);
-        });
-
-        after(function() {
-            window.document.body.removeChild(cssnode);
-        });
+        // bodyNode looks like this:
+        /*
+        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;">
+            <div style="height: 50px; width: 100px;"></div>
+            <div></div>
+        </div>
+        */
 
         // Code to execute before every test.
         beforeEach(function() {
             node = window.document.createElement('div');
-            node.setAttribute('style', 'position: absolute; z-index: -1; left: -9999px; top: -9999px;');
+            node.id = 'ITSA';
+            node.className = 'red blue';
+            node.setAttribute('style', 'position: absolute; z-index: 1; left: 10px; top: 30px; height: 75px; width: 150px; background-color: #F00;');
+                nodeSub1 = window.document.createElement('div');
+                nodeSub1.setAttribute('style', 'height: 50px; width: 100px;');
+                node.appendChild(nodeSub1);
+
+                nodeSub2 = window.document.createElement('div');
+                node.appendChild(nodeSub2);
+                nodeSub2.setText('ok');
+                nodeSub2.setInlineStyle('background-color', '#00F');
             window.document.body.appendChild(node);
         });
 
         // Code to execute after every test.
         afterEach(function() {
-            window.document.body.removeChild(node);
+            // window.document.body.removeChild(node);
+        });
+/*
+        it('setXY node with height', function () {
+            expect(node.left).to.be.eql(10);
+            expect(node.top).to.be.eql(30);
+
+            node.setXY(85, 55);
+            expect(node.left).to.be.eql(85);
+            expect(node.top).to.be.eql(55);
+
+            expect(node.getStyle('left')).to.be.eql('85px');
+            expect(node.getStyle('top')).to.be.eql('55px');
         });
 
-        it('check to return a Promise', function () {
-            expect(node.setClass('blue', true) instanceof window.Promise).to.be.true;
-            expect(node.setClass('blue') instanceof window.Promise).to.be.false;
+        it('setXY node without height', function () {
+            node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px;');
+            expect(node.left).to.be.eql(10);
+            expect(node.top).to.be.eql(30);
 
-            expect(node.removeClass('blue', true) instanceof window.Promise).to.be.true;
-            expect(node.removeClass('blue') instanceof window.Promise).to.be.false;
-            expect(node.toggleClass('blue', true, true) instanceof window.Promise).to.be.true;
-            expect(node.toggleClass('blue', true) instanceof window.Promise).to.be.false;
-            expect(node.toggleClass('blue', null, true) instanceof window.Promise).to.be.true;
-            expect(node.toggleClass('blue') instanceof window.Promise).to.be.false;
+            node.setXY(85, 55);
+            expect(node.left).to.be.eql(85);
+            expect(node.top).to.be.eql(55);
 
-
-            expect(node.replaceClass('blue', 'red', true, true) instanceof window.Promise).to.be.true;
-            expect(node.replaceClass('blue', 'red', true) instanceof window.Promise).to.be.false;
-            expect(node.replaceClass('blue', 'red', true, true) instanceof window.Promise).to.be.true;
-            expect(node.replaceClass('blue', 'red', true) instanceof window.Promise).to.be.false;
-
-            expect(node.replaceClass('blue', 'red', false, true) instanceof window.Promise).to.be.true;
-            expect(node.replaceClass('blue', 'red', false) instanceof window.Promise).to.be.false;
-            expect(node.replaceClass('blue', 'red', false, true) instanceof window.Promise).to.be.true;
-            expect(node.replaceClass('blue', 'red', false) instanceof window.Promise).to.be.false;
-
+            expect(node.getStyle('left')).to.be.eql('85px');
+            expect(node.getStyle('top')).to.be.eql('55px');
         });
 
+        it('setXY innner-node with height', function () {
+            nodeSub1.setXY(2, 5);
+            expect(nodeSub1.left).to.be.eql(2);
+            expect(nodeSub1.top).to.be.eql(5);
+        });
+*/
+        it('setXYinner-node without height', function () {
+            nodeSub2.setXY(2, 5);
+            expect(nodeSub2.left).to.be.eql(2);
+            expect(nodeSub2.top).to.be.eql(5);
+        });
+/*
+        it('setXY with constrained to inner-node with height', function () {
+            nodeSub1.setXY(2, 5, '#ITSA');
+            expect(nodeSub1.left).to.be.eql(10);
+            expect(nodeSub1.top).to.be.eql(30);
+
+            nodeSub1.setXY(15, 35);
+            expect(nodeSub1.left).to.be.eql(15);
+            expect(nodeSub1.top).to.be.eql(35);
+
+            nodeSub1.setXY(2, 5, node);
+            expect(nodeSub1.left).to.be.eql(10);
+            expect(nodeSub1.top).to.be.eql(30);
+        });
+
+        it('setXY with constrained to inner-node without height', function () {
+            nodeSub2.setXY(2, 5, '#ITSA');
+            expect(nodeSub2.left).to.be.eql(10);
+            expect(nodeSub2.top).to.be.eql(30);
+
+            nodeSub2.setXY(15, 35);
+            expect(nodeSub2.left).to.be.eql(15);
+            expect(nodeSub2.top).to.be.eql(35);
+
+            nodeSub2.setXY(2, 5, node);
+            expect(nodeSub2.left).to.be.eql(10);
+            expect(nodeSub2.top).to.be.eql(30);
+        });
+
+        it('setXY to inner-node with height and with constrained-plugin', function () {
+            nodeSub1.plug(plugins.NodeConstrain, {selector: '#ITSA'});
+            nodeSub1.setXY(2, 5);
+            expect(nodeSub1.left).to.be.eql(10);
+            expect(nodeSub1.top).to.be.eql(30);
+        });
+
+        it('setXY to inner-node without height and with constrained-plugin', function () {
+            nodeSub2.plug(plugins.NodeConstrain, {selector: '#ITSA'});
+            nodeSub2.setXY(2, 5);
+            expect(nodeSub2.left).to.be.eql(10);
+            expect(nodeSub2.top).to.be.eql(30);
+        });
+*/
     });
 
 

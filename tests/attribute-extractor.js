@@ -138,9 +138,21 @@
                         'font-weight': 'normal'
                     }
                 },
+                stylesNoPseudo = {
+                    element: {
+                        color: '#F00',
+                        border: 'solid 1px #000'
+                    }
+                },
                 extracted = extractor.extractStyle(style);
-            expect(extracted.attrStyle).to.be.eql('{color: #F00; border: solid 1px #000; } :before {color: #FF0; font-weight: bold; } :after {color: #999; font-weight: normal; }');
-            expect(extracted.styles).to.be.eql(styles);
+            if (window.document._supportInlinePseudoStyles) {
+                expect(extracted.attrStyle).to.be.eql('{color: #F00; border: solid 1px #000; } :before {color: #FF0; font-weight: bold; } :after {color: #999; font-weight: normal; }');
+                expect(extracted.styles).to.be.eql(styles);
+            }
+            else {
+                expect(extracted.attrStyle).to.be.eql('color: #F00; border: solid 1px #000;');
+                expect(extracted.styles).to.be.eql(stylesNoPseudo);
+            }
         });
 
         it('multiple messy 1', function () {
@@ -159,9 +171,21 @@
                         'font-weight': 'normal'
                     }
                 },
+                stylesNoPseudo = {
+                    element: {
+                        color: '#F00',
+                        border: 'solid 1px #000'
+                    }
+                },
                 extracted = extractor.extractStyle(style);
-            expect(extracted.attrStyle).to.be.eql('{color: #F00; border: solid 1px #000; } :before {color: #FF0; font-weight: bold; } :after {color: #999; font-weight: normal; }');
-            expect(extracted.styles).to.be.eql(styles);
+            if (window.document._supportInlinePseudoStyles) {
+                expect(extracted.attrStyle).to.be.eql('{color: #F00; border: solid 1px #000; } :before {color: #FF0; font-weight: bold; } :after {color: #999; font-weight: normal; }');
+                expect(extracted.styles).to.be.eql(styles);
+            }
+            else {
+                expect(extracted.attrStyle).to.be.eql('color: #F00; border: solid 1px #000;');
+                expect(extracted.styles).to.be.eql(stylesNoPseudo);
+            }
         });
 
         it('multiple messy 2', function () {
@@ -180,9 +204,21 @@
                         'font-weight': 'normal'
                     }
                 },
+                stylesNoPseudo = {
+                    element: {
+                        color: '#F00',
+                        border: 'solid 1px #000'
+                    }
+                },
                 extracted = extractor.extractStyle(style);
-            expect(extracted.attrStyle).to.be.eql('{color: #F00; border: solid 1px #000; } :before {color: #FF0; font-weight: bold; } :after {color: #999; font-weight: normal; }');
-            expect(extracted.styles).to.be.eql(styles);
+            if (window.document._supportInlinePseudoStyles) {
+                expect(extracted.attrStyle).to.be.eql('{color: #F00; border: solid 1px #000; } :before {color: #FF0; font-weight: bold; } :after {color: #999; font-weight: normal; }');
+                expect(extracted.styles).to.be.eql(styles);
+            }
+            else {
+                expect(extracted.attrStyle).to.be.eql('color: #F00; border: solid 1px #000;');
+                expect(extracted.styles).to.be.eql(stylesNoPseudo);
+            }
         });
 
     });
@@ -214,133 +250,12 @@
                     'font-weight': 'normal'
                 }
             };
-            expect(extractor.serializeStyles(styles)).to.be.eql('{color: #F00; border: solid 1px #000; } :before {color: #FF0; font-weight: bold; } :after {color: #999; font-weight: normal; }');
-        });
-
-    });
-
-    describe('extractStyle with transform', function () {
-
-        it('single', function () {
-            var style = 'color: #F00; transform: translateX(10px) matrix(1.0, 2.0, 3.0, 4.0, 5.0, 6.0) translateY(5px); border: solid 1px #000;',
-                styles = {
-                    element: {
-                        color: '#F00',
-                        transform: {
-                            translateX: '10px',
-                            matrix: '1.0, 2.0, 3.0, 4.0, 5.0, 6.0',
-                            translateY: '5px'
-                        },
-                        border: 'solid 1px #000'
-                    }
-                },
-                extracted = extractor.extractStyle(style);
-            expect(extracted.attrStyle).to.be.eql('color: #F00; transform: translateX(10px) matrix(1.0, 2.0, 3.0, 4.0, 5.0, 6.0) translateY(5px); border: solid 1px #000;');
-            expect(extracted.styles).to.be.eql(styles);
-        });
-
-        it('single with transform none', function () {
-            var style = 'color: #F00; transform: none; border: solid 1px #000;',
-                styles = {
-                    element: {
-                        color: '#F00',
-                        transform: {
-                            none: true
-                        },
-                        border: 'solid 1px #000'
-                    }
-                },
-                extracted = extractor.extractStyle(style);
-            expect(extracted.attrStyle).to.be.eql('color: #F00; transform: none; border: solid 1px #000;');
-            expect(extracted.styles).to.be.eql(styles);
-        });
-
-        it('multiple', function () {
-            var style = '{color: #F00; transform: translateX(10px) matrix(1.0, 2.0, 3.0, 4.0, 5.0, 6.0) translateY(5px); border: solid 1px #000; } :before {color: #FF0; transform: translateX(50px) translateY(150px); font-weight: bold; } :after {color: #999; font-weight: normal; }',
-                styles = {
-                    element: {
-                        color: '#F00',
-                        transform: {
-                            translateX: '10px',
-                            matrix: '1.0, 2.0, 3.0, 4.0, 5.0, 6.0',
-                            translateY: '5px'
-                        },
-                        border: 'solid 1px #000'
-                    },
-                    ':before': {
-                        color: '#FF0',
-                        transform: {
-                            translateX: '50px',
-                            translateY: '150px'
-                        },
-                        'font-weight': 'bold'
-                    },
-                    ':after': {
-                        color: '#999',
-                        'font-weight': 'normal'
-                    }
-                },
-                extracted = extractor.extractStyle(style);
-            expect(extracted.attrStyle).to.be.eql('{color: #F00; transform: translateX(10px) matrix(1.0, 2.0, 3.0, 4.0, 5.0, 6.0) translateY(5px); border: solid 1px #000; } :before {color: #FF0; transform: translateX(50px) translateY(150px); font-weight: bold; } :after {color: #999; font-weight: normal; }');
-            expect(extracted.styles).to.be.eql(styles);
-        });
-
-    });
-
-    describe('serializeStyles with transform', function () {
-
-        it('serializeStyles', function () {
-            var styles = {
-                element: {
-                    color: '#F00',
-                    transform: {
-                        translateX: '50px',
-                        translateY: '150px'
-                    },
-                    border: 'solid 1px #000'
-                }
-            };
-            expect(extractor.serializeStyles(styles)).to.be.eql('color: #F00; transform: translateX(50px) translateY(150px); border: solid 1px #000;');
-        });
-
-        it('serializeStyles with transform none', function () {
-            var styles = {
-                element: {
-                    color: '#F00',
-                    transform: {
-                        none: true
-                    },
-                    border: 'solid 1px #000'
-                }
-            };
-            expect(extractor.serializeStyles(styles)).to.be.eql('color: #F00; transform: none; border: solid 1px #000;');
-        });
-
-        it('serializeStyles complex', function () {
-            var styles = {
-                element: {
-                    color: '#F00',
-                    transform: {
-                        translateX: '10px',
-                        matrix: '1.0, 2.0, 3.0, 4.0, 5.0, 6.0',
-                        translateY: '5px'
-                    },
-                    border: 'solid 1px #000'
-                },
-                ':before': {
-                    color: '#FF0',
-                    transform: {
-                        translateX: '50px',
-                        translateY: '150px'
-                    },
-                    'font-weight': 'bold'
-                },
-                ':after': {
-                    color: '#999',
-                    'font-weight': 'normal'
-                }
-            };
-            expect(extractor.serializeStyles(styles)).to.be.eql('{color: #F00; transform: translateX(10px) matrix(1.0, 2.0, 3.0, 4.0, 5.0, 6.0) translateY(5px); border: solid 1px #000; } :before {color: #FF0; transform: translateX(50px) translateY(150px); font-weight: bold; } :after {color: #999; font-weight: normal; }');
+            if (window.document._supportInlinePseudoStyles) {
+                expect(extractor.serializeStyles(styles)).to.be.eql('{color: #F00; border: solid 1px #000; } :before {color: #FF0; font-weight: bold; } :after {color: #999; font-weight: normal; }');
+            }
+            else {
+                expect(extractor.serializeStyles(styles)).to.be.eql('color: #F00; border: solid 1px #000;');
+            }
         });
 
     });
@@ -438,9 +353,31 @@
                         'font-weight': 'normal'
                     }
                 },
+                stylesNoPseudo = {
+                    element: {
+                        color: '#F00',
+                        transition: {
+                            width: {
+                                duration: 2,
+                                timingFunction: 'ease-in',
+                                delay: 4.5
+                            },
+                            height: {
+                                duration: 6
+                            }
+                        },
+                        border: 'solid 1px #000'
+                    }
+                },
                 extracted = extractor.extractStyle(style);
-            expect(extracted.attrStyle).to.be.eql('{color: #F00; transition: width 2s ease-in 4.5s, height 6s; border: solid 1px #000; } :before {color: #FF0; transition: opacity 8s; font-weight: bold; } :after {color: #999; font-weight: normal; }');
-            expect(extracted.styles).to.be.eql(styles);
+            if (window.document._supportInlinePseudoStyles) {
+                expect(extracted.attrStyle).to.be.eql('{color: #F00; transition: width 2s ease-in 4.5s, height 6s; border: solid 1px #000; } :before {color: #FF0; transition: opacity 8s; font-weight: bold; } :after {color: #999; font-weight: normal; }');
+                expect(extracted.styles).to.be.eql(styles);
+            }
+            else {
+                expect(extracted.attrStyle).to.be.eql('color: #F00; transition: width 2s ease-in 4.5s, height 6s; border: solid 1px #000;');
+                expect(extracted.styles).to.be.eql(stylesNoPseudo);
+            }
         });
 
     });
@@ -497,7 +434,12 @@
                     'font-weight': 'normal'
                 }
             };
-            expect(extractor.serializeStyles(styles)).to.be.eql('{color: #F00; transition: width 2s ease-in 4.5s, height 6s; border: solid 1px #000; } :before {color: #FF0; transition: opacity 8s; font-weight: bold; } :after {color: #999; font-weight: normal; }');
+            if (window.document._supportInlinePseudoStyles) {
+                expect(extractor.serializeStyles(styles)).to.be.eql('{color: #F00; transition: width 2s ease-in 4.5s, height 6s; border: solid 1px #000; } :before {color: #FF0; transition: opacity 8s; font-weight: bold; } :after {color: #999; font-weight: normal; }');
+            }
+            else {
+                expect(extractor.serializeStyles(styles)).to.be.eql('color: #F00; transition: width 2s ease-in 4.5s, height 6s; border: solid 1px #000;');
+            }
         });
 
     });

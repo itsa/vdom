@@ -8,13 +8,26 @@
     transition: none !important;
 }
 
+.itsa-no-overflow {
+    overflow: hidden !important;
+}
+
 .itsa-invisible {
-    visibility: hidden !important;
     position: absolute !important;
+}
+
+.itsa-invisible-relative {
+    position: relative !important;
+}
+
+.itsa-invisible,
+.itsa-invisible-relative {
+    visibility: hidden !important;
     z-index: -1;
 }
 
-.itsa-invisible * {
+.itsa-invisible *,
+.itsa-invisible-relative * {
     visibility: hidden !important;
 }
 
@@ -22,19 +35,11 @@
     opacity: 0;
 }
 
-.itsa-transformed-1s {
-    -webkit-transition: opacity 1s; !important;
-    -moz-transition: opacity 1s !important;
-    -ms-transition: opacity 1s !important;
-    -o-transition: opacity 1s !important; /* opera doesn't support none */
-    transition: opacity 1s !important;
-}
-
 .itsa-hidden {
     visibility: hidden !important;
     position: absolute !important;
-    left: -9999px;
-    top: -9999px;
+    left: -9999px !important;
+    top: -9999px !important;
 }
 
 .itsa-block {

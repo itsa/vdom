@@ -48,83 +48,129 @@
             window.document.body.removeChild(node);
         });
 
-        it('setXY node with height', function () {
+        it('setXY node with height', function (done) {
             expect(node.left).to.be.eql(10);
             expect(node.top).to.be.eql(30);
 
-            node.setXY(85, 55);
-            expect(node.left).to.be.eql(85);
-            expect(node.top).to.be.eql(55);
-
-            expect(node.getStyle('left')).to.be.eql('85px');
-            expect(node.getStyle('top')).to.be.eql('55px');
+            node.setXY(85, 55).then(
+                function() {
+                    expect(node.left).to.be.eql(85);
+                    expect(node.top).to.be.eql(55);
+                    expect(node.getStyle('left')).to.be.eql('85px');
+                    expect(node.getStyle('top')).to.be.eql('55px');
+                    done();
+                },
+                done
+            );
         });
 
-        it('setXY node without height', function () {
+        it('setXY node without height', function (done) {
             node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px;');
             expect(node.left).to.be.eql(10);
             expect(node.top).to.be.eql(30);
 
-            node.setXY(85, 55);
-            expect(node.left).to.be.eql(85);
-            expect(node.top).to.be.eql(55);
-
-            expect(node.getStyle('left')).to.be.eql('85px');
-            expect(node.getStyle('top')).to.be.eql('55px');
+            node.setXY(85, 55).then(
+                function() {
+                    expect(node.left).to.be.eql(85);
+                    expect(node.top).to.be.eql(55);
+                    expect(node.getStyle('left')).to.be.eql('85px');
+                    expect(node.getStyle('top')).to.be.eql('55px');
+                    done();
+                },
+                done
+            );
         });
 
-        it('setXY innner-node with height', function () {
-            nodeSub1.setXY(2, 5);
-            expect(nodeSub1.left).to.be.eql(2);
-            expect(nodeSub1.top).to.be.eql(5);
+        it('setXY innner-node with height', function (done) {
+            nodeSub1.setXY(2, 5).then(
+                function() {
+                    expect(nodeSub1.left).to.be.eql(2);
+                    expect(nodeSub1.top).to.be.eql(5);
+                    done();
+                },
+                done
+            );
         });
 
-        it('setXYinner-node without height', function () {
-            nodeSub2.setXY(2, 5);
-            expect(nodeSub2.left).to.be.eql(2);
-            expect(nodeSub2.top).to.be.eql(5);
+        it('setXYinner-node without height', function (done) {
+            nodeSub2.setXY(2, 5).then(
+                function() {
+                    expect(nodeSub2.left).to.be.eql(2);
+                    expect(nodeSub2.top).to.be.eql(5);
+                    done();
+                },
+                done
+            );
         });
 
-        it('setXY with constrained to inner-node with height', function () {
-            nodeSub1.setXY(2, 5, '#ITSA');
-            expect(nodeSub1.left).to.be.eql(10);
-            expect(nodeSub1.top).to.be.eql(30);
-
-            nodeSub1.setXY(15, 35);
-            expect(nodeSub1.left).to.be.eql(15);
-            expect(nodeSub1.top).to.be.eql(35);
-
-            nodeSub1.setXY(2, 5, node);
-            expect(nodeSub1.left).to.be.eql(10);
-            expect(nodeSub1.top).to.be.eql(30);
+        it('setXY with constrained to inner-node with height', function (done) {
+            nodeSub1.setXY(2, 5, '#ITSA').then(
+                function() {
+                    expect(nodeSub1.left).to.be.eql(10);
+                    expect(nodeSub1.top).to.be.eql(30);
+                    return nodeSub1.setXY(15, 35);
+                }
+            ).then(
+                function() {
+                    expect(nodeSub1.left).to.be.eql(15);
+                    expect(nodeSub1.top).to.be.eql(35);
+                    return nodeSub1.setXY(2, 5, node);
+                }
+            ).then(
+                function() {
+                    expect(nodeSub1.left).to.be.eql(10);
+                    expect(nodeSub1.top).to.be.eql(30);
+                    done();
+                },
+                done
+            );
         });
 
-        it('setXY with constrained to inner-node without height', function () {
-            nodeSub2.setXY(2, 5, '#ITSA');
-            expect(nodeSub2.left).to.be.eql(10);
-            expect(nodeSub2.top).to.be.eql(30);
-
-            nodeSub2.setXY(15, 35);
-            expect(nodeSub2.left).to.be.eql(15);
-            expect(nodeSub2.top).to.be.eql(35);
-
-            nodeSub2.setXY(2, 5, node);
-            expect(nodeSub2.left).to.be.eql(10);
-            expect(nodeSub2.top).to.be.eql(30);
+        it('setXY with constrained to inner-node without height', function (done) {
+            nodeSub2.setXY(2, 5, '#ITSA').then(
+                function() {
+                    expect(nodeSub2.left).to.be.eql(10);
+                    expect(nodeSub2.top).to.be.eql(30);
+                    return nodeSub2.setXY(15, 35);
+                }
+            ).then(
+                function() {
+                    expect(nodeSub2.left).to.be.eql(15);
+                    expect(nodeSub2.top).to.be.eql(35);
+                    return nodeSub2.setXY(2, 5, node);
+                }
+            ).then(
+                function() {
+                    expect(nodeSub2.left).to.be.eql(10);
+                    expect(nodeSub2.top).to.be.eql(30);
+                    done();
+                },
+                done
+            );
         });
 
-        it('setXY to inner-node with height and with constrained-plugin', function () {
+        it('setXY to inner-node with height and with constrained-plugin', function (done) {
             nodeSub1.plug(plugins.NodeConstrain, {selector: '#ITSA'});
-            nodeSub1.setXY(2, 5);
-            expect(nodeSub1.left).to.be.eql(10);
-            expect(nodeSub1.top).to.be.eql(30);
+            nodeSub1.setXY(2, 5).then(
+                function() {
+                    expect(nodeSub1.left).to.be.eql(10);
+                    expect(nodeSub1.top).to.be.eql(30);
+                    done();
+                },
+                done
+            );
         });
 
-        it('setXY to inner-node without height and with constrained-plugin', function () {
+        it('setXY to inner-node without height and with constrained-plugin', function (done) {
             nodeSub2.plug(plugins.NodeConstrain, {selector: '#ITSA'});
-            nodeSub2.setXY(2, 5);
-            expect(nodeSub2.left).to.be.eql(10);
-            expect(nodeSub2.top).to.be.eql(30);
+            nodeSub2.setXY(2, 5).then(
+                function() {
+                    expect(nodeSub2.left).to.be.eql(10);
+                    expect(nodeSub2.top).to.be.eql(30);
+                    done();
+                },
+                done
+            );
         });
 
     });
@@ -201,7 +247,7 @@
             expect(nodeSub1.left).to.be.eql(10);
             expect(nodeSub1.top).to.be.eql(30);
 
-            nodeSub1.setXY(15, 35);
+            nodeSub1.setXY(15, 35, null, true);
             expect(nodeSub1.left).to.be.eql(15);
             expect(nodeSub1.top).to.be.eql(35);
 
@@ -215,7 +261,7 @@
             expect(nodeSub2.left).to.be.eql(10);
             expect(nodeSub2.top).to.be.eql(30);
 
-            nodeSub2.setXY(15, 35);
+            nodeSub2.setXY(15, 35, null, true);
             expect(nodeSub2.left).to.be.eql(15);
             expect(nodeSub2.top).to.be.eql(35);
 
