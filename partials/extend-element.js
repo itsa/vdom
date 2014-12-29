@@ -8,7 +8,7 @@
  * <br>
  * New BSD License - http://choosealicense.com/licenses/bsd-3-clause/
  *
- * @module vnode
+ * @module vdom
  * @submodule extend-element
  * @class Element
  * @since 0.0.1
@@ -3914,15 +3914,6 @@ for (j=0; j<len2; j++) {
 * <ul>
 * @param element {Element}
 */
-
-/**
- * Inserts `newElement` before `referenceElement`.
- *
- * @method insertBefore
- * @param newElement {Element} The newElement to insert
- * @param referenceElement {Element} The Element before which newElement is inserted.
- * @return {Element} the Element being inserted (equals newElement)
- */
 
 /**
 * Removes the attribute specified by an attributeNode from the Element.
