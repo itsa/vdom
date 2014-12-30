@@ -2718,6 +2718,30 @@ module.exports = function (window) {
         };
 
        /**
+         * Sets multiple attributes on the Element with the specified value.
+         * The argument should be one ore more Objects with the properties: `name` and `value`
+         *
+         * @example
+         * instance.setAttrs([
+         *                      {name: 'tabIndex', value: '0'},
+         *                      {name: 'style', value: 'color: #000;'}
+         *                  ]);
+         *
+         * @method setAttrs
+         * @param attributeData {Array|Object}
+         * @chainable
+         * @since 0.0.1
+        */
+        ElementPrototype.setAttrs = function(attributeData) {
+            var instance = this;
+            Array.isArray(attributeData) || (attributeData=[attributeData]);
+            attributeData.forEach(function(item) {
+                instance.setAttribute(item.name, item.value);
+            });
+            return instance;
+        };
+
+       /**
         * Adds a class to the Element. If the class already exists it won't be duplicated.
         *
         * @method setClass
