@@ -8,7 +8,7 @@
  * <br>
  * New BSD License - http://choosealicense.com/licenses/bsd-3-clause/
  *
- * @module vnode
+ * @module vdom
  * @submodule extend-element
  * @class Element
  * @since 0.0.1
@@ -2718,6 +2718,30 @@ module.exports = function (window) {
         };
 
        /**
+         * Sets multiple attributes on the Element with the specified value.
+         * The argument should be one ore more Objects with the properties: `name` and `value`
+         *
+         * @example
+         * instance.setAttrs([
+         *                      {name: 'tabIndex', value: '0'},
+         *                      {name: 'style', value: 'color: #000;'}
+         *                  ]);
+         *
+         * @method setAttrs
+         * @param attributeData {Array|Object}
+         * @chainable
+         * @since 0.0.1
+        */
+        ElementPrototype.setAttrs = function(attributeData) {
+            var instance = this;
+            Array.isArray(attributeData) || (attributeData=[attributeData]);
+            attributeData.forEach(function(item) {
+                instance.setAttribute(item.name, item.value);
+            });
+            return instance;
+        };
+
+       /**
         * Adds a class to the Element. If the class already exists it won't be duplicated.
         *
         * @method setClass
@@ -3205,7 +3229,7 @@ module.exports = function (window) {
             // make sure it has sizes and can be positioned
             instance.setClass([invisibleClass, BORDERBOX]);
             (instance.getInlineStyle('display')==='none') && instance.setClass(BLOCK);
-            constrain || (constrain=instance.getAttr('xy-constrain'));
+            constrain || (constrain=instance.getAttr('constrain-selector'));
             if (constrain) {
                 if (constrain==='window') {
                     containerLeft = window.getScrollLeft();
@@ -3914,15 +3938,6 @@ for (j=0; j<len2; j++) {
 * <ul>
 * @param element {Element}
 */
-
-/**
- * Inserts `newElement` before `referenceElement`.
- *
- * @method insertBefore
- * @param newElement {Element} The newElement to insert
- * @param referenceElement {Element} The Element before which newElement is inserted.
- * @return {Element} the Element being inserted (equals newElement)
- */
 
 /**
 * Removes the attribute specified by an attributeNode from the Element.
