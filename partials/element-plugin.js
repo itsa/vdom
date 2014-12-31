@@ -15,24 +15,24 @@
  * @since 0.0.1
 */
 
-require('js-ext/lib/function.js');
+require('js-ext/lib/object.js');
+require('js-ext/lib/string.js');
+
+var fromCamelCase = function(input) {
+        return input.replace(/[a-z]([A-Z])/g, function(match, group) {
+            return match[0]+'-'+group.toLowerCase();
+        });
+    };
 
 module.exports = function (window) {
 
-    if (!window._ITSAmodules) {
-        Object.defineProperty(window, '_ITSAmodules', {
-            configurable: false,
-            enumerable: false,
-            writable: false,
-            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {} its members
-        });
-    }
+    window._ITSAmodules || window.protectedProp('_ITSAmodules', {});
 
     if (window._ITSAmodules.ElementPlugin) {
         return window._ITSAmodules.ElementPlugin; // ElementPlugin was already created
     }
 
-    var NodePlugin, NodeConstrain, ElementPlugin;
+    var nodePlugin, nodeConstrain, ElementPlugin;
 
     // also extend window.Element:
     window.Element && (function(ElementPrototype) {
@@ -44,9 +44,8 @@ module.exports = function (window) {
         * @return {Boolean} whether the plugin is plugged in
         * @since 0.0.1
         */
-        ElementPrototype.isPlugged = function(NodePluginClass) {
-            var plugin = new NodePluginClass();
-            return plugin.validate(this);
+        ElementPrototype.isPlugged = function(nodePlugin) {
+            return nodePlugin.validate(this);
         };
 
        /**
@@ -54,13 +53,12 @@ module.exports = function (window) {
         *
         * @method plug
         * @param pluginClass {NodePlugin} The plugin that should be plugged. Needs to be the Class, not an instance!
-        * @param options {Object} any options that should be passed through when the class is instantiated.
+        * @param config {Object} any config that should be passed through when the class is instantiated.
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.plug = function(NodePluginClass, options) {
-            var plugin = new NodePluginClass(options);
-            plugin.setup(this);
+        ElementPrototype.plug = function(nodePlugin, config) {
+            nodePlugin.setup(this, config);
             return this;
         };
 
@@ -72,46 +70,60 @@ module.exports = function (window) {
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.unplug = function(NodePluginClass) {
-            var plugin = new NodePluginClass();
-            plugin.teardown(this);
+        ElementPrototype.unplug = function(nodePlugin) {
+            nodePlugin.teardown(this);
             return this;
         };
     }(window.Element.prototype));
 
-    NodePlugin = Object.createClass(null, {
-        setup: function (hostElement) {
-            this.each(
+    nodePlugin = {
+        setup: function (hostElement, config) {
+            var instance = this,
+                attrs = instance.defaults.shallowClone();
+            attrs.merge(config, true);
+            attrs.each(
                 function(value, key) {
-                    value && hostElement.setAttr(key, value);
+                    key = fromCamelCase(key);
+                    value && hostElement.setAttr(instance.ns+'-'+key, value);
                 }
             );
-        },
+        } ,
         teardown: function (hostElement) {
-            this.each(
+            var instance = this,
+                attrs = hostElement.vnode.attrs,
+                ns = instance.ns+'-';
+            attrs.each(
                 function(value, key) {
-                    hostElement.removeAttr(key);
+                     key.startsWith(ns) && hostElement.removeAttr(key);
                 }
             );
         },
-        validate: function(hostElement) {
-            return this.some(
+        validate: function (hostElement) {
+            var instance = this,
+                attrs = hostElement.vnode.attrs,
+                ns = instance.ns+'-';
+            return attrs.some(
                 function(value, key) {
-                    return hostElement.hasAttr(key);
+                    return key.startsWith(ns);
                 }
             );
+        },
+        definePlugin: function (ns, defaults) {
+            var newPlugin = Object.create(nodePlugin);
+            Object.isObject(defaults) || (defaults = {});
+            (typeof ns==='string') || (ns = 'invalid_ns');
+            ns = ns.replace(/ /g, '').replace(/-/g, '');
+            newPlugin.protectedProp('ns', ns);
+            newPlugin.defaults = defaults;
+            return newPlugin;
         }
-    });
+    };
 
-    NodeConstrain = NodePlugin.subClass(
-        function (config) {
-            this['xy-constrain'] = (config && config.selector) || 'window';
-        }
-    );
+    nodeConstrain = nodePlugin.definePlugin('constrain', {selector: 'window'});
 
     ElementPlugin = window._ITSAmodules.ElementPlugin = {
-        NodePlugin: NodePlugin,
-        NodeConstrain: NodeConstrain
+        nodePlugin: nodePlugin,
+        nodeConstrain: nodeConstrain
     };
 
     return ElementPlugin;
