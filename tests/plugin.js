@@ -46,43 +46,43 @@
         });
 
         it('plug', function () {
-            nodeSub1.plug(plugins.NodeConstrain);
+            nodeSub1.plug(plugins.nodeConstrain);
 
             expect(nodeSub1.outerHTML).to.be.eql('<div constrain-selector="window"></div>');
             expect(nodeSub1.getOuterHTML()).to.be.eql('<div constrain-selector="window"></div>');
             expect(nodeSub2.outerHTML).to.be.eql('<div></div>');
             expect(nodeSub2.getOuterHTML()).to.be.eql('<div></div>');
 
-            nodeSub1.plug(plugins.NodeConstrain, {selector: '#div1'});
+            nodeSub1.plug(plugins.nodeConstrain, {selector: '#div1'});
 
             expect(nodeSub1.outerHTML).to.be.eql('<div constrain-selector="#div1"></div>');
             expect(nodeSub1.getOuterHTML()).to.be.eql('<div constrain-selector="#div1"></div>');
         });
 
         it('isPlugged', function () {
-            expect(nodeSub1.isPlugged(plugins.NodeConstrain)).to.be.false;
-            expect(nodeSub2.isPlugged(plugins.NodeConstrain)).to.be.false;
+            expect(nodeSub1.isPlugged(plugins.nodeConstrain)).to.be.false;
+            expect(nodeSub2.isPlugged(plugins.nodeConstrain)).to.be.false;
 
             expect(nodeSub1.outerHTML).to.be.eql('<div></div>');
             expect(nodeSub1.getOuterHTML()).to.be.eql('<div></div>');
 
-            nodeSub1.plug(plugins.NodeConstrain);
-            expect(nodeSub1.isPlugged(plugins.NodeConstrain)).to.be.true;
-            expect(nodeSub2.isPlugged(plugins.NodeConstrain)).to.be.false;
+            nodeSub1.plug(plugins.nodeConstrain);
+            expect(nodeSub1.isPlugged(plugins.nodeConstrain)).to.be.true;
+            expect(nodeSub2.isPlugged(plugins.nodeConstrain)).to.be.false;
 
-            nodeSub1.plug(plugins.NodeConstrain, {selector: '#div1'});
-            expect(nodeSub1.isPlugged(plugins.NodeConstrain)).to.be.true;
-            expect(nodeSub2.isPlugged(plugins.NodeConstrain)).to.be.false;
+            nodeSub1.plug(plugins.nodeConstrain, {selector: '#div1'});
+            expect(nodeSub1.isPlugged(plugins.nodeConstrain)).to.be.true;
+            expect(nodeSub2.isPlugged(plugins.nodeConstrain)).to.be.false;
 
             nodeSub1.removeAttr('constrain-selector');
-            expect(nodeSub1.isPlugged(plugins.NodeConstrain)).to.be.false;
+            expect(nodeSub1.isPlugged(plugins.nodeConstrain)).to.be.false;
         });
 
         it('unplug', function () {
-            nodeSub1.plug(plugins.NodeConstrain);
-            expect(nodeSub1.isPlugged(plugins.NodeConstrain)).to.be.true;
-            nodeSub1.unplug(plugins.NodeConstrain);
-            expect(nodeSub1.isPlugged(plugins.NodeConstrain)).to.be.false;
+            nodeSub1.plug(plugins.nodeConstrain);
+            expect(nodeSub1.isPlugged(plugins.nodeConstrain)).to.be.true;
+            nodeSub1.unplug(plugins.nodeConstrain);
+            expect(nodeSub1.isPlugged(plugins.nodeConstrain)).to.be.false;
         });
 
     });
