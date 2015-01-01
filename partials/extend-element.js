@@ -2714,7 +2714,7 @@ module.exports = function (window) {
             var instance = this,
                 vnode = instance.vnode;
             (value==='') && (value=null);
-            value ? vnode._setAttr(attributeName, value) : vnode._removeAttr(attributeName);
+            ((value!==null) && (value!==undefined)) ? vnode._setAttr(attributeName, value) : vnode._removeAttr(attributeName);
         };
 
        /**
