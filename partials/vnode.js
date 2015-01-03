@@ -25,14 +25,7 @@ require('js-ext/lib/string.js');
 
 module.exports = function (window) {
 
-    if (!window._ITSAmodules) {
-        Object.defineProperty(window, '_ITSAmodules', {
-            configurable: false,
-            enumerable: false,
-            writable: false,
-            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {} its members
-        });
-    }
+    window._ITSAmodules || window.protectedProp('_ITSAmodules', {});
 
     if (window._ITSAmodules.VNode) {
         return window._ITSAmodules.VNode; // VNODE was already created
@@ -49,6 +42,12 @@ module.exports = function (window) {
         CLASS = 'class',
         STYLE = 'style',
         ID = 'id',
+        EV_REMOVED = 1,
+        EV_INSERTED = 2,
+        EV_CONTENT_CHANGE = 3,
+        EV_ATTRIBUTE_REMOVED = 4,
+        EV_ATTRIBUTE_CHANGED = 5,
+        EV_ATTRIBUTE_INSERTED = 6,
         SPLIT_CHARACTER = {
             ' ': true,
             '>': true,
@@ -1049,6 +1048,7 @@ module.exports = function (window) {
                 // if the size changed, then the domNode was merged
                 (size===instance.vChildNodes.length) || (domNode=instance.vChildNodes[instance.vChildNodes.length-1].domNode);
             }
+            VNode._emit(EV_INSERTED);
             return domNode;
         },
 
@@ -1090,12 +1090,7 @@ module.exports = function (window) {
                 vChildNodes = instance.vChildNodes,
                 len, i, vChildNode;
             if (!instance.destroyed) {
-                Object.defineProperty(instance, 'destroyed', {
-                    value: true,
-                    writable: false,
-                    configurable: false,
-                    enumerable: true
-                });
+                instance.protectedProp('destroyed', true);
                 // first: _remove all its vChildNodes
                 if ((instance.nodeType===1) && vChildNodes) {
                     len = vChildNodes.length;
@@ -1113,6 +1108,7 @@ module.exports = function (window) {
                 async(function() {
                     instance.domNode = null;
                 });
+                instane._emit(EV_REMOVED);
             }
             return instance;
         },
@@ -1137,6 +1133,7 @@ module.exports = function (window) {
                 newVNode._moveToParent(instance, index);
                 instance.domNode._insertBefore(domNode, refVNode.domNode);
                 (newVNode.nodeType===3) && instance._normalize();
+                newVNode._emit(EV_INSERTED);
             }
             return domNode;
         },
@@ -1181,6 +1178,7 @@ module.exports = function (window) {
             var instance = this,
                 domNode = instance.domNode,
                 vChildNodes = instance.vChildNodes,
+                changed = false,
                 i, preChildNode, vChildNode;
             if (!instance._unNormalizable && vChildNodes) {
                 for (i=vChildNodes.length-1; i>=0; i--) {
@@ -1190,16 +1188,19 @@ module.exports = function (window) {
                         if (vChildNode.text==='') {
                             domNode._removeChild(vChildNode.domNode);
                             vChildNode._destroy();
+                            changed = true;
                         }
                         else if (preChildNode && preChildNode.nodeType===3) {
                             preChildNode.text += vChildNode.text;
                             preChildNode.domNode.nodeValue = preChildNode.text;
                             domNode._removeChild(vChildNode.domNode);
                             vChildNode._destroy();
+                            changed = true;
                         }
                     }
                 }
             }
+            changed && instance._emit(EV_CONTENT_CHANGE);
             return instance;
         },
 
@@ -1252,16 +1253,19 @@ module.exports = function (window) {
         */
         _removeAttr: function(attributeName) {
             var instance = this;
-            delete instance.attrs[attributeName];
-            // in case of STYLE attribute --> special treatment
-            (attributeName===STYLE) && (instance.styles={});
-            // in case of CLASS attribute --> special treatment
-            (attributeName===CLASS) && (instance.classNames={});
-            if (attributeName===ID) {
-                delete nodeids[instance.id];
-                delete instance.id;
+            if (instance.attrs[attributeName]!==undefined) {
+                delete instance.attrs[attributeName];
+                // in case of STYLE attribute --> special treatment
+                (attributeName===STYLE) && (instance.styles={});
+                // in case of CLASS attribute --> special treatment
+                (attributeName===CLASS) && (instance.classNames={});
+                if (attributeName===ID) {
+                    delete nodeids[instance.id];
+                    delete instance.id;
+                }
+                instance.domNode._removeAttribute(attributeName);
+                instance._emit(EV_ATTRIBUTE_REMOVED, attributeName);
             }
-            instance.domNode._removeAttribute(attributeName);
             return instance;
         },
 
@@ -1331,9 +1335,10 @@ module.exports = function (window) {
         _setAttr: function(attributeName, value) {
             var instance = this,
                 extractStyle, extractClass,
-                attrs = instance.attrs;
-            if (attrs[attributeName]!==value) {
-                if ((value===undefined) || (value===undefined)) {
+                attrs = instance.attrs,
+                prevVal = attrs[attributeName];
+            if (prevVal!==value) {
+                if ((value===undefined) || (value===null)) {
                     instance._removeAttr(attributeName);
                     return instance;
                 }
@@ -1368,6 +1373,7 @@ module.exports = function (window) {
                     nodeids[value] = instance.domNode;
                 }
                 instance.domNode._setAttribute(attributeName, value);
+                instance._emit(prevVal ? EV_ATTRIBUTE_CHANGED : EV_ATTRIBUTE_INSERTED, attributeName, value, prevVal);
             }
             return instance;
         },
@@ -1478,6 +1484,8 @@ module.exports = function (window) {
                                 newChild._setChildNodes(bkpChildNodes);
                                 newChild.id && (nodeids[newChild.id]=newChild.domNode);
                                 oldChild._replaceAtParent(newChild);
+                                newChild._emit(EV_INSERTED);
+                                oldChild._emit(EV_REMOVED);
                             }
                             else {
                                 // same tag --> only update what is needed
@@ -1495,26 +1503,31 @@ module.exports = function (window) {
                             domNode._replaceChild(newChild.domNode, childDomNode);
                             newChild.vParent = instance;
                             oldChild._replaceAtParent(newChild);
+                            instance._emit(EV_CONTENT_CHANGE);
+                            oldChild._emit(EV_REMOVED);
                             break;
                         case 4: // oldNodeType==TextNode, newNodeType==Element
                                 // case4 and case7 should be treated the same
                         case 7: // oldNodeType==Comment, newNodeType==Element
-                                newChild._setAttrs(newChild.attrs);
-
-                                domNode._replaceChild(newChild.domNode, childDomNode);
-                                newChild._setChildNodes(newChild.vChildNodes);
-
-                                newChild.id && (nodeids[newChild.id]=newChild.domNode);
-
-                                oldChild.isVoid = newChild.isVoid;
-                                delete oldChild.text;
+                            bkpAttrs = newChild.attrs;
+                            bkpChildNodes = newChild.vChildNodes;
+                            newChild.attrs = {}; // reset, to force defined by `_setAttrs`
+                            newChild.vChildNodes = []; // reset to current state, to force defined by `_setAttrs`
+                            domNode._replaceChild(newChild.domNode, childDomNode);
+                            newChild._setAttrs(bkpAttrs);
+                            newChild._setChildNodes(bkpChildNodes);
+                            newChild.id && (nodeids[newChild.id]=newChild.domNode);
+                            oldChild.isVoid = newChild.isVoid;
+                            delete oldChild.text;
+                            instance._emit(EV_CONTENT_CHANGE);
+                            newChild._emit(EV_INSERTED);
                             break;
-
                         case 5: // oldNodeType==TextNode, newNodeType==TextNode
                                 // case5 and case9 should be treated the same
                         case 9: // oldNodeType==Comment, newNodeType==Comment
                             (oldChild.text===newChild.text) || (oldChild.domNode.nodeValue = oldChild.text = newChild.text);
                             newVChildNodes[i] = oldChild;
+                            instance._emit(EV_CONTENT_CHANGE);
                             break;
                         case 6: // oldNodeType==TextNode, newNodeType==Comment
                                 // case6 and case8 should be treated the same
@@ -1522,6 +1535,7 @@ module.exports = function (window) {
                             newChild.domNode.nodeValue = newChild.text;
                             domNode._replaceChild(newChild.domNode, childDomNode);
                             newChild.vParent = oldChild.vParent;
+                            instance._emit(EV_CONTENT_CHANGE);
                     }
                     if ((nodeswitch===2) || (nodeswitch===5) || (nodeswitch===8)) {
                         needNormalize = true;
@@ -1530,7 +1544,7 @@ module.exports = function (window) {
                 else {
                     // _remove previous definition
                     domNode._removeChild(oldChild.domNode);
-                    // the oldChild needs to be removed, however, this canoot be done right now, for it would effect the loop
+                    // the oldChild needs to be removed, however, this cannot be done right now, for it would effect the loop
                     // so we store it inside a hash to remove it later
                     forRemoval[forRemoval.length] = oldChild;
                 }
@@ -1553,14 +1567,16 @@ module.exports = function (window) {
                         domNode._appendChild(newChild.domNode);
                         newChild._setAttrs(bkpAttrs);
                         newChild._setChildNodes(bkpChildNodes);
+                        newChild._emit(EV_INSERTED);
                         break;
-                    case 3: // Element
+                    case 3: // TextNode
                         needNormalize = true;
                         // we need to break through --> no `break`
                         /* falls through */
                     default: // TextNode or CommentNode
                         newChild.domNode.nodeValue = newChild.text;
                         domNode._appendChild(newChild.domNode);
+                        instance._emit(EV_CONTENT_CHANGE);
                 }
                 newChild.storeId();
             }
@@ -1717,6 +1733,7 @@ module.exports = function (window) {
                     instance.domNode.textContent = v;
                     // set .text AFTER the dom-node is updated --> the content might be escaped!
                     instance.text = instance.domNode.textContent;
+                    instance._emit(EV_CONTENT_CHANGE);
                 }
             }
         },
@@ -1783,6 +1800,8 @@ module.exports = function (window) {
                             // vnode.vChildNodes = bkpChildNodes;
                             vnode.id && (nodeids[vnode.id]=vnode.domNode);
                             instance._replaceAtParent(vnode);
+                            vnode._emit(EV_INSERTED);
+                            instance._emit(EV_REMOVED);
                         }
                         else {
                             instance._setAttrs(vnode.attrs);
@@ -1794,6 +1813,8 @@ module.exports = function (window) {
                         vnode.domNode.nodeValue = vnode.text;
                         vParent.domNode._replaceChild(vnode.domNode, instance.domNode);
                         instance._replaceAtParent(vnode);
+                        vnode._emit(EV_INSERTED);
+                        instance._emit(EV_REMOVED);
                     }
                 }
                 for (i=1; i<len; i++) {
@@ -1805,6 +1826,7 @@ module.exports = function (window) {
                             vnode.attrs = {}; // reset, to force defined by `_setAttrs`
                             vnode.vChildNodes = []; // reset to current state, to force defined by `_setAttrs`
                             isLastChildNode ? vParent.domNode._appendChild(vnode.domNode) : vParent.domNode._insertBefore(vnode.domNode, refDomNode);
+                            vnode._emit(EV_INSERTED);
                             vnode._setAttrs(bkpAttrs);
                             vnode._setChildNodes(bkpChildNodes);
                             break;

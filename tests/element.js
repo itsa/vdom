@@ -1800,6 +1800,13 @@
             expect(nodeSub2.childNodes[0].childNodes.length).to.be.eql(2);
             expect(nodeSub2.childNodes[0].childNodes[1].innerHTML).to.be.eql('World');
             expect(nodeSub2.childNodes[0].childNodes[1].getHTML()).to.be.eql('World');
+
+            var newnode = node.append('<div id="test">hmm</div>');
+            newnode.setHTML('<div>I am inner</div>');
+            expect(newnode.childNodes.length).to.be.eql(1);
+            expect(newnode.childNodes[0].childNodes.length).to.be.eql(1);
+            expect(newnode.childNodes[0].innerHTML).to.be.eql('I am inner');
+            expect(newnode.getHTML()).to.be.eql('<div>I am inner</div>');
         });
 
         it('setId', function () {
