@@ -12,16 +12,11 @@
  * @since 0.0.1
 */
 
+require('polyfill');
+
 module.exports = function (window) {
 
-    if (!window._ITSAmodules) {
-        Object.defineProperty(window, '_ITSAmodules', {
-            configurable: false,
-            enumerable: false,
-            writable: false,
-            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {} its members
-        });
-    }
+    window._ITSAmodules || window.protectedProp('_ITSAmodules', {});
 
     if (window._ITSAmodules.NodeParser) {
         return window._ITSAmodules.NodeParser; // NodeParser was already created
@@ -68,7 +63,7 @@ module.exports = function (window) {
                 len = attributes.length;
                 for (i=0; i<len; i++) {
                     attr = attributes[i];
-                    vnode.attrs[attr.name] = attr.value;
+                    vnode.attrs[attr.name] = String(attr.value);
                 }
 
                 vnode.id = vnode.attrs.id;

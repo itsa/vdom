@@ -13,16 +13,11 @@
  * @since 0.0.1
 */
 
+require('polyfill');
+
 module.exports = function (window) {
 
-    if (!window._ITSAmodules) {
-        Object.defineProperty(window, '_ITSAmodules', {
-            configurable: false,
-            enumerable: false,
-            writable: false,
-            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {} its members
-        });
-    }
+    window._ITSAmodules || window.protectedProp('_ITSAmodules', {});
 
     if (window._ITSAmodules.HtmlParser) {
         return window._ITSAmodules.HtmlParser; // HtmlParser was already created
@@ -112,7 +107,7 @@ module.exports = function (window) {
                 vnodes = [],
                 parentVNode = arguments[2], // private pass through-argument, only available when internal looped
                 insideTagDefinition, insideComment, innerText, endTagCount, stringMarker, attributeisString, attribute, attributeValue,
-                j, character, character2, vnode, isBoolean, checkBoolean, tag, isBeginTag, isEndTag, scriptVNode, extractClass, extractStyle;
+                j, character, character2, vnode, tag, isBeginTag, isEndTag, scriptVNode, extractClass, extractStyle;
             while (i<len) {
                 character = htmlString[i];
                 character2 = htmlString[i+1];
@@ -147,9 +142,6 @@ module.exports = function (window) {
                                         }
                                         // need to set the position one step behind --> the attributeloop will increase it and would otherwise miss a character
                                         i--;
-                                        isBoolean = ((attributeValue.length>3) && (attributeValue.length<6) && (checkBoolean=attributeValue.toUpperCase()) && ((checkBoolean==='FALSE') || (checkBoolean==='TRUE')));
-                                        // typecast the value to either Boolean or Number:
-                                        attributeValue = isBoolean ? (checkBoolean==='TRUE') : parseFloat(attributeValue);
                                     }
                                 }
                                 else {

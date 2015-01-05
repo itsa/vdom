@@ -22,17 +22,12 @@
 require('js-ext/lib/array.js');
 require('js-ext/lib/object.js');
 require('js-ext/lib/string.js');
+require('js-ext/extra/lightmap.js');
+require('polyfill');
 
 module.exports = function (window) {
 
-    if (!window._ITSAmodules) {
-        Object.defineProperty(window, '_ITSAmodules', {
-            configurable: false,
-            enumerable: false,
-            writable: false,
-            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {} its members
-        });
-    }
+    window._ITSAmodules || window.protectedProp('_ITSAmodules', {});
 
     if (window._ITSAmodules.VNode) {
         return window._ITSAmodules.VNode; // VNODE was already created
@@ -41,14 +36,34 @@ module.exports = function (window) {
     var NS = require('./vdom-ns.js')(window),
         extractor = require('./attribute-extractor.js')(window),
         DOCUMENT = window.document,
+        MUTATION_EVENTS = new window.LightMap(),
+        BATCH_WILL_RUN = false,
         nodeids = NS.nodeids,
         htmlToVNodes = require('./html-parser.js')(window),
-        async = require('utils/lib/timers.js').async,
+        timers = require('utils/lib/timers.js'),
+        async = timers.async,
+        later = timers.later,
+
+        // cleanup memory after 1 minute: removed nodes SHOULD NOT be accessed afterwards
+        // because vnode would be recalculated and might be different from before
+        DESTROY_DELAY = 60000,
+
         NTH_CHILD_REGEXP = /^(?:(\d*)[n|N])([\+|\-](\d+))?$/, // an+b
         STRING = 'string',
         CLASS = 'class',
         STYLE = 'style',
         ID = 'id',
+        NODE= 'node',
+        REMOVE = 'remove',
+        INSERT = 'insert',
+        CHANGE = 'change',
+        ATTRIBUTE = 'attribute',
+        EV_REMOVED = NODE+REMOVE,
+        EV_INSERTED = NODE+INSERT,
+        EV_CONTENT_CHANGE = NODE+'content'+CHANGE,
+        EV_ATTRIBUTE_REMOVED = ATTRIBUTE+REMOVE,
+        EV_ATTRIBUTE_CHANGED = ATTRIBUTE+CHANGE,
+        EV_ATTRIBUTE_INSERTED = ATTRIBUTE+INSERT,
         SPLIT_CHARACTER = {
             ' ': true,
             '>': true,
@@ -185,8 +200,7 @@ module.exports = function (window) {
          */
         PSEUDO_REQUIRED_CHILDREN = {},
         _matchesSelectorItem, _matchesOneSelector, _findElementSibling, vNodeProto,
-        _splitSelector, _findNodeSibling, _matchNthChild;
-
+        _splitSelector, _findNodeSibling, _matchNthChild, _batchEmit, _emitDestroyChildren;
         PSEUDO_REQUIRED_CHILDREN[PSEUDO_FIRST_CHILD] = true;
         PSEUDO_REQUIRED_CHILDREN[PSEUDO_FIRST_OF_TYPE] = true;
         PSEUDO_REQUIRED_CHILDREN[PSEUDO_LAST_CHILD] = true;
@@ -260,19 +274,25 @@ module.exports = function (window) {
     * @since 0.0.1
     */
     _matchNthChild = function(pseudoArg, index) {
-        var match, k, a, b, nodeOk, nthIndex, sign;
+        var match, k, a, b, nodeOk, nthIndex, sign, isNumber;
         (pseudoArg==='even') && (pseudoArg='2n');
         (pseudoArg==='odd') && (pseudoArg='2n+1');
 
-        match = pseudoArg.match(NTH_CHILD_REGEXP);
+        match = pseudoArg.match(NTH_CHILD_REGEXP) || (isNumber=pseudoArg.validateNumber());
         if (!match) {
             return false;
         }
         // pseudoArg follows the pattern: `an+b`
-        a = match[1];
-        sign = match[2];
-        b = match[3];
-        (b==='') && (b=0);
+        if (!isNumber) {
+            a = match[1];
+            sign = match[2];
+            b = match[3] || 0;
+            (b==='') && (b=0);
+        }
+        else {
+            b = pseudoArg;
+        }
+        sign && (sign=sign[0]);
         if (!a) {
             // only fixed index to match
             return (sign==='-') ? false : (parseInt(b, 10)===index);
@@ -808,6 +828,37 @@ module.exports = function (window) {
         return list;
     };
 
+    _batchEmit = function() {
+        MUTATION_EVENTS.each(function (mutationEvents, vnode) {
+            var domNode = vnode.domNode;
+            if (mutationEvents[EV_REMOVED]) {
+                domNode.emit(EV_REMOVED);
+            }
+            else if (mutationEvents[EV_INSERTED]) {
+                domNode.emit(EV_INSERTED);
+            }
+            else {
+                // contentchange and attributechanges can go hand in hand
+                mutationEvents.each(function(value, evt) {
+                    domNode.emit(evt, (evt===EV_CONTENT_CHANGE) ? null : {changed: value});
+                });
+            }
+        });
+        MUTATION_EVENTS.clear();
+        BATCH_WILL_RUN = false;
+    };
+
+    _emitDestroyChildren = function(vnode) {
+        var children = vnode.vChildren,
+            len = children.length,
+            i, vChild;
+        for (i=0; i<len; i++) {
+            vChild = children[i];
+            vChild._emit(EV_REMOVED);
+            _emitDestroyChildren(vChild);
+        }
+    };
+
     vNodeProto = window._ITSAmodules.VNode = {
        /**
         * Check whether the vnode's domNode is equal, or contains the specified Element.
@@ -821,6 +872,10 @@ module.exports = function (window) {
                 otherVNode = otherVNode.vParent;
             }
             return (otherVNode===this);
+        },
+
+        empty: function() {
+            this._setChildNodes([]);
         },
 
        /**
@@ -954,7 +1009,7 @@ module.exports = function (window) {
                 attributeValue = domNode._getAttribute(attributeName),
                 attrs = instance.attrs,
                 extractStyle, extractClass;
-            if (instance.nodeType==1) {
+            if (instance.nodeType===1) {
                 attributeValue || (attributeValue='');
                 if (attributeValue==='') {
                     delete attrs[attributeName];
@@ -1029,7 +1084,7 @@ module.exports = function (window) {
         /**
          * Adds a vnode to the end of the list of vChildNodes.
          *
-         * Syns with the DOM.
+         * Syncs with the DOM.
          *
          * @method _appendChild
          * @param VNode {vnode} vnode to append
@@ -1049,6 +1104,7 @@ module.exports = function (window) {
                 // if the size changed, then the domNode was merged
                 (size===instance.vChildNodes.length) || (domNode=instance.vChildNodes[instance.vChildNodes.length-1].domNode);
             }
+            VNode._emit(EV_INSERTED);
             return domNode;
         },
 
@@ -1073,6 +1129,16 @@ module.exports = function (window) {
             return instance;
         },
 
+        _cleanData: function() {
+            var instance = this,
+                data = instance._data;
+            data && data.each(
+                function(value, key) {
+                    delete data[key];
+                }
+            );
+            return instance;
+        },
        /**
         * Destroys the vnode and all its vnode-vChildNodes.
         * Removes it from its vParent.vChildNodes list,
@@ -1085,34 +1151,169 @@ module.exports = function (window) {
         * @chainable
         * @since 0.0.1
         */
-        _destroy: function() {
+        _destroy: function(silent) {
             var instance = this,
                 vChildNodes = instance.vChildNodes,
-                len, i, vChildNode;
+                len, i, vChildNode, vParent, treeNodes;
             if (!instance.destroyed) {
-                Object.defineProperty(instance, 'destroyed', {
-                    value: true,
-                    writable: false,
-                    configurable: false,
-                    enumerable: true
-                });
-                // first: _remove all its vChildNodes
-                if ((instance.nodeType===1) && vChildNodes) {
-                    len = vChildNodes.length;
-                    for (i=0; i < len; i++) {
-                        vChildNode = vChildNodes[i];
-                        vChildNode && vChildNode._destroy();
-                    }
+                silent || instance._emit(EV_REMOVED);
+                instance.protectedProp('destroyed', true);
+
+                // first: determine the dom-tree, which module `event-dom` needs to determine where the node was before it was destroyed:
+                treeNodes = [instance];
+                vParent = instance.vParent;
+                while (vParent) {
+                    treeNodes[treeNodes.length] = vParent;
+                    vParent = vParent.vParent;
                 }
-                instance._vChildren = null;
-                // explicitely set instance.domNode._vnode and instance.domNode to null in order to prevent problems with the GC (we break the circular reference)
-                delete instance.domNode._vnode;
-                // if valid id, then _remove the DOMnodeRef from internal hash
-                instance.id && delete nodeids[instance.id];
+
+                // The definite cleanup needs to be done after a timeout:
+                // someone might need to handle the Element when removed (fe to cleanup specific things)
+                later(function() {
+                    instance._cleanData();
+                    // _destroy all its vChildNodes
+                    if ((instance.nodeType===1) && vChildNodes) {
+                        len = vChildNodes.length;
+                        for (i=0; i < len; i++) {
+                            vChildNode = vChildNodes[i];
+                            vChildNode && vChildNode._destroy(true);
+                        }
+                    }
+                    instance._vChildren = null;
+                    // explicitely set instance.domNode._vnode and instance.domNode to null in order to prevent problems with the GC (we break the circular reference)
+                    delete instance.domNode._vnode;
+                    // if valid id, then _remove the DOMnodeRef from internal hash
+                    instance.id && delete nodeids[instance.id];
+                }, silent ? 0 : DESTROY_DELAY);
+
                 instance._deleteFromParent();
-                async(function() {
-                    instance.domNode = null;
-                });
+                // Do not make domNode `null` --> it could be used even when not in the dom
+            }
+            return instance;
+        },
+
+        _emit: function(evt, attribute, newValue, prevValue) {
+           /**
+            * Emitted by every Element that gets inserted.
+            *
+            * @event nodeinsert
+            * @param e {Object} eventobject including:
+            * @param e.target {HtmlElement} the HtmlElement that is being dragged
+            * @param e.currentTarget {HtmlElement} the HtmlElement that is delegating
+            * @since 0.1
+            */
+
+           /**
+            * Emitted by every Element that gets removed.
+            *
+            * @event noderemove
+            * @param e {Object} eventobject including:
+            * @param e.target {HtmlElement} the HtmlElement that is being dragged
+            * @param e.currentTarget {HtmlElement} the HtmlElement that is delegating
+            * @since 0.1
+            */
+
+           /**
+            * Emitted by every Element that gets its content changed (innerHTML/innerText).
+            *
+            * @event nodecontentchange
+            * @param e {Object} eventobject including:
+            * @param e.target {HtmlElement} the HtmlElement that is being dragged
+            * @param e.currentTarget {HtmlElement} the HtmlElement that is delegating
+            * @since 0.1
+            */
+
+           /**
+            * Emitted by every Element that gets an attribute inserted.
+            *
+            * @event attributeinsert
+            * @param e {Object} eventobject including:
+            * @param e.target {HtmlElement} the HtmlElement that is being dragged
+            * @param e.currentTarget {HtmlElement} the HtmlElement that is delegating
+            * @param e.changed {Array} Array with Objects having three properties:
+            * <ul>
+            *     <li>attribute</li>
+            *     <li>newValue</li>
+            * </ul>
+            * @since 0.1
+            */
+
+           /**
+            * Emitted by every Element that gets an attribute removed.
+            *
+            * @event attributeremove
+            * @param e {Object} eventobject including:
+            * @param e.target {HtmlElement} the HtmlElement that is being dragged
+            * @param e.currentTarget {HtmlElement} the HtmlElement that is delegating
+            * @param e.changed {Array} Array with Strings of the attributeNames that are removed
+            * @since 0.1
+            */
+
+           /**
+            * Emitted by every Element that gets an attribute changed.
+            *
+            * @event attributechange
+            * @param e {Object} eventobject including:
+            * @param e.target {HtmlElement} the HtmlElement that is being dragged
+            * @param e.currentTarget {HtmlElement} the HtmlElement that is delegating
+            * @param e.changed {Array} Array with Objects having three properties:
+            * <ul>
+            *     <li>attribute</li>
+            *     <li>newValue</li>
+            *     <li>prevValue</li>
+            * </ul>
+            * @since 0.1
+            */
+
+            var instance = this,
+                silent, attrMutations, mutationEvents, mutation, vParent;
+            if (!DOCUMENT.hasMutationSubs || (instance.nodeType!==1)) {
+                return;
+            }
+            silent = !!DOCUMENT._suppressMutationEvents;
+            if (!silent && !instance.destroyed) {
+                mutationEvents = MUTATION_EVENTS.get(instance) || {};
+                if (attribute) {
+                    attrMutations = mutationEvents[evt] || [];
+                    if (evt===EV_ATTRIBUTE_REMOVED) {
+                        mutation = attribute;
+                    }
+                    else {
+                        mutation = {
+                            attribute: attribute
+                        };
+                        if ((evt===EV_ATTRIBUTE_INSERTED) || (evt===EV_ATTRIBUTE_CHANGED)) {
+                            mutation.newValue = newValue;
+                        }
+                        if ((evt===EV_ATTRIBUTE_CHANGED) && prevValue) {
+                            mutation.prevValue = prevValue;
+                        }
+                    }
+                    attrMutations.push(mutation);
+                    mutationEvents[evt] = attrMutations;
+                }
+                else {
+                    mutationEvents[evt] = true;
+                }
+                MUTATION_EVENTS.set(instance, mutationEvents);
+                // now set all parent to have a nodecontentchange:
+                vParent = instance;
+/*jshint boss:true */
+                while (vParent=vParent.vParent) {
+/*jshint boss:false */
+                    vParent._emit(EV_CONTENT_CHANGE);
+                }
+
+                // in case of removal we need to emit EV_REMOVED for all children right now
+                // for they will be actually removed silently after a delay of 1 minute
+                (evt===EV_REMOVED) && _emitDestroyChildren(instance);
+
+                if (!BATCH_WILL_RUN) {
+                    BATCH_WILL_RUN = true;
+                    async(function() {
+                        _batchEmit();
+                    });
+                }
             }
             return instance;
         },
@@ -1120,7 +1321,7 @@ module.exports = function (window) {
         /**
          * Inserts `newVNode` before `refVNode`.
          *
-         * Syns with the DOM.
+         * Syncs with the DOM.
          *
          * @method _insertBefore
          * @param newVNode {vnode} vnode to insert
@@ -1137,6 +1338,7 @@ module.exports = function (window) {
                 newVNode._moveToParent(instance, index);
                 instance.domNode._insertBefore(domNode, refVNode.domNode);
                 (newVNode.nodeType===3) && instance._normalize();
+                newVNode._emit(EV_INSERTED);
             }
             return domNode;
         },
@@ -1181,6 +1383,7 @@ module.exports = function (window) {
             var instance = this,
                 domNode = instance.domNode,
                 vChildNodes = instance.vChildNodes,
+                changed = false,
                 i, preChildNode, vChildNode;
             if (!instance._unNormalizable && vChildNodes) {
                 for (i=vChildNodes.length-1; i>=0; i--) {
@@ -1190,16 +1393,19 @@ module.exports = function (window) {
                         if (vChildNode.text==='') {
                             domNode._removeChild(vChildNode.domNode);
                             vChildNode._destroy();
+                            changed = true;
                         }
                         else if (preChildNode && preChildNode.nodeType===3) {
                             preChildNode.text += vChildNode.text;
                             preChildNode.domNode.nodeValue = preChildNode.text;
                             domNode._removeChild(vChildNode.domNode);
                             vChildNode._destroy();
+                            changed = true;
                         }
                     }
                 }
             }
+            changed && instance._emit(EV_CONTENT_CHANGE);
             return instance;
         },
 
@@ -1252,23 +1458,26 @@ module.exports = function (window) {
         */
         _removeAttr: function(attributeName) {
             var instance = this;
-            delete instance.attrs[attributeName];
-            // in case of STYLE attribute --> special treatment
-            (attributeName===STYLE) && (instance.styles={});
-            // in case of CLASS attribute --> special treatment
-            (attributeName===CLASS) && (instance.classNames={});
-            if (attributeName===ID) {
-                delete nodeids[instance.id];
-                delete instance.id;
+            if (instance.attrs[attributeName]!==undefined) {
+                delete instance.attrs[attributeName];
+                // in case of STYLE attribute --> special treatment
+                (attributeName===STYLE) && (instance.styles={});
+                // in case of CLASS attribute --> special treatment
+                (attributeName===CLASS) && (instance.classNames={});
+                if (attributeName===ID) {
+                    delete nodeids[instance.id];
+                    delete instance.id;
+                }
+                instance.domNode._removeAttribute(attributeName);
+                instance._emit(EV_ATTRIBUTE_REMOVED, attributeName);
             }
-            instance.domNode._removeAttribute(attributeName);
             return instance;
         },
 
         /**
         * Removes the vnode's child-vnode from its vChildren and the DOM.
         *
-         * Syns with the DOM.
+         * Syncs with the DOM.
          *
         * @method removeChild
         * @param VNode {vnode} the child-vnode to remove
@@ -1276,10 +1485,20 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         _removeChild: function(VNode) {
-            var instance = this;
+            var instance = this,
+                domNode = VNode.domNode,
+                hadFocus = domNode.hasFocus() && (VNode.attrs['fm-lastitem']==='true'),
+                parentVNode = VNode.vParent;
             VNode._destroy();
             instance.domNode._removeChild(VNode.domNode);
             instance._normalize();
+            // now, reset the focus on focusmanager when needed:
+            if (hadFocus) {
+                while (parentVNode && !parentVNode.attrs['fm-manage']) {
+                    parentVNode = parentVNode.vParent;
+                }
+                parentVNode && parentVNode.domNode.focus();
+            }
         },
 
        /**
@@ -1321,12 +1540,17 @@ module.exports = function (window) {
         _setAttr: function(attributeName, value) {
             var instance = this,
                 extractStyle, extractClass,
-                attrs = instance.attrs;
-            if (attrs[attributeName]!==value) {
-                if ((value===undefined) || (value===undefined)) {
+                attrs = instance.attrs,
+                prevVal = attrs[attributeName];
+            // don't check by !== --> value isn't parsed into a String yet
+
+            if (prevVal!=value) {
+                if ((value===undefined) || (value===null)) {
                     instance._removeAttr(attributeName);
                     return instance;
                 }
+                // attribute-values are always Strings:
+                value = String(value);
                 attrs[attributeName] = value;
                 // in case of STYLE attribute --> special treatment
                 if (attributeName===STYLE) {
@@ -1358,6 +1582,7 @@ module.exports = function (window) {
                     nodeids[value] = instance.domNode;
                 }
                 instance.domNode._setAttribute(attributeName, value);
+                instance._emit(prevVal ? EV_ATTRIBUTE_CHANGED : EV_ATTRIBUTE_INSERTED, attributeName, value, prevVal);
             }
             return instance;
         },
@@ -1468,6 +1693,7 @@ module.exports = function (window) {
                                 newChild._setChildNodes(bkpChildNodes);
                                 newChild.id && (nodeids[newChild.id]=newChild.domNode);
                                 oldChild._replaceAtParent(newChild);
+                                newChild._emit(EV_INSERTED);
                             }
                             else {
                                 // same tag --> only update what is needed
@@ -1475,6 +1701,9 @@ module.exports = function (window) {
                                 oldChild._setAttrs(newChild.attrs);
                                 // next: sync the vChildNodes:
                                 oldChild._setChildNodes(newChild.vChildNodes);
+                                // reset ref. to the domNode, for it might heva been changed by newChild:
+                                oldChild.id && (nodeids[oldChild.id]=childDomNode);
+                                newVChildNodes[i] = oldChild;
                             }
                             break;
                         case 2: // oldNodeType==Element, newNodeType==TextNode
@@ -1485,25 +1714,31 @@ module.exports = function (window) {
                             domNode._replaceChild(newChild.domNode, childDomNode);
                             newChild.vParent = instance;
                             oldChild._replaceAtParent(newChild);
+                            instance._emit(EV_CONTENT_CHANGE);
                             break;
                         case 4: // oldNodeType==TextNode, newNodeType==Element
                                 // case4 and case7 should be treated the same
                         case 7: // oldNodeType==Comment, newNodeType==Element
-                                newChild._setAttrs(newChild.attrs);
-
-                                domNode._replaceChild(newChild.domNode, childDomNode);
-                                newChild._setChildNodes(newChild.vChildNodes);
-
-                                newChild.id && (nodeids[newChild.id]=newChild.domNode);
-
-                                oldChild.isVoid = newChild.isVoid;
-                                delete oldChild.text;
+                            bkpAttrs = newChild.attrs;
+                            bkpChildNodes = newChild.vChildNodes;
+                            newChild.attrs = {}; // reset, to force defined by `_setAttrs`
+                            newChild.vChildNodes = []; // reset to current state, to force defined by `_setAttrs`
+                            domNode._replaceChild(newChild.domNode, childDomNode);
+                            newChild._setAttrs(bkpAttrs);
+                            newChild._setChildNodes(bkpChildNodes);
+                            newChild.id && (nodeids[newChild.id]=newChild.domNode);
+                            oldChild.isVoid = newChild.isVoid;
+                            delete oldChild.text;
+                            instance._emit(EV_CONTENT_CHANGE);
+                            newChild._emit(EV_INSERTED);
                             break;
-
                         case 5: // oldNodeType==TextNode, newNodeType==TextNode
                                 // case5 and case9 should be treated the same
                         case 9: // oldNodeType==Comment, newNodeType==Comment
-                            (oldChild.text===newChild.text) || (oldChild.domNode.nodeValue = oldChild.text = newChild.text);
+                            if (oldChild.text!==newChild.text) {
+                                oldChild.domNode.nodeValue = oldChild.text = newChild.text;
+                                instance._emit(EV_CONTENT_CHANGE);
+                            }
                             newVChildNodes[i] = oldChild;
                             break;
                         case 6: // oldNodeType==TextNode, newNodeType==Comment
@@ -1512,6 +1747,7 @@ module.exports = function (window) {
                             newChild.domNode.nodeValue = newChild.text;
                             domNode._replaceChild(newChild.domNode, childDomNode);
                             newChild.vParent = oldChild.vParent;
+                            instance._emit(EV_CONTENT_CHANGE);
                     }
                     if ((nodeswitch===2) || (nodeswitch===5) || (nodeswitch===8)) {
                         needNormalize = true;
@@ -1520,7 +1756,7 @@ module.exports = function (window) {
                 else {
                     // _remove previous definition
                     domNode._removeChild(oldChild.domNode);
-                    // the oldChild needs to be removed, however, this canoot be done right now, for it would effect the loop
+                    // the oldChild needs to be removed, however, this cannot be done right now, for it would effect the loop
                     // so we store it inside a hash to remove it later
                     forRemoval[forRemoval.length] = oldChild;
                 }
@@ -1543,14 +1779,16 @@ module.exports = function (window) {
                         domNode._appendChild(newChild.domNode);
                         newChild._setAttrs(bkpAttrs);
                         newChild._setChildNodes(bkpChildNodes);
+                        newChild._emit(EV_INSERTED);
                         break;
-                    case 3: // Element
+                    case 3: // TextNode
                         needNormalize = true;
                         // we need to break through --> no `break`
                         /* falls through */
                     default: // TextNode or CommentNode
                         newChild.domNode.nodeValue = newChild.text;
                         domNode._appendChild(newChild.domNode);
+                        instance._emit(EV_CONTENT_CHANGE);
                 }
                 newChild.storeId();
             }
@@ -1702,11 +1940,14 @@ module.exports = function (window) {
                 return ((instance.nodeType===3) || (instance.nodeType===8)) ? instance.text : null;
             },
             set: function(v) {
-                var instance = this;
+                var instance = this,
+                    newTextContent, prevTextContent;
                 if ((instance.nodeType===3) || (instance.nodeType===8)) {
+                    prevTextContent = instance.domNode.textContent;
                     instance.domNode.textContent = v;
                     // set .text AFTER the dom-node is updated --> the content might be escaped!
-                    instance.text = instance.domNode.textContent;
+                    newTextContent = instance.text = instance.domNode.textContent;
+                    (newTextContent!==prevTextContent) && instance._emit(EV_CONTENT_CHANGE);
                 }
             }
         },
@@ -1773,6 +2014,7 @@ module.exports = function (window) {
                             // vnode.vChildNodes = bkpChildNodes;
                             vnode.id && (nodeids[vnode.id]=vnode.domNode);
                             instance._replaceAtParent(vnode);
+                            vnode._emit(EV_INSERTED);
                         }
                         else {
                             instance._setAttrs(vnode.attrs);
@@ -1784,6 +2026,7 @@ module.exports = function (window) {
                         vnode.domNode.nodeValue = vnode.text;
                         vParent.domNode._replaceChild(vnode.domNode, instance.domNode);
                         instance._replaceAtParent(vnode);
+                        vnode._emit(EV_INSERTED);
                     }
                 }
                 for (i=1; i<len; i++) {
@@ -1795,6 +2038,7 @@ module.exports = function (window) {
                             vnode.attrs = {}; // reset, to force defined by `_setAttrs`
                             vnode.vChildNodes = []; // reset to current state, to force defined by `_setAttrs`
                             isLastChildNode ? vParent.domNode._appendChild(vnode.domNode) : vParent.domNode._insertBefore(vnode.domNode, refDomNode);
+                            vnode._emit(EV_INSERTED);
                             vnode._setAttrs(bkpAttrs);
                             vnode._setChildNodes(bkpChildNodes);
                             break;
@@ -1868,6 +2112,7 @@ module.exports = function (window) {
                         (vChildNode.nodeType===1) && (children[children.length]=vChildNode);
                     }
                 }
+                children || (children = instance._vChildren = []);
                 return children;
             }
         },
