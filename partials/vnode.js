@@ -27,7 +27,7 @@ require('polyfill');
 
 module.exports = function (window) {
 
-    window._ITSAmodules || window.protectedProp('_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
 
     if (window._ITSAmodules.VNode) {
         return window._ITSAmodules.VNode; // VNODE was already created
@@ -199,7 +199,7 @@ module.exports = function (window) {
          * @since 0.0.1
          */
         PSEUDO_REQUIRED_CHILDREN = {},
-        _matchesSelectorItem, _matchesOneSelector, _findElementSibling, vNodeProto,
+        _matchesSelectorItem, _matchesOneSelector, _findElementSibling, vNodeProto, _markRemoved,
         _splitSelector, _findNodeSibling, _matchNthChild, _batchEmit, _emitDestroyChildren;
         PSEUDO_REQUIRED_CHILDREN[PSEUDO_FIRST_CHILD] = true;
         PSEUDO_REQUIRED_CHILDREN[PSEUDO_FIRST_OF_TYPE] = true;
@@ -859,6 +859,21 @@ module.exports = function (window) {
         }
     };
 
+    _markRemoved = function(vnode) {
+        var vChildNodes = vnode.vChildNodes,
+            len, i, vChildNode;
+        if (vnode.nodeType===1) {
+            Object.protectedProp(vnode, 'removedFromDOM', true);
+            if (vChildNodes) {
+                len = vChildNodes.length;
+                for (i=0; i < len; i++) {
+                    vChildNode = vChildNodes[i];
+                    vChildNode && _markRemoved(vChildNode);
+                }
+            }
+        }
+    };
+
     vNodeProto = window._ITSAmodules.VNode = {
        /**
         * Check whether the vnode's domNode is equal, or contains the specified Element.
@@ -868,6 +883,9 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         contains: function(otherVNode) {
+            if (otherVNode.destroyed) {
+                return false;
+            }
             while (otherVNode && (otherVNode!==this)) {
                 otherVNode = otherVNode.vParent;
             }
@@ -1139,6 +1157,7 @@ module.exports = function (window) {
             );
             return instance;
         },
+
        /**
         * Destroys the vnode and all its vnode-vChildNodes.
         * Removes it from its vParent.vChildNodes list,
@@ -1157,7 +1176,7 @@ module.exports = function (window) {
                 len, i, vChildNode, vParent, treeNodes;
             if (!instance.destroyed) {
                 silent || instance._emit(EV_REMOVED);
-                instance.protectedProp('destroyed', true);
+                Object.protectedProp(instance, 'destroyed', true);
 
                 // first: determine the dom-tree, which module `event-dom` needs to determine where the node was before it was destroyed:
                 treeNodes = [instance];
@@ -1166,6 +1185,9 @@ module.exports = function (window) {
                     treeNodes[treeNodes.length] = vParent;
                     vParent = vParent.vParent;
                 }
+
+                // mark all its vChildNodes so we can see if the node is in the DOM
+                _markRemoved(instance);
 
                 // The definite cleanup needs to be done after a timeout:
                 // someone might need to handle the Element when removed (fe to cleanup specific things)

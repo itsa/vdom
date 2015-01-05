@@ -23,7 +23,7 @@ require('polyfill');
 
 module.exports = function (window) {
 
-    window._ITSAmodules || window.protectedProp('_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
 
     if (window._ITSAmodules.ExtendElement) {
         return; // ExtendElement was already created
@@ -989,7 +989,7 @@ module.exports = function (window) {
                 cloned = instance._cloneNode(deep),
                 cloneData = function(srcVNode, targetVNode) {
                     if (srcVNode._data) {
-                        targetVNode.protectedProp('_data', {});
+                        Object.protectedProp(targetVNode, '_data', {});
                         targetVNode._data.merge(srcVNode._data);
                     }
                 },
@@ -1897,6 +1897,9 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         ElementPrototype.inDOM = function() {
+            if (this.vnode.removedFromDOM) {
+                return false;
+            }
             return DOCUMENT.contains(this);
         };
 
@@ -2806,7 +2809,7 @@ module.exports = function (window) {
             var instance = this,
                 vnode = instance.vnode;
             if (value!==undefined) {
-                vnode._data ||  vnode.protectedProp('_data', {});
+                vnode._data || Object.protectedProp(vnode, '_data', {});
                 vnode._data[key] = value;
                 if (deep) {
                     instance.getChildren().forEach(function(element) {

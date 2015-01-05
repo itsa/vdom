@@ -1,8 +1,10 @@
 "use strict";
 
+require('js-ext/lib/object.js');
+
 module.exports = function (window) {
 
-    window._ITSAmodules || window.protectedProp('_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
 
     if (window._ITSAmodules.VDOM) {
         return window._ITSAmodules.VDOM; // VDOM was already created

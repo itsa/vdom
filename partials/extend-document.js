@@ -15,10 +15,11 @@
 */
 
 require('polyfill');
+require('js-ext/lib/object.js');
 
 module.exports = function (window) {
 
-    window._ITSAmodules || window.protectedProp('_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
 
     if (window._ITSAmodules.ExtendDocument) {
         return; // ExtendDocument was already created

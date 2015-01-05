@@ -343,7 +343,7 @@
             var nodeidSize = nodeids.size();
             node.empty();
             expect(node.innerHTML).to.be.eql('');
-            expect(nodeids.size()).to.be.eql(nodeidSize-4);
+            expect(nodeids.size()).to.be.eql(nodeidSize); // they only get removed after 1 minute!
         });
 
         it('first', function () {
@@ -1315,7 +1315,9 @@
             expect(node.childNodes[1]).to.be.eql(nodeSub3);
             expect(node.vnode.vChildNodes[0].domNode).to.be.eql(nodeSub1);
             expect(node.vnode.vChildNodes[1].domNode).to.be.eql(nodeSub3);
-            expect(nodeids.sub2===undefined).to.be.true;
+            expect(nodeids.sub2).to.be.eql(nodeSub2); // should still exist: will be removed after 60 sec
+            expect(nodeSub2.vnode.destroyed).to.be.true;
+            expect(nodeSub2.vnode.removedFromDOM).to.be.true;
         });
 
         it('remove and reinsert', function () {
@@ -1364,7 +1366,9 @@
             expect(node.childNodes[1]).to.be.eql(nodeSub3);
             expect(node.vnode.vChildNodes[0].domNode).to.be.eql(nodeSub1);
             expect(node.vnode.vChildNodes[1].domNode).to.be.eql(nodeSub3);
-            expect(nodeids.sub2===undefined).to.be.true;
+            expect(nodeids.sub2).to.be.eql(nodeSub2); // should still exist: will be removed after 60 sec
+            expect(nodeSub2.vnode.destroyed).to.be.true;
+            expect(nodeSub2.vnode.removedFromDOM).to.be.true;
         });
 
         it('removeClass', function () {
