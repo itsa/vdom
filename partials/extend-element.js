@@ -989,12 +989,7 @@ module.exports = function (window) {
                 cloned = instance._cloneNode(deep),
                 cloneData = function(srcVNode, targetVNode) {
                     if (srcVNode._data) {
-                        Object.defineProperty(targetVNode, '_data', {
-                            configurable: false,
-                            enumerable: false,
-                            writable: false,
-                            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {}'s properties itself
-                        });
+                        targetVNode.protectedProp('_data', {});
                         targetVNode._data.merge(srcVNode._data);
                     }
                 },
@@ -2343,7 +2338,7 @@ module.exports = function (window) {
         * When no arguments are passed, all node-data (key-value pairs) will be removed.
         *
         * @method removeData
-        * @param key {string} name of the key
+        * @param [key] {string} name of the key, when not set, all data is removed
         * @param [deep] {Boolean} whether to set the data to all descendants recursively
         * @chainable
         * @since 0.0.1
@@ -2357,11 +2352,7 @@ module.exports = function (window) {
                 }
                 else {
                     // we cannot just redefine _data, for it is set as readonly
-                    vnode._data.each(
-                        function(value, key) {
-                            delete vnode._data[key];
-                        }
-                    );
+                    vnode._cleanData();
                     if (deep) {
                         instance.getChildren().forEach(function(element) {
                             element.removeData(key, true);
