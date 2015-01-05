@@ -17,6 +17,7 @@
 
 require('js-ext/lib/object.js');
 require('js-ext/lib/string.js');
+require('polyfill');
 
 var fromCamelCase = function(input) {
         return input.replace(/[a-z]([A-Z])/g, function(match, group) {

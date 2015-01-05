@@ -23,14 +23,7 @@ require('polyfill');
 
 module.exports = function (window) {
 
-    if (!window._ITSAmodules) {
-        Object.defineProperty(window, '_ITSAmodules', {
-            configurable: false,
-            enumerable: false,
-            writable: false,
-            value: {} // `writable` is false means we cannot chance the value-reference, but we can change {} its members
-        });
-    }
+    window._ITSAmodules || window.protectedProp('_ITSAmodules', {});
 
     if (window._ITSAmodules.ExtendElement) {
         return; // ExtendElement was already created
@@ -318,10 +311,10 @@ module.exports = function (window) {
             }
             unFreeze = function(options) {
                 var bkpFreezedStyle = node.getData(bkpFreezed),
-                    bkpFreezedData1 = node.getData(bkpFreezedData1),
                     finish = options && options.finish,
                     cancel = options && options.cancel,
                     transitioned = !finish;
+                bkpFreezedData1 = node.getData(bkpFreezedData1);
                 if (bkpFreezedStyle!==undefined) {
                     if (finish || cancel) {
                         node.setClass(NO_TRANS2);
@@ -927,10 +920,11 @@ module.exports = function (window) {
         * @param content {Element|ElementArray|String} content to append
         * @param [escape] {Boolean} whether to insert `escaped` content, leading it into only text inserted
         * @param [refElement] {Element} reference Element where the content should be appended
+        * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
         * @return {Element} the created Element (or the last when multiple)
         * @since 0.0.1
         */
-        ElementPrototype.append = function(content, escape, refElement) {
+        ElementPrototype.append = function(content, escape, refElement, silent) {
             var instance = this,
                 vnode = instance.vnode,
                 i, len, item, createdElement, vnodes, vRefElement,
@@ -938,6 +932,7 @@ module.exports = function (window) {
                 escape && (oneItem.nodeType===1) && (oneItem=DOCUMENT.createTextNode(oneItem.getOuterHTML()));
                 createdElement = refElement ? vnode._insertBefore(oneItem.vnode, refElement.vnode) : vnode._appendChild(oneItem.vnode);
             };
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             vnode._noSync()._normalizable(false);
             if (refElement && (vnode.vChildNodes.indexOf(refElement.vnode)!==-1)) {
                 vRefElement = refElement.vnode.vNext;
@@ -962,6 +957,7 @@ module.exports = function (window) {
                 doAppend(content);
             }
             vnode._normalizable(true)._normalize();
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
             return createdElement;
         };
 
@@ -1144,11 +1140,14 @@ module.exports = function (window) {
         * Alias for thisNode.vTextContent = '';
         *
         * @method empty
+        * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.empty = function() {
-            this.setText('');
+        ElementPrototype.empty = function(silent) {
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
+            this.vnode.empty();
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
         };
 
         /**
@@ -2062,10 +2061,11 @@ module.exports = function (window) {
         * @param content {Element|Element|ElementArray|String} content to prepend
         * @param [escape] {Boolean} whether to insert `escaped` content, leading it into only text inserted
         * @param [refElement] {Element} reference Element where the content should be prepended
+        * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
         * @return {Element} the created Element (or the last when multiple)
         * @since 0.0.1
         */
-        ElementPrototype.prepend = function(content, escape, refElement) {
+        ElementPrototype.prepend = function(content, escape, refElement, silent) {
             var instance = this,
                 vnode = instance.vnode,
                 i, len, item, createdElement, vnodes, vChildNodes, vRefElement,
@@ -2075,6 +2075,7 @@ module.exports = function (window) {
                 // CAUTIOUS: when using TextNodes, they might get merged (vnode._normalize does this), which leads into disappearance of refElement:
                 refElement = createdElement;
             };
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             vnode._noSync()._normalizable(false);
             if (!refElement) {
                 vChildNodes = vnode.vChildNodes;
@@ -2102,6 +2103,7 @@ module.exports = function (window) {
                 doPrepend(content);
             }
             vnode._normalizable(true)._normalize();
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
             return createdElement;
         };
 
@@ -2259,6 +2261,27 @@ module.exports = function (window) {
         };
 
        /**
+         * Removes multiple attributes on the Element.
+         * The argument should be one ore more AttributeNames.
+         *
+         * @example
+         * instance.removeAttrs(['tabIndex', 'style']);
+         *
+         * @method removeAttrs
+         * @param attributeData {Array|String}
+         * @chainable
+         * @since 0.0.1
+        */
+        ElementPrototype.removeAttrs = function(attributeData) {
+            var instance = this;
+            Array.isArray(attributeData) || (attributeData=[attributeData]);
+            attributeData.forEach(function(item) {
+                instance.removeAttribute(item);
+            });
+            return instance;
+        };
+
+       /**
         * Removes the attribute from the Element.
         *
         * Use removeAttr() to be able to chain.
@@ -2321,11 +2344,13 @@ module.exports = function (window) {
         *
         * @method removeData
         * @param key {string} name of the key
+        * @param [deep] {Boolean} whether to set the data to all descendants recursively
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.removeData = function(key) {
-            var vnode = this.vnode;
+        ElementPrototype.removeData = function(key, deep) {
+            var instance = this,
+                vnode = instance.vnode;
             if (vnode._data) {
                 if (key) {
                     delete vnode._data[key];
@@ -2337,9 +2362,14 @@ module.exports = function (window) {
                             delete vnode._data[key];
                         }
                     );
+                    if (deep) {
+                        instance.getChildren().forEach(function(element) {
+                            element.removeData(key, true);
+                        });
+                    }
                 }
             }
-            return this;
+            return instance;
         };
 
        /**
@@ -2777,21 +2807,23 @@ module.exports = function (window) {
          * @method setData
          * @param key {string} name of the key
          * @param value {Any} the value that belongs to `key`
+         * @param [deep] {Boolean} whether to set the data to all descendants recursively
          * @chainable
          * @since 0.0.1
         */
-        ElementPrototype.setData = function(key, value) {
-            var vnode = this.vnode;
+        ElementPrototype.setData = function(key, value, deep) {
+            var instance = this,
+                vnode = instance.vnode;
             if (value!==undefined) {
-                vnode._data ||  Object.defineProperty(vnode, '_data', {
-                    configurable: false,
-                    enumerable: false,
-                    writable: false,
-                    value: {} // `writable` is false means we cannot chance the value-reference, but we can change {}'s properties itself
-                });
+                vnode._data ||  vnode.protectedProp('_data', {});
                 vnode._data[key] = value;
+                if (deep) {
+                    instance.getChildren().forEach(function(element) {
+                        element.setData(key, value, true);
+                    });
+                }
             }
-            return this;
+            return instance;
         };
 
         /**
@@ -2804,12 +2836,16 @@ module.exports = function (window) {
          *
          * @method setHTML
          * @param val {String} the new value to be set
+         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
          * @chainable
          * @since 0.0.1
          */
-        ElementPrototype.setHTML = function(val) {
-            this.vnode.innerHTML = val;
-            return this;
+        ElementPrototype.setHTML = function(val, silent) {
+            var instance = this;
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
+            instance.vnode.innerHTML = val;
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            return instance;
         };
 
        /**
@@ -3105,12 +3141,16 @@ module.exports = function (window) {
          *
          * @method setOuterHTML
          * @param val {String} the new value to be set
+         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
          * @chainable
          * @since 0.0.1
          */
-        ElementPrototype.setOuterHTML = function(val) {
-            this.vnode.outerHTML = val;
-            return this;
+        ElementPrototype.setOuterHTML = function(val, silent) {
+            var instance = this;
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
+            instance.vnode.outerHTML = val;
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            return instance;
         };
 
         /**
@@ -3123,12 +3163,16 @@ module.exports = function (window) {
          *
          * @method setText
          * @param val {String} the textContent to be set
+         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
          * @chainable
          * @since 0.0.1
          */
-        ElementPrototype.setText = function(val) {
-            this.vnode.textContent = val;
-            return this;
+        ElementPrototype.setText = function(val, silent) {
+            var instance = this;
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
+            instance.vnode.textContent = val;
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            return instance;
         };
 
        /**
