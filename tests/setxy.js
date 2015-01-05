@@ -150,7 +150,7 @@
         });
 
         it('setXY to inner-node with height and with constrained-plugin', function (done) {
-            nodeSub1.plug(plugins.NodeConstrain, {selector: '#ITSA'});
+            nodeSub1.plug(plugins.nodeConstrain, {selector: '#ITSA'});
             nodeSub1.setXY(2, 5).then(
                 function() {
                     expect(nodeSub1.left).to.be.eql(10);
@@ -162,7 +162,7 @@
         });
 
         it('setXY to inner-node without height and with constrained-plugin', function (done) {
-            nodeSub2.plug(plugins.NodeConstrain, {selector: '#ITSA'});
+            nodeSub2.plug(plugins.nodeConstrain, {selector: '#ITSA'});
             nodeSub2.setXY(2, 5).then(
                 function() {
                     expect(nodeSub2.left).to.be.eql(10);
@@ -271,14 +271,14 @@
         });
 
         it('setXY to inner-node with height and with constrained-plugin', function () {
-            nodeSub1.plug(plugins.NodeConstrain, {selector: '#ITSA'});
+            nodeSub1.plug(plugins.nodeConstrain, {selector: '#ITSA'});
             nodeSub1.setXY(2, 5, null, true);
             expect(nodeSub1.left).to.be.eql(10);
             expect(nodeSub1.top).to.be.eql(30);
         });
 
         it('setXY to inner-node without height and with constrained-plugin', function () {
-            nodeSub2.plug(plugins.NodeConstrain, {selector: '#ITSA'});
+            nodeSub2.plug(plugins.nodeConstrain, {selector: '#ITSA'});
             nodeSub2.setXY(2, 5, null, true);
             expect(nodeSub2.left).to.be.eql(10);
             expect(nodeSub2.top).to.be.eql(30);

@@ -27,7 +27,7 @@ var fromCamelCase = function(input) {
 
 module.exports = function (window) {
 
-    window._ITSAmodules || window.protectedProp('_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
 
     if (window._ITSAmodules.ElementPlugin) {
         return window._ITSAmodules.ElementPlugin; // ElementPlugin was already created
@@ -114,7 +114,7 @@ module.exports = function (window) {
             Object.isObject(defaults) || (defaults = {});
             (typeof ns==='string') || (ns = 'invalid_ns');
             ns = ns.replace(/ /g, '').replace(/-/g, '');
-            newPlugin.protectedProp('ns', ns);
+            Object.protectedProp(newPlugin, 'ns', ns);
             newPlugin.defaults = defaults;
             return newPlugin;
         }
