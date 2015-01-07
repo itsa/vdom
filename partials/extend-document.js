@@ -106,11 +106,10 @@ module.exports = function (window) {
     };
 
     /**
-     * Returns the Element matching the specified id.
+     * Returns the an Array with all Elements that have a tagName `i-parcel-*`
      *
-     * @method getElementById
-     * @param id {String} id of the Element
-     * @return {Element|null}
+     * @method getParcels
+     * @return {Array}
      *
      */
     DOCUMENT.getParcels = function() {
@@ -126,7 +125,7 @@ module.exports = function (window) {
         // when not returned: it would be the first time --> we setup the current list
         // the quickest way is by going through the vdom and inspect the tagNames ourselves:
         findChildren = function(vnode) {
-            var vChildren = vnode.getChildren(),
+            var vChildren = vnode.vChildren(),
                 len = vChildren.length,
                 i, vChild;
             for (i=0; i<len; i++) {
