@@ -16,6 +16,7 @@
 
 require('polyfill');
 require('js-ext/lib/object.js');
+require('js-ext/lib/string.js');
 
 module.exports = function (window) {
 
@@ -102,6 +103,41 @@ module.exports = function (window) {
      */
     DOCUMENT.getElementById = function(id) {
         return nodeids[id] || null; // force `null` instead of `undefined` to be compatible with native getElementById.
+    };
+
+    /**
+     * Returns the Element matching the specified id.
+     *
+     * @method getElementById
+     * @param id {String} id of the Element
+     * @return {Element|null}
+     *
+     */
+    DOCUMENT.getParcels = function() {
+        var instance = this,
+            findChildren;
+        // i-parcel elements can only exists when the window.ITAGS are defined (by itags.core)
+        if (!window.ITAGS) {
+            return [];
+        }
+        if (instance._parcelList) {
+            return instance._parcelList;
+        }
+        // when not returned: it would be the first time --> we setup the current list
+        // the quickest way is by going through the vdom and inspect the tagNames ourselves:
+        findChildren = function(vnode) {
+            var vChildren = vnode.getChildren(),
+                len = vChildren.length,
+                i, vChild;
+            for (i=0; i<len; i++) {
+                vChild = vChildren[i];
+                vChild.tag.startsWith('I-PARCEL-') && (DOCUMENT._parcelList[DOCUMENT._parcelList.length]=vChild.domNode);
+                findChildren(vChild);
+            }
+        };
+        Object.protectedProp(instance, '_parcelList', []);
+        findChildren(instance.getElement('body').vnode);
+        return instance._parcelList;
     };
 
     /**

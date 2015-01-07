@@ -141,6 +141,11 @@
             domNodeToVNode(bodyNode);
         });
 
+        it('check tagname case-insensitivity', function () {
+            bodyNode.vnode.matchesSelector('div').should.be.true;
+            bodyNode.vnode.matchesSelector('DIV').should.be.true;
+        });
+
         it('divnode1 --> "#fakebody *"', function () {
             bodyNode.vnode.matchesSelector('#fakebody *').should.be.false;
             divnode1.vnode.matchesSelector('#fakebody *').should.be.true;
