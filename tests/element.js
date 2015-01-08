@@ -1811,6 +1811,10 @@
             expect(newnode.childNodes[0].childNodes.length).to.be.eql(1);
             expect(newnode.childNodes[0].innerHTML).to.be.eql('I am inner');
             expect(newnode.getHTML()).to.be.eql('<div>I am inner</div>');
+
+            nodeSub2.setHTML('<button class="pure-button">choose</button><div><ul></ul></div>');
+            expect(nodeSub2.innerHTML).to.be.eql('<button class="pure-button">choose</button><div><ul></ul></div>');
+
         });
 
         it('setId', function () {

@@ -125,7 +125,7 @@ module.exports = function (window) {
         // when not returned: it would be the first time --> we setup the current list
         // the quickest way is by going through the vdom and inspect the tagNames ourselves:
         findChildren = function(vnode) {
-            var vChildren = vnode.vChildren(),
+            var vChildren = vnode.vChildren,
                 len = vChildren.length,
                 i, vChild;
             for (i=0; i<len; i++) {
