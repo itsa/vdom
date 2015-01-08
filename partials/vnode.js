@@ -1735,11 +1735,27 @@ module.exports = function (window) {
                             }
                             else {
                                 // same tag --> only update what is needed
-                                oldChild.attrs = newChild.attrs;
+                                // first: we might need to set the class `focussed` when the attributeData says so:
+                                // this happens when an itag gets rerendered: its renderFn doesn't know if any elements
+                                // were focussed
+                                if (oldChild.hasData('focussed') && !newChild.hasClass('focussed')) {
+                                    newChild.classNames.push('focussed');
+                                    if (newChild.attrs[CLASS]) {
+                                        newChild.attrs[CLASS] = newChild.attrs[CLASS] + ' focussed';
+                                    }
+                                    else {
+                                        newChild.attrs[CLASS] = 'focussed';
+                                    }
+                                }
+                                if (oldChild.getData('fm-tabindex')==='true') {
+                                    // node has the tabindex set by the focusmanager,
+                                    // but that info might got lost with re-rendering of the new element
+                                    newChild.attrs.tabIndex = '0';
+                                }
                                 oldChild._setAttrs(newChild.attrs);
                                 // next: sync the vChildNodes:
                                 oldChild._setChildNodes(newChild.vChildNodes);
-                                // reset ref. to the domNode, for it might heva been changed by newChild:
+                                // reset ref. to the domNode, for it might have been changed by newChild:
                                 oldChild.id && (nodeids[oldChild.id]=childDomNode);
                                 newVChildNodes[i] = oldChild;
                             }
