@@ -451,6 +451,14 @@
             expect(vnode.vParent===undefined).to.be.true;
         });
 
+        it('Complex attributes', function () {
+            var vnodes = htmlToVNodes('<div items="[\\"item1\\",\\"item2\\",\\"item3\\",\\"item4\\",\\"item5\\"]"></div>', vNodeProto),
+                vnode, childvnode;
+            expect(vnodes.length).to.be.eql(1);
+            vnode = vnodes[0];
+            expect(vnode.attrs.items).to.be.eql('["item1","item2","item3","item4","item5"]');
+        });
+
     });
 
 }(global.window || require('node-win')));

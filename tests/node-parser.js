@@ -298,6 +298,15 @@
 
         });
 
+        it('Complex attributes', function () {
+            var testNode = DOCUMENT.createElement('div'),
+                vnode;
+
+            testNode.setAttribute('items', '["item1","item2","item3","item4","item5"]');
+            vnode = domNodeToVNode(testNode),
+            expect(vnode.attrs.items).to.be.eql('["item1","item2","item3","item4","item5"]');
+        });
+
     });
 
 }(global.window || require('node-win')));

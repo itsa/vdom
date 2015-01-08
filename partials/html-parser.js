@@ -133,8 +133,8 @@ module.exports = function (window) {
                                     attributeValue = '';
                                     if (attributeisString) {
                                         i++;
-                                        while ((character!=='\\') && (++i<len) && (character=htmlString[i]) && (character!==stringMarker)) {
-                                            attributeValue += character;
+                                        while ((++i<len) && (character=htmlString[i]) && ((character!==stringMarker) || (htmlString[i-1]==='\\'))) {
+                                            ((htmlString[i+1]!==stringMarker) || (character!=='\\')) && (attributeValue+=character);
                                         }
                                     }
                                     else {
