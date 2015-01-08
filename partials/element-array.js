@@ -122,11 +122,30 @@ module.exports = function (window) {
             *
             * @method removeAttr
             * @param attributeName {String}
-            * @return {Boolean} Whether the HtmlElement has the attribute set.
+            * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+            * @chainable
             * @since 0.0.1
             */
-            removeAttr: function(/* attributeName */) {
+            removeAttr: function(/* attributeName, silent */) {
                 return forEach(this, 'removeAttr', arguments);
+            },
+
+           /**
+            * For all vElements of the ElementArray:
+             * Removes multiple attributes on the Element.
+             * The argument should be one ore more AttributeNames.
+             *
+             * @example
+             * instance.removeAttrs(['tabIndex', 'style']);
+             *
+             * @method removeAttrs
+             * @param attributeData {Array|String}
+             * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+            * @chainable
+            * @since 0.0.1
+            */
+            removeAttrs: function(/* attributeData, silent */) {
+                return forEach(this, 'removeAttrs', arguments);
             },
 
            /**
@@ -227,11 +246,33 @@ module.exports = function (window) {
             * @method setAttr
             * @param attributeName {String}
             * @param value {Any} the value that belongs to `key`
+            * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
             * @chainable
             * @since 0.0.1
            */
-            setAttr: function(/* attributeName, value */) {
+            setAttr: function(/* attributeData, silent */) {
                 return forEach(this, 'setAttr', arguments);
+            },
+
+           /**
+            * For all vElements of the ElementArray:
+             * Sets multiple attributes on the Element with the specified value.
+             * The argument should be one ore more Objects with the properties: `name` and `value`
+             *
+             * @example
+             * instance.setAttrs([
+             *                      {name: 'tabIndex', value: '0'},
+             *                      {name: 'style', value: 'color: #000;'}
+             *                  ]);
+             *
+             * @method setAttrs
+             * @param attributeData {Array|Object}
+             * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+            * @chainable
+            * @since 0.0.1
+           */
+            setAttrs: function(/* attributeName, value, silent */) {
+                return forEach(this, 'setAttrs', arguments);
             },
 
            /**

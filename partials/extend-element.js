@@ -2250,11 +2250,14 @@ module.exports = function (window) {
         *
         * @method removeAttr
         * @param attributeName {String}
+        * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.removeAttr = function(/* attributeName */) {
-            this.removeAttribute.apply(this, arguments);
+        ElementPrototype.removeAttr = function(attributeName, silent) {
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
+            this.removeAttribute(attributeName);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
             return this;
         };
 
@@ -2267,15 +2270,18 @@ module.exports = function (window) {
          *
          * @method removeAttrs
          * @param attributeData {Array|String}
+         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
          * @chainable
          * @since 0.0.1
         */
-        ElementPrototype.removeAttrs = function(attributeData) {
+        ElementPrototype.removeAttrs = function(attributeData, silent) {
             var instance = this;
             Array.isArray(attributeData) || (attributeData=[attributeData]);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             attributeData.forEach(function(item) {
                 instance.removeAttribute(item);
             });
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
             return instance;
         };
 
@@ -2318,6 +2324,7 @@ module.exports = function (window) {
         *        Setting this parameter, will calculate the true css of the transitioned properties and set this temporarely inline, to fix the issue.
         *        Don't use it when not needed, it has a slightly performancehit.
         *        No need to set when `returnPromise` is set --> returnPromise always handles the transitionFix.
+        * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
         * @return {Promise|this} In case `returnPromise` is set, a Promise returns with the next handles:
         *        <ul>
         *            <li>cancel() {Promise}</li>
@@ -2328,11 +2335,22 @@ module.exports = function (window) {
         *        These handles resolve with the `elapsed-time` as first argument of the callbackFn
         * @since 0.0.1
         */
-        ElementPrototype.removeClass = function(className, returnPromise, transitionFix) {
+        ElementPrototype.removeClass = function(className, returnPromise, transitionFix, silent) {
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             var instance = this,
                 transPromise = (returnPromise || transitionFix) && getClassTransPromise(instance, REMOVE, className),
                 returnValue = returnPromise ? transPromise : instance;
             transPromise || instance.getClassList().remove(className);
+            if (silent && DOCUMENT.suppressMutationEvents) {
+                if (returnValue===instance) {
+                    DOCUMENT.suppressMutationEvents(false);
+                }
+                else {
+                    returnValue.finally(function() {
+                        DOCUMENT.suppressMutationEvents(false);
+                    });
+                }
+            }
             return returnValue;
         };
 
@@ -2668,6 +2686,7 @@ module.exports = function (window) {
         *        Setting this parameter, will calculate the true css of the transitioned properties and set this temporarely inline, to fix the issue.
         *        Don't use it when not needed, it has a slightly performancehit.
         *        No need to set when `returnPromise` is set --> returnPromise always handles the transitionFix.
+        * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
         * @return {Promise|this} In case `returnPromise` is set, a Promise returns with the next handles:
         *        <ul>
         *            <li>cancel() {Promise}</li>
@@ -2678,7 +2697,8 @@ module.exports = function (window) {
         *        These handles resolve with the `elapsed-time` as first argument of the callbackFn
         * @since 0.0.1
         */
-        ElementPrototype.replaceClass = function(prevClassName, newClassName, force, returnPromise, transitionFix) {
+        ElementPrototype.replaceClass = function(prevClassName, newClassName, force, returnPromise, transitionFix, silent) {
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             var instance = this,
                 transPromise = (returnPromise || transitionFix) && getClassTransPromise(instance, REPLACE, newClassName, prevClassName, force),
                 returnValue;
@@ -2686,6 +2706,16 @@ module.exports = function (window) {
                 returnValue = returnPromise ? transPromise : instance;
                 transPromise || instance.removeClass(prevClassName).setClass(newClassName);
                 return returnValue;
+            }
+            if (silent && DOCUMENT.suppressMutationEvents) {
+                if (returnValue===instance) {
+                    DOCUMENT.suppressMutationEvents(false);
+                }
+                else {
+                    returnValue.finally(function() {
+                        DOCUMENT.suppressMutationEvents(false);
+                    });
+                }
             }
             return returnPromise ? window.Promise.resolve() : instance;
         };
@@ -2715,12 +2745,15 @@ module.exports = function (window) {
          * @method setAttr
          * @param attributeName {String}
          * @param value {Any} the value that belongs to `key`
+         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
          * @chainable
          * @since 0.0.1
         */
-        ElementPrototype.setAttr = function(/* attributeName, value */) {
+        ElementPrototype.setAttr = function(attributeName, value, silent) {
             var instance = this;
-            instance.setAttribute.apply(instance, arguments);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
+            instance.setAttribute(attributeName, value);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
             return instance;
         };
 
@@ -2753,15 +2786,18 @@ module.exports = function (window) {
          *
          * @method setAttrs
          * @param attributeData {Array|Object}
+         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
          * @chainable
          * @since 0.0.1
         */
-        ElementPrototype.setAttrs = function(attributeData) {
+        ElementPrototype.setAttrs = function(attributeData, silent) {
             var instance = this;
             Array.isArray(attributeData) || (attributeData=[attributeData]);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             attributeData.forEach(function(item) {
                 instance.setAttribute(item.name, item.value);
             });
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
             return instance;
         };
 
@@ -2776,6 +2812,7 @@ module.exports = function (window) {
         *        Setting this parameter, will calculate the true css of the transitioned properties and set this temporarely inline, to fix the issue.
         *        Don't use it when not needed, it has a slightly performancehit.
         *        No need to set when `returnPromise` is set --> returnPromise always handles the transitionFix.
+        * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
         * @return {Promise|this} In case `returnPromise` is set, a Promise returns with the next handles:
         *        <ul>
         *            <li>cancel() {Promise}</li>
@@ -2786,11 +2823,22 @@ module.exports = function (window) {
         *        These handles resolve with the `elapsed-time` as first argument of the callbackFn
         * @since 0.0.1
         */
-        ElementPrototype.setClass = function(className, returnPromise, transitionFix) {
+        ElementPrototype.setClass = function(className, returnPromise, transitionFix, silent) {
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             var instance = this,
                 transPromise = (returnPromise || transitionFix) && getClassTransPromise(instance, SET, className),
                 returnValue = returnPromise ? transPromise : instance;
             transPromise || instance.getClassList().add(className);
+            if (silent && DOCUMENT.suppressMutationEvents) {
+                if (returnValue===instance) {
+                    DOCUMENT.suppressMutationEvents(false);
+                }
+                else {
+                    returnValue.finally(function() {
+                        DOCUMENT.suppressMutationEvents(false);
+                    });
+                }
+            }
             return returnValue;
         };
 
@@ -3663,6 +3711,7 @@ module.exports = function (window) {
         *        Setting this parameter, will calculate the true css of the transitioned properties and set this temporarely inline, to fix the issue.
         *        Don't use it when not needed, it has a slightly performancehit.
         *        No need to set when `returnPromise` is set --> returnPromise always handles the transitionFix.
+        * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
         * @return {Promise|this} In case `returnPromise` is set, a Promise returns with the next handles:
         *        <ul>
         *            <li>cancel() {Promise}</li>
@@ -3673,11 +3722,22 @@ module.exports = function (window) {
         *        These handles resolve with the `elapsed-time` as first argument of the callbackFn
         * @since 0.0.1
         */
-        ElementPrototype.toggleClass = function(className, forceState, returnPromise, transitionFix) {
+        ElementPrototype.toggleClass = function(className, forceState, returnPromise, transitionFix, silent) {
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             var instance = this,
                 transPromise = (returnPromise || transitionFix) && getClassTransPromise(instance, TOGGLE, className, forceState),
                 returnValue = returnPromise ? transPromise : instance;
             transPromise || instance.getClassList().toggle(className, forceState);
+            if (silent && DOCUMENT.suppressMutationEvents) {
+                if (returnValue===instance) {
+                    DOCUMENT.suppressMutationEvents(false);
+                }
+                else {
+                    returnValue.finally(function() {
+                        DOCUMENT.suppressMutationEvents(false);
+                    });
+                }
+            }
             return returnValue;
         };
 
