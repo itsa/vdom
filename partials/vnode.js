@@ -1196,16 +1196,18 @@ module.exports = function (window) {
                 // someone might need to handle the Element when removed (fe to cleanup specific things)
                 later(function() {
                     instance._cleanData();
-                    // if vnode is part of DOCUMENT._parcelList then remove it
-                    if (DOCUMENT._parcelList && instance.tag.startsWith('I-PARCEL-')) {
-                        DOCUMENT._parcelList.remove(instance.domNode);
-                    }
-                    // _destroy all its vChildNodes
-                    if ((instance.nodeType===1) && vChildNodes) {
-                        len = vChildNodes.length;
-                        for (i=0; i < len; i++) {
-                            vChildNode = vChildNodes[i];
-                            vChildNode && vChildNode._destroy(true);
+                    if (instance.nodeType===1) {
+                        // if vnode is part of DOCUMENT._parcelList then remove it
+                        if (DOCUMENT._parcelList && instance.tag.startsWith('I-PARCEL-')) {
+                            DOCUMENT._parcelList.remove(instance.domNode);
+                        }
+                        // _destroy all its vChildNodes
+                        if (vChildNodes) {
+                            len = vChildNodes.length;
+                            for (i=0; i < len; i++) {
+                                vChildNode = vChildNodes[i];
+                                vChildNode && vChildNode._destroy(true);
+                            }
                         }
                     }
                     instance._vChildren = null;
