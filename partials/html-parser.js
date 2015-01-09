@@ -159,7 +159,7 @@ module.exports = function (window) {
 
                         extractStyle = extractor.extractStyle(vnode.attrs.style);
                         extractStyle.attrStyle && (vnode.attrs.style=extractStyle.attrStyle);
-                        vnode.styles = extractClass.styles;
+                        vnode.styles = extractStyle.styles;
 
                     }
 
