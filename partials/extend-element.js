@@ -2232,14 +2232,17 @@ module.exports = function (window) {
         * Alias for thisNode.parentNode.removeChild(thisNode);
         *
         * @method remove
+        * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
         * @return {Node} the DOM-node that was removed. You could re-insert it at a later time.
         * @since 0.0.1
         */
-        ElementPrototype.remove = function() {
+        ElementPrototype.remove = function(silent) {
             var instance = this,
                 vnode = instance.vnode,
                 vParent = vnode.vParent;
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             vParent && vParent._removeChild(vnode);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
             return instance;
         };
 
