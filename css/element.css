@@ -20,26 +20,32 @@
     position: relative !important;
 }
 
+/* don't set visibility to hidden --> you cannot set a focus on those items */
 .itsa-invisible,
 .itsa-invisible-relative {
-    visibility: hidden !important;
+    opacity: 0 !important;
     z-index: -1;
 }
 
 .itsa-invisible *,
 .itsa-invisible-relative * {
-    visibility: hidden !important;
+    opacity: 0 !important;
 }
 
 .itsa-transparent {
     opacity: 0;
 }
 
+/* don't set visibility to hidden --> you cannot set a focus on those items */
 .itsa-hidden {
-    visibility: hidden !important;
+    opacity: 0 !important;
     position: absolute !important;
     left: -9999px !important;
     top: -9999px !important;
+}
+
+.itsa-hidden * {
+    opacity: 0 !important;
 }
 
 .itsa-block {
