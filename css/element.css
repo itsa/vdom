@@ -24,7 +24,6 @@
 .itsa-invisible,
 .itsa-invisible-relative {
     opacity: 0 !important;
-    z-index: -1;
 }
 
 .itsa-invisible *,
@@ -42,6 +41,7 @@
     position: absolute !important;
     left: -9999px !important;
     top: -9999px !important;
+    z-index: -9;
 }
 
 .itsa-hidden * {
