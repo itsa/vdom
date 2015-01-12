@@ -21,6 +21,9 @@
         "virtual dom"
     ],
     "main": "vdom.js",
+    "browserify": {
+        "transform": ["cssify"]
+    },
     "engines": {
         "node": "*"
     },

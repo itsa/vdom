@@ -3999,37 +3999,9 @@ for (j=0; j<len2; j++) {
  */
 
 /**
-* Inserts the Element into the DOM tree at a specified position.
-*
-* @method insertAdjacentElement
-* @param position {String}
-* <ul>
-*     <li>'beforebegin' Before the element itself</li>
-*     <li>'afterbegin' Just inside the element, before its first child</li>
-*     <li>'beforeend' Just inside the element, after its last child</li>
-*     <li>'afterend' After the element itself</li>
-* <ul>
-* @param element {Element}
-*/
-
-/**
 * Parses the specified text as HTML and inserts the resulting nodes into the DOM tree at a specified position.
 *
 * @method insertAdjacentHTML
-* @param position {String}
-* <ul>
-*     <li>'beforebegin' Before the element itself</li>
-*     <li>'afterbegin' Just inside the element, before its first child</li>
-*     <li>'beforeend' Just inside the element, after its last child</li>
-*     <li>'afterend' After the element itself</li>
-* <ul>
-* @param element {Element}
-*/
-
-/**
-* Inserts the text into the DOM tree as a TextNode at a specified position.
-*
-* @method insertAdjacentText
 * @param position {String}
 * <ul>
 *     <li>'beforebegin' Before the element itself</li>
