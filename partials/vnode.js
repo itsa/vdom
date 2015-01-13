@@ -829,7 +829,7 @@ module.exports = function (window) {
     };
 
     _batchEmit = function() {
-        MUTATION_EVENTS.each(function (mutationEvents, vnode) {
+        MUTATION_EVENTS.forEach(function (mutationEvents, vnode) {
             var domNode = vnode.domNode;
             if (mutationEvents[EV_REMOVED]) {
                 domNode.emit(EV_REMOVED);
