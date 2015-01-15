@@ -333,17 +333,13 @@
         });
 
         it('empty single', function () {
-            var nodeidSize = nodeids.size();
             nodeSub3.empty();
-            // expect(nodeSub3.innerHTML).to.be.eql('');
-            // expect(nodeids.size()).to.be.eql(nodeidSize-1);
+            expect(nodeSub3.innerHTML).to.be.eql('');
         });
 
         it('empty deep', function () {
-            var nodeidSize = nodeids.size();
             node.empty();
             expect(node.innerHTML).to.be.eql('');
-            expect(nodeids.size()).to.be.eql(nodeidSize); // they only get removed after 1 minute!
         });
 
         it('first', function () {

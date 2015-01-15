@@ -15,9 +15,11 @@
 require('polyfill');
 require('js-ext/lib/object.js');
 
+var createHashMap = require('js-ext/extra/hashmap.js').createMap;
+
 module.exports = function (window) {
 
-    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', createHashMap());
 
     if (window._ITSAmodules.NodeParser) {
         return window._ITSAmodules.NodeParser; // NodeParser was already created

@@ -22,12 +22,13 @@
 require('js-ext/lib/array.js');
 require('js-ext/lib/object.js');
 require('js-ext/lib/string.js');
-require('js-ext/extra/lightmap.js');
 require('polyfill');
+
+var createHashMap = require('js-ext/extra/hashmap.js').createMap;
 
 module.exports = function (window) {
 
-    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', createHashMap());
 
     if (window._ITSAmodules.VNode) {
         return window._ITSAmodules.VNode; // VNODE was already created
@@ -36,7 +37,8 @@ module.exports = function (window) {
     var NS = require('./vdom-ns.js')(window),
         extractor = require('./attribute-extractor.js')(window),
         DOCUMENT = window.document,
-        MUTATION_EVENTS = new window.LightMap(),
+        LightMap = require('js-ext/extra/lightmap.js'),
+        MUTATION_EVENTS = new LightMap(),
         BATCH_WILL_RUN = false,
         nodeids = NS.nodeids,
         htmlToVNodes = require('./html-parser.js')(window),
@@ -64,28 +66,28 @@ module.exports = function (window) {
         EV_ATTRIBUTE_REMOVED = ATTRIBUTE+REMOVE,
         EV_ATTRIBUTE_CHANGED = ATTRIBUTE+CHANGE,
         EV_ATTRIBUTE_INSERTED = ATTRIBUTE+INSERT,
-        SPLIT_CHARACTER = {
+        SPLIT_CHARACTER = createHashMap({
             ' ': true,
             '>': true,
             '+': true, // only select the element when it is immediately preceded by the former element
             '~': true  // only the element when it has the former element as a sibling. (just like `+`, but less strict)
-        },
-        STORABLE_SPLIT_CHARACTER = {
+        }),
+        STORABLE_SPLIT_CHARACTER = createHashMap({
             '>': true,
             '+': true,
             '~': true
-        },
-        SIBLING_MATCH_CHARACTER = {
+        }),
+        SIBLING_MATCH_CHARACTER = createHashMap({
             '+': true,
             '~': true
-        },
-        ATTR_DETAIL_SPECIFIERS = {
+        }),
+        ATTR_DETAIL_SPECIFIERS = createHashMap({
             '^': true, // “begins with” selector
             '$': true, // “ends with” selector
             '*': true, // “contains” selector (might be a substring)
             '~': true, // “contains” selector as a separate word, separated by spaces
             '|': true // “contains” selector as a separate word, separated by `|`
-        },
+        }),
         /**
          * Object to gain quick access to attribute-name end-tokens.
          *
@@ -98,7 +100,7 @@ module.exports = function (window) {
          * @protected
          * @since 0.0.1
          */
-        END_ATTRIBUTENAME = {
+        END_ATTRIBUTENAME = createHashMap({
             '=': true,
             ']': true,
             '^': true, // “begins with” selector
@@ -106,7 +108,7 @@ module.exports = function (window) {
             '*': true, // “contains” selector (might be a substring)
             '~': true, // “contains” selector as a separate word, separated by spaces
             '|': true // “contains” selector as a separate word, separated by `|`
-        },
+        }),
         /**
          * Object to gain quick access to different changes of Element nodeType changes.
          *
@@ -132,23 +134,23 @@ module.exports = function (window) {
          * @protected
          * @since 0.0.1
          */
-        NODESWITCH = {
-            1: {
+        NODESWITCH = createHashMap({
+            1: createHashMap({
                 1: 1, // oldNodeType==Element, newNodeType==Element
                 3: 2, // oldNodeType==Element, newNodeType==TextNode
                 8: 3  // oldNodeType==Element, newNodeType==Comment
-            },
-            3: {
+            }),
+            3: createHashMap({
                 1: 4, // oldNodeType==TextNode, newNodeType==Element
                 3: 5, // oldNodeType==TextNode, newNodeType==TextNode
                 8: 6  // oldNodeType==TextNode, newNodeType==Comment
-            },
-            8: {
+            }),
+            8: createHashMap({
                 1: 7, // oldNodeType==Comment, newNodeType==Element
                 3: 8, // oldNodeType==Comment, newNodeType==TextNode
                 8: 9  // oldNodeType==Comment, newNodeType==Comment
-            }
-        },
+            })
+        }),
         /**
          * Object to gain quick access to selector start-tokens.
          *
@@ -162,12 +164,12 @@ module.exports = function (window) {
          * @protected
          * @since 0.0.1
          */
-        SELECTOR_IDENTIFIERS = {
+        SELECTOR_IDENTIFIERS = createHashMap({
             '#': 1,
             '.': 2,
             '[': 3,
             ':': 4
-        },
+        }),
         PSEUDO_FIRST_CHILD = ':first-child',
         PSEUDO_FIRST_OF_TYPE = ':first-of-type',
         PSEUDO_LAST_CHILD = ':last-child',
@@ -198,7 +200,7 @@ module.exports = function (window) {
          * @protected
          * @since 0.0.1
          */
-        PSEUDO_REQUIRED_CHILDREN = {},
+        PSEUDO_REQUIRED_CHILDREN = createHashMap(),
         _matchesSelectorItem, _matchesOneSelector, _findElementSibling, vNodeProto, _markRemoved,
         _splitSelector, _findNodeSibling, _matchNthChild, _batchEmit, _emitDestroyChildren;
         PSEUDO_REQUIRED_CHILDREN[PSEUDO_FIRST_CHILD] = true;

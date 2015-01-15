@@ -18,16 +18,18 @@
 require('js-ext/lib/object.js');
 require('polyfill');
 
+var createHashMap = require('js-ext/extra/hashmap.js').createMap;
+
 module.exports = function (window) {
     var NS;
 
-    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', createHashMap());
 
     if (window._ITSAmodules.VDOM_NS) {
         return window._ITSAmodules.VDOM_NS; // VDOM_NS was already created
     }
 
-    NS = window._ITSAmodules.VDOM_NS = {};
+    NS = window._ITSAmodules.VDOM_NS = createHashMap();
 
     /**
      * Reference to the VElement of document.body (gets its value as soon as it gets refered to)
@@ -48,7 +50,7 @@ module.exports = function (window) {
      * @type Object
      * @since 0.0.1
      */
-    NS.nodeids || (NS.nodeids={});
+    NS.nodeids || (NS.nodeids=createHashMap());
 
     /**
      * A hash with all encountered non-void Elements
@@ -58,7 +60,7 @@ module.exports = function (window) {
      * @type Object
      * @since 0.0.1
      */
-    NS.nonVoidElements || (NS.nonVoidElements={});
+    NS.nonVoidElements || (NS.nonVoidElements=createHashMap());
 
     /**
      * A hash to identify what tagNames are equal to `SCRIPT` or `STYLE`.
@@ -68,10 +70,10 @@ module.exports = function (window) {
      * @type Object
      * @since 0.0.1
      */
-    NS.SCRIPT_OR_STYLE_TAG = {
+    NS.SCRIPT_OR_STYLE_TAG = createHashMap({
         SCRIPT: true,
         STYLE: true
-    };
+    });
 
     /**
      * A hash with all nodeTypes that should be captured by the vDOM.
@@ -81,11 +83,11 @@ module.exports = function (window) {
      * @type Object
      * @since 0.0.1
      */
-    NS.VALID_NODE_TYPES = {
+    NS.VALID_NODE_TYPES = createHashMap({
         1: true,
         3: true,
         8: true
-    };
+    });
 
     /**
      * A hash with all encountered void Elements
@@ -95,7 +97,7 @@ module.exports = function (window) {
      * @type Object
      * @since 0.0.1
      */
-    NS.voidElements || (NS.voidElements={});
+    NS.voidElements || (NS.voidElements=createHashMap());
 
     return NS;
 };

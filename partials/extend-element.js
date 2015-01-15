@@ -21,9 +21,11 @@ require('js-ext/lib/string.js');
 require('js-ext/lib/promise.js');
 require('polyfill');
 
+var createHashMap = require('js-ext/extra/hashmap.js').createMap;
+
 module.exports = function (window) {
 
-    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', createHashMap());
 
     if (window._ITSAmodules.ExtendElement) {
         return; // ExtendElement was already created
@@ -91,15 +93,16 @@ module.exports = function (window) {
         REMOVE = 'remove',
         _STARTSTYLE = '_startStyle',
         setupObserver,
-        SIBLING_MATCH_CHARACTER = {
+        SIBLING_MATCH_CHARACTER = createHashMap({
             '+': true,
             '~': true
-        },
-        NON_CLONABLE_STYLES = {
+        }),
+        NON_CLONABLE_STYLES = createHashMap({
             absolute: true,
             hidden: true,
             block: true
-        },
+        }),
+        // CSS_PROPS_TO_CALCULATE should not be a hashMap, but an object --> we need to iterate with .each
         CSS_PROPS_TO_CALCULATE = { // http://www.w3.org/TR/css3-transitions/#animatable-css
             backgroundColor: true,
             backgroundPositionX: true,

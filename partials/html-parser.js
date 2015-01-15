@@ -16,9 +16,11 @@
 require('polyfill');
 require('js-ext/lib/object.js');
 
+var createHashMap = require('js-ext/extra/hashmap.js').createMap;
+
 module.exports = function (window) {
 
-    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', createHashMap());
 
     if (window._ITSAmodules.HtmlParser) {
         return window._ITSAmodules.HtmlParser; // HtmlParser was already created
@@ -30,7 +32,7 @@ module.exports = function (window) {
         voidElements = NS.voidElements,
         nonVoidElements = NS.nonVoidElements,
 
-        TAG_OR_ATTR_START_CHARACTERS = {
+        TAG_OR_ATTR_START_CHARACTERS = createHashMap({
             a: true,
             b: true,
             c: true,
@@ -83,16 +85,16 @@ module.exports = function (window) {
             X: true,
             Y: true,
             Z: true
-        },
-        STARTTAG_OR_ATTR_VALUE_ENDS_CHARACTERS = {
+        }),
+        STARTTAG_OR_ATTR_VALUE_ENDS_CHARACTERS = createHashMap({
             ' ': true,
             '>': true
-        },
-        ATTRUBUTE_NAME_ENDS_CHARACTER = {
+        }),
+        ATTRUBUTE_NAME_ENDS_CHARACTER = createHashMap({
             ' ': true,
             '=': true,
             '>': true
-        },
+        }),
 
         /**
          * Transforms html-text into a vnodes-Array.
