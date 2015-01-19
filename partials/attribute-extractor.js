@@ -17,19 +17,21 @@ require('js-ext/lib/string.js');
 require('js-ext/lib/object.js');
 require('polyfill');
 
+var createHashMap = require('js-ext/extra/hashmap.js').createMap;
+
 module.exports = function (window) {
 
-    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', createHashMap());
 
     if (window._ITSAmodules.AttributeExtractor) {
         return window._ITSAmodules.AttributeExtractor; // AttributeExtractor was already created
     }
 
     var SUPPORT_INLINE_PSEUDO_STYLES = false, // current browsers don't support this. When tey do, set this value `true`
-        END_OF_VALUE = {
+        END_OF_VALUE = createHashMap({
             ';': true,
             '}': true
-        },
+        }),
         VENDOR_CSS = require('polyfill/extra/vendorCSS.js')(window),
         generateVendorCSSProp = VENDOR_CSS.generator,
         VENDOR_CSS_PROPERTIES = VENDOR_CSS.cssProps,

@@ -22,12 +22,13 @@
 require('js-ext/lib/array.js');
 require('js-ext/lib/object.js');
 require('js-ext/lib/string.js');
-require('js-ext/extra/lightmap.js');
 require('polyfill');
+
+var createHashMap = require('js-ext/extra/hashmap.js').createMap;
 
 module.exports = function (window) {
 
-    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', createHashMap());
 
     if (window._ITSAmodules.VNode) {
         return window._ITSAmodules.VNode; // VNODE was already created
@@ -36,8 +37,10 @@ module.exports = function (window) {
     var NS = require('./vdom-ns.js')(window),
         extractor = require('./attribute-extractor.js')(window),
         DOCUMENT = window.document,
-        MUTATION_EVENTS = new window.LightMap(),
+        LightMap = require('js-ext/extra/lightmap.js'),
+        MUTATION_EVENTS = new LightMap(),
         BATCH_WILL_RUN = false,
+        xmlNS = NS.xmlNS,
         nodeids = NS.nodeids,
         htmlToVNodes = require('./html-parser.js')(window),
         timers = require('utils/lib/timers.js'),
@@ -64,28 +67,28 @@ module.exports = function (window) {
         EV_ATTRIBUTE_REMOVED = ATTRIBUTE+REMOVE,
         EV_ATTRIBUTE_CHANGED = ATTRIBUTE+CHANGE,
         EV_ATTRIBUTE_INSERTED = ATTRIBUTE+INSERT,
-        SPLIT_CHARACTER = {
+        SPLIT_CHARACTER = createHashMap({
             ' ': true,
             '>': true,
             '+': true, // only select the element when it is immediately preceded by the former element
             '~': true  // only the element when it has the former element as a sibling. (just like `+`, but less strict)
-        },
-        STORABLE_SPLIT_CHARACTER = {
+        }),
+        STORABLE_SPLIT_CHARACTER = createHashMap({
             '>': true,
             '+': true,
             '~': true
-        },
-        SIBLING_MATCH_CHARACTER = {
+        }),
+        SIBLING_MATCH_CHARACTER = createHashMap({
             '+': true,
             '~': true
-        },
-        ATTR_DETAIL_SPECIFIERS = {
+        }),
+        ATTR_DETAIL_SPECIFIERS = createHashMap({
             '^': true, // “begins with” selector
             '$': true, // “ends with” selector
             '*': true, // “contains” selector (might be a substring)
             '~': true, // “contains” selector as a separate word, separated by spaces
             '|': true // “contains” selector as a separate word, separated by `|`
-        },
+        }),
         /**
          * Object to gain quick access to attribute-name end-tokens.
          *
@@ -98,7 +101,7 @@ module.exports = function (window) {
          * @protected
          * @since 0.0.1
          */
-        END_ATTRIBUTENAME = {
+        END_ATTRIBUTENAME = createHashMap({
             '=': true,
             ']': true,
             '^': true, // “begins with” selector
@@ -106,7 +109,7 @@ module.exports = function (window) {
             '*': true, // “contains” selector (might be a substring)
             '~': true, // “contains” selector as a separate word, separated by spaces
             '|': true // “contains” selector as a separate word, separated by `|`
-        },
+        }),
         /**
          * Object to gain quick access to different changes of Element nodeType changes.
          *
@@ -132,23 +135,23 @@ module.exports = function (window) {
          * @protected
          * @since 0.0.1
          */
-        NODESWITCH = {
-            1: {
+        NODESWITCH = createHashMap({
+            1: createHashMap({
                 1: 1, // oldNodeType==Element, newNodeType==Element
                 3: 2, // oldNodeType==Element, newNodeType==TextNode
                 8: 3  // oldNodeType==Element, newNodeType==Comment
-            },
-            3: {
+            }),
+            3: createHashMap({
                 1: 4, // oldNodeType==TextNode, newNodeType==Element
                 3: 5, // oldNodeType==TextNode, newNodeType==TextNode
                 8: 6  // oldNodeType==TextNode, newNodeType==Comment
-            },
-            8: {
+            }),
+            8: createHashMap({
                 1: 7, // oldNodeType==Comment, newNodeType==Element
                 3: 8, // oldNodeType==Comment, newNodeType==TextNode
                 8: 9  // oldNodeType==Comment, newNodeType==Comment
-            }
-        },
+            })
+        }),
         /**
          * Object to gain quick access to selector start-tokens.
          *
@@ -162,12 +165,12 @@ module.exports = function (window) {
          * @protected
          * @since 0.0.1
          */
-        SELECTOR_IDENTIFIERS = {
+        SELECTOR_IDENTIFIERS = createHashMap({
             '#': 1,
             '.': 2,
             '[': 3,
             ':': 4
-        },
+        }),
         PSEUDO_FIRST_CHILD = ':first-child',
         PSEUDO_FIRST_OF_TYPE = ':first-of-type',
         PSEUDO_LAST_CHILD = ':last-child',
@@ -198,7 +201,7 @@ module.exports = function (window) {
          * @protected
          * @since 0.0.1
          */
-        PSEUDO_REQUIRED_CHILDREN = {},
+        PSEUDO_REQUIRED_CHILDREN = createHashMap(),
         _matchesSelectorItem, _matchesOneSelector, _findElementSibling, vNodeProto, _markRemoved,
         _splitSelector, _findNodeSibling, _matchNthChild, _batchEmit, _emitDestroyChildren;
         PSEUDO_REQUIRED_CHILDREN[PSEUDO_FIRST_CHILD] = true;
@@ -829,7 +832,7 @@ module.exports = function (window) {
     };
 
     _batchEmit = function() {
-        MUTATION_EVENTS.forEach(function (mutationEvents, vnode) {
+        MUTATION_EVENTS.each(function (mutationEvents, vnode) {
             var domNode = vnode.domNode;
             if (mutationEvents[EV_REMOVED]) {
                 domNode.emit(EV_REMOVED);
@@ -1491,7 +1494,8 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         _removeAttr: function(attributeName) {
-            var instance = this;
+            var instance = this,
+                attributeNameSplitted, ns;
             if (instance.attrs[attributeName]!==undefined) {
                 delete instance.attrs[attributeName];
                 // in case of STYLE attribute --> special treatment
@@ -1502,8 +1506,16 @@ module.exports = function (window) {
                     delete nodeids[instance.id];
                     delete instance.id;
                 }
-                instance.domNode._removeAttribute(attributeName);
                 instance._emit(EV_ATTRIBUTE_REMOVED, attributeName);
+                if (attributeName.indexOf(':')!==-1) {
+                    attributeNameSplitted = attributeName.split(':');
+                    ns = attributeNameSplitted[0];
+                    attributeName = attributeNameSplitted[1];
+                    instance.domNode._removeAttributeNS(xmlNS[ns.toUpperCase()] || ns, attributeName);
+                }
+                else {
+                    instance.domNode._removeAttribute(attributeName);
+                }
             }
             return instance;
         },
@@ -1575,7 +1587,8 @@ module.exports = function (window) {
             var instance = this,
                 extractStyle, extractClass,
                 attrs = instance.attrs,
-                prevVal = attrs[attributeName];
+                prevVal = attrs[attributeName],
+                attributeNameSplitted, ns;
             // don't check by !== --> value isn't parsed into a String yet
 
             if (prevVal && ((value===undefined) || (value===null))) {
@@ -1617,9 +1630,20 @@ module.exports = function (window) {
                     instance.id = value;
                     nodeids[value] = instance.domNode;
                 }
-                // when set in the dom --> quotes need to be set as &quot;
-                instance.domNode._setAttribute(attributeName, value.replace(/"/g, '&quot;'));
+
                 instance._emit(prevVal ? EV_ATTRIBUTE_CHANGED : EV_ATTRIBUTE_INSERTED, attributeName, value, prevVal);
+
+                // when set in the dom --> quotes need to be set as &quot;
+                value = value.replace(/"/g, '&quot;');
+                if (attributeName.indexOf(':')!==-1) {
+                    attributeNameSplitted = attributeName.split(':');
+                    ns = attributeNameSplitted[0];
+                    attributeName = attributeNameSplitted[1];
+                    instance.domNode._setAttributeNS(xmlNS[ns.toUpperCase()] || ns, attributeName, value);
+                }
+                else {
+                    instance.domNode._setAttribute(attributeName, value);
+                }
             }
             return instance;
         },
@@ -1978,7 +2002,7 @@ module.exports = function (window) {
                 return html;
             },
             set: function(v) {
-                this._setChildNodes(htmlToVNodes(v, vNodeProto));
+                this._setChildNodes(htmlToVNodes(v, vNodeProto, this.ns));
             }
         },
 
@@ -2031,6 +2055,7 @@ module.exports = function (window) {
                     attrs.each(function(value, key) {
                         html += ' '+key+'="'+value+'"';
                     });
+                    instance.isVoid && (html += '/');
                     html += '>';
                     if (!instance.isVoid) {
                         html += instance.innerHTML + '</' + instance.tag.toLowerCase() + '>';
@@ -2051,7 +2076,7 @@ module.exports = function (window) {
                 index = vChildNodes.indexOf(instance);
                 isLastChildNode = (index===(vChildNodes.length-1));
                 isLastChildNode || (refDomNode=vChildNodes[index+1].domNode);
-                vnodes = htmlToVNodes(v, vNodeProto, vParent);
+                vnodes = htmlToVNodes(v, vNodeProto, vParent.ns, vParent);
                 len = vnodes.length;
                 if (len>0) {
                     // the first vnode will replace the current instance:

@@ -19,7 +19,8 @@ require('js-ext/lib/object.js');
 require('js-ext/lib/string.js');
 require('polyfill');
 
-var fromCamelCase = function(input) {
+var createHashMap = require('js-ext/extra/hashmap.js').createMap,
+    fromCamelCase = function(input) {
         return input.replace(/[a-z]([A-Z])/g, function(match, group) {
             return match[0]+'-'+group.toLowerCase();
         });
@@ -27,7 +28,7 @@ var fromCamelCase = function(input) {
 
 module.exports = function (window) {
 
-    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', createHashMap());
 
     if (window._ITSAmodules.ElementPlugin) {
         return window._ITSAmodules.ElementPlugin; // ElementPlugin was already created
@@ -81,7 +82,7 @@ module.exports = function (window) {
         setup: function (hostElement, config) {
             var instance = this,
                 attrs = instance.defaults.shallowClone();
-            attrs.merge(config, true);
+            attrs.merge(config, {force: true});
             attrs.each(
                 function(value, key) {
                     key = fromCamelCase(key);

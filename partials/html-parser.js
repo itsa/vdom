@@ -16,9 +16,11 @@
 require('polyfill');
 require('js-ext/lib/object.js');
 
+var createHashMap = require('js-ext/extra/hashmap.js').createMap;
+
 module.exports = function (window) {
 
-    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', {});
+    window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', createHashMap());
 
     if (window._ITSAmodules.HtmlParser) {
         return window._ITSAmodules.HtmlParser; // HtmlParser was already created
@@ -27,10 +29,11 @@ module.exports = function (window) {
     var NS = require('./vdom-ns.js')(window),
         extractor = require('./attribute-extractor.js')(window),
         DOCUMENT = window.document,
+        xmlNS = NS.xmlNS,
         voidElements = NS.voidElements,
         nonVoidElements = NS.nonVoidElements,
 
-        TAG_OR_ATTR_START_CHARACTERS = {
+        TAG_OR_ATTR_START_CHARACTERS = createHashMap({
             a: true,
             b: true,
             c: true,
@@ -83,16 +86,16 @@ module.exports = function (window) {
             X: true,
             Y: true,
             Z: true
-        },
-        STARTTAG_OR_ATTR_VALUE_ENDS_CHARACTERS = {
+        }),
+        STARTTAG_OR_ATTR_VALUE_ENDS_CHARACTERS = createHashMap({
             ' ': true,
             '>': true
-        },
-        ATTRUBUTE_NAME_ENDS_CHARACTER = {
+        }),
+        ATTRUBUTE_NAME_ENDS_CHARACTER = createHashMap({
             ' ': true,
             '=': true,
             '>': true
-        },
+        }),
 
         /**
          * Transforms html-text into a vnodes-Array.
@@ -102,11 +105,11 @@ module.exports = function (window) {
          * @return {Array} array with `vnodes`
          * @since 0.0.1
          */
-        htmlToVNodes = window._ITSAmodules.HtmlParser = function(htmlString, vNodeProto) {
+        htmlToVNodes = window._ITSAmodules.HtmlParser = function(htmlString, vNodeProto, nameSpace) {
             var i = 0,
                 len = htmlString.length,
                 vnodes = [],
-                parentVNode = arguments[2], // private pass through-argument, only available when internal looped
+                parentVNode = arguments[3], // private pass through-argument, only available when internal looped
                 insideTagDefinition, insideComment, innerText, endTagCount, stringMarker, attributeisString, attribute, attributeValue,
                 j, character, character2, vnode, tag, isBeginTag, isEndTag, scriptVNode, extractClass, extractStyle;
             while (i<len) {
@@ -202,6 +205,7 @@ module.exports = function (window) {
                         if (NS.SCRIPT_OR_STYLE_TAG[vnode.tag]) {
                             // CREATE INNER TEXTNODE
                             scriptVNode = Object.create(vNodeProto);
+                            scriptVNode.ns = nameSpace;
                             scriptVNode.nodeType = 3;
                             scriptVNode.domNode = DOCUMENT.createTextNode(innerText);
                             // create circular reference:
@@ -211,7 +215,7 @@ module.exports = function (window) {
                             vnode.vChildNodes = [scriptVNode];
                         }
                         else {
-                            vnode.vChildNodes = (innerText!=='') ? htmlToVNodes(innerText, vNodeProto, vnode) : [];
+                            vnode.vChildNodes = (innerText!=='') ? htmlToVNodes(innerText, vNodeProto, vnode.ns, vnode) : [];
                         }
                     }
                     else {
@@ -254,6 +258,7 @@ module.exports = function (window) {
                             vnodes[vnodes.length] = vnode;
                         }
                         vnode = Object.create(vNodeProto);
+                        vnode.ns = nameSpace;
                         vnode.nodeType = 1;
                         vnode.vParent = parentVNode;
                         vnode.tag = '';
@@ -265,7 +270,9 @@ module.exports = function (window) {
                         }
 
                         tag = vnode.tag;
-                        vnode.domNode = DOCUMENT.createElement(tag);
+                        vnode.ns = xmlNS[tag] || nameSpace;
+                        vnode.domNode = vnode.ns ? DOCUMENT.createElementNS(vnode.ns, tag.toLowerCase()) : DOCUMENT.createElement(tag);
+
                         // create circular reference:
                         vnode.domNode._vnode = vnode;
                         // check if it is a void-tag, but only need to do the regexp once per tag-element:
@@ -290,6 +297,7 @@ module.exports = function (window) {
                             vnodes[vnodes.length] = vnode;
                         }
                         vnode = Object.create(vNodeProto);
+                        vnode.ns = nameSpace;
                         vnode.nodeType = 8;
                         vnode.text = '';
                         vnode.vParent = parentVNode;
@@ -301,6 +309,7 @@ module.exports = function (window) {
                         if (!vnode) {
                             // no current vnode --> create a TextNode:
                             vnode = Object.create(vNodeProto);
+                            vnode.ns = nameSpace;
                             vnode.nodeType = 3;
                             vnode.text = '';
                             vnode.vParent = parentVNode;
