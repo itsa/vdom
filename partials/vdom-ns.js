@@ -39,8 +39,15 @@ module.exports = function (window) {
      * @type VElement
      * @since 0.0.1
      */
-     NS.body = null;
+    NS.body = null;
 
+    NS.xmlNS = createHashMap({
+        SVG: 'http://www.w3.org/2000/svg',
+        XBL: 'http://www.mozilla.org/xbl',
+        XUL: 'http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul',
+        MATH: 'http://www.w3.org/1998/Math/MathML',
+        XLINK: 'http://www.w3.org/1999/xlink'
+    });
 
     /**
      * A hash with all node'ids (of all the domnodes that have an id). The value is a reference to an VElement.

@@ -150,8 +150,8 @@ module.exports = function (window) {
             zIndex: true
         },
         // CSS_PROPS_TO_CALCULATE.transform is set later on by the vendor specific transform-property
-        htmlToVFragments = function(html) {
-            var vnodes = htmlToVNodes(html, vNodeProto),
+        htmlToVFragments = function(html, nameSpace) {
+            var vnodes = htmlToVNodes(html, vNodeProto, nameSpace),
                 len = vnodes.length,
                 vnode, i, bkpAttrs, bkpVChildNodes;
             for (i=0; i<len; i++) {
@@ -941,7 +941,7 @@ module.exports = function (window) {
                 vRefElement = refElement.vnode.vNext;
                 refElement = vRefElement && vRefElement.domNode;
             }
-            (typeof content===STRING) && (content=htmlToVFragments(content));
+            (typeof content===STRING) && (content=htmlToVFragments(content, vnode.ns));
             if (content.isFragment) {
                 vnodes = content.vnodes;
                 len = vnodes.length;
@@ -2083,7 +2083,7 @@ module.exports = function (window) {
                 vRefElement = vChildNodes && vChildNodes[0];
                 refElement = vRefElement && vRefElement.domNode;
             }
-            (typeof content===STRING) && (content=htmlToVFragments(content));
+            (typeof content===STRING) && (content=htmlToVFragments(content, vnode.ns));
             if (content.isFragment) {
                 vnodes = content.vnodes;
                 len = vnodes.length;
@@ -2303,6 +2303,18 @@ module.exports = function (window) {
         ElementPrototype._removeAttribute = ElementPrototype.removeAttribute;
         ElementPrototype.removeAttribute = function(attributeName) {
             this.vnode._removeAttr(attributeName);
+        };
+
+       /**
+         * Removes the attribute of the Elementinside a specified namespace
+         *
+         * @method removeAttributeNS
+         * @param nameSpace {String} the namespace where to attribuyte should be set in
+         * @param attributeName {String}
+        */
+        ElementPrototype._removeAttributeNS = ElementPrototype.removeAttributeNS;
+        ElementPrototype.removeAttributeNS = function(nameSpace, attributeName) {
+            this.removeAttribute((nameSpace ? nameSpace+':' : '')+attributeName);
         };
 
         /**
@@ -2778,6 +2790,19 @@ module.exports = function (window) {
                 vnode = instance.vnode;
             (value==='') && (value=null);
             ((value!==null) && (value!==undefined)) ? vnode._setAttr(attributeName, value) : vnode._removeAttr(attributeName);
+        };
+
+       /**
+         * Sets the attribute on the Element with the specified value inside a specified namespace
+         *
+         * @method setAttributeNS
+         * @param nameSpace {String} the namespace where to attribuyte should be set in
+         * @param attributeName {String}
+         * @param value {String} the value for the attributeName
+        */
+        ElementPrototype._setAttributeNS = ElementPrototype.setAttributeNS;
+        ElementPrototype.setAttributeNS = function(nameSpace, attributeName, value) {
+            this.setAttribute((nameSpace ? nameSpace+':' : '')+attributeName, value);
         };
 
        /**

@@ -40,6 +40,7 @@ module.exports = function (window) {
         LightMap = require('js-ext/extra/lightmap.js'),
         MUTATION_EVENTS = new LightMap(),
         BATCH_WILL_RUN = false,
+        xmlNS = NS.xmlNS,
         nodeids = NS.nodeids,
         htmlToVNodes = require('./html-parser.js')(window),
         timers = require('utils/lib/timers.js'),
@@ -1493,7 +1494,8 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         _removeAttr: function(attributeName) {
-            var instance = this;
+            var instance = this,
+                attributeNameSplitted, ns;
             if (instance.attrs[attributeName]!==undefined) {
                 delete instance.attrs[attributeName];
                 // in case of STYLE attribute --> special treatment
@@ -1504,8 +1506,16 @@ module.exports = function (window) {
                     delete nodeids[instance.id];
                     delete instance.id;
                 }
-                instance.domNode._removeAttribute(attributeName);
                 instance._emit(EV_ATTRIBUTE_REMOVED, attributeName);
+                if (attributeName.indexOf(':')!==-1) {
+                    attributeNameSplitted = attributeName.split(':');
+                    ns = attributeNameSplitted[0];
+                    attributeName = attributeNameSplitted[1];
+                    instance.domNode._removeAttributeNS(xmlNS[ns.toUpperCase()] || ns, attributeName);
+                }
+                else {
+                    instance.domNode._removeAttribute(attributeName);
+                }
             }
             return instance;
         },
@@ -1577,7 +1587,8 @@ module.exports = function (window) {
             var instance = this,
                 extractStyle, extractClass,
                 attrs = instance.attrs,
-                prevVal = attrs[attributeName];
+                prevVal = attrs[attributeName],
+                attributeNameSplitted, ns;
             // don't check by !== --> value isn't parsed into a String yet
 
             if (prevVal && ((value===undefined) || (value===null))) {
@@ -1619,9 +1630,20 @@ module.exports = function (window) {
                     instance.id = value;
                     nodeids[value] = instance.domNode;
                 }
-                // when set in the dom --> quotes need to be set as &quot;
-                instance.domNode._setAttribute(attributeName, value.replace(/"/g, '&quot;'));
+
                 instance._emit(prevVal ? EV_ATTRIBUTE_CHANGED : EV_ATTRIBUTE_INSERTED, attributeName, value, prevVal);
+
+                // when set in the dom --> quotes need to be set as &quot;
+                value = value.replace(/"/g, '&quot;');
+                if (attributeName.indexOf(':')!==-1) {
+                    attributeNameSplitted = attributeName.split(':');
+                    ns = attributeNameSplitted[0];
+                    attributeName = attributeNameSplitted[1];
+                    instance.domNode._setAttributeNS(xmlNS[ns.toUpperCase()] || ns, attributeName, value);
+                }
+                else {
+                    instance.domNode._setAttribute(attributeName, value);
+                }
             }
             return instance;
         },
@@ -1980,7 +2002,7 @@ module.exports = function (window) {
                 return html;
             },
             set: function(v) {
-                this._setChildNodes(htmlToVNodes(v, vNodeProto));
+                this._setChildNodes(htmlToVNodes(v, vNodeProto, this.ns));
             }
         },
 
@@ -2033,6 +2055,7 @@ module.exports = function (window) {
                     attrs.each(function(value, key) {
                         html += ' '+key+'="'+value+'"';
                     });
+                    instance.isVoid && (html += '/');
                     html += '>';
                     if (!instance.isVoid) {
                         html += instance.innerHTML + '</' + instance.tag.toLowerCase() + '>';
@@ -2053,7 +2076,7 @@ module.exports = function (window) {
                 index = vChildNodes.indexOf(instance);
                 isLastChildNode = (index===(vChildNodes.length-1));
                 isLastChildNode || (refDomNode=vChildNodes[index+1].domNode);
-                vnodes = htmlToVNodes(v, vNodeProto, vParent);
+                vnodes = htmlToVNodes(v, vNodeProto, vParent.ns, vParent);
                 len = vnodes.length;
                 if (len>0) {
                     // the first vnode will replace the current instance:
