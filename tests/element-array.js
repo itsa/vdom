@@ -212,7 +212,7 @@
             var list = node.getAll('.green');
             list.replaceNode('<input>');
             expect(node.innerHTML).to.be.eql('<input><input><div id="sub3"><input>extra text</div>');
-            expect(node.getHTML()).to.be.eql('<input><input><div id="sub3"><input>extra text</div>');
+            expect(node.getHTML()).to.be.eql('<input/><input/><div id="sub3"><input/>extra text</div>');
             expect(node.childNodes.length).to.be.eql(3);
             expect(node.vnode.vChildNodes.length).to.be.eql(3);
             expect(list.length).to.be.eql(3);
@@ -285,7 +285,7 @@
             var list = node.getAll('.green');
             list.setOuterHTML('<input>');
             expect(node.innerHTML).to.be.eql('<input><input><div id="sub3"><input>extra text</div>');
-            expect(node.getHTML()).to.be.eql('<input><input><div id="sub3"><input>extra text</div>');
+            expect(node.getHTML()).to.be.eql('<input/><input/><div id="sub3"><input/>extra text</div>');
             expect(node.childNodes.length).to.be.eql(3);
             expect(node.vnode.vChildNodes.length).to.be.eql(3);
             expect(list.length).to.be.eql(3);

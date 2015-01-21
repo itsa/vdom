@@ -141,7 +141,7 @@
         });
 
         it('innerHTML', function () {
-            expect(vnode.innerHTML).to.be.eql('<img id="imgone" alt="http://google.com/img1.jpg" class="yellow">'+
+            expect(vnode.innerHTML).to.be.eql('<img id="imgone" alt="http://google.com/img1.jpg" class="yellow"/>'+
                                               'just a textnode'+
                                               '<!--just a commentnode-->'+
                                               'just a second textnode'+
@@ -224,7 +224,7 @@
 
         it('outerHTML', function () {
             expect(vnode.outerHTML).to.be.eql('<div id="divone" class="red blue" data-x="somedata">'+
-                                              '<img id="imgone" alt="http://google.com/img1.jpg" class="yellow">'+
+                                              '<img id="imgone" alt="http://google.com/img1.jpg" class="yellow"/>'+
                                               'just a textnode'+
                                               '<!--just a commentnode-->'+
                                               'just a second textnode'+
@@ -240,7 +240,7 @@
                                                   'some text'+
                                               '</div>'+
                                               '</div>');
-            expect(vnode.vChildNodes[0].outerHTML).to.be.eql('<img id="imgone" alt="http://google.com/img1.jpg" class="yellow">');
+            expect(vnode.vChildNodes[0].outerHTML).to.be.eql('<img id="imgone" alt="http://google.com/img1.jpg" class="yellow"/>');
             expect(vnode.vChildNodes[1].outerHTML===undefined).to.be.true;
             expect(vnode.vChildNodes[2].outerHTML===undefined).to.be.true;
             expect(vnode.vChildNodes[3].outerHTML===undefined).to.be.true;
@@ -685,7 +685,7 @@
         it('innerHTML test 5', function () {
             nodeSub.vnode.innerHTML = 'before <input type="text" disabled> after';
             expect(nodeSub.vnode.vChildNodes.length).to.be.eql(3);
-            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2"><div class="bluesub">before <input type="text" disabled=""> after</div></div><div class="blues3"></div></div>');
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2"><div class="bluesub">before <input type="text" disabled=""/> after</div></div><div class="blues3"></div></div>');
         });
 
         it('nodeValue', function () {
@@ -733,7 +733,7 @@
         it('outerHTML test 4', function () {
             nodeSub.vnode.outerHTML = 'before <input type="text" disabled> after';
             // expect(nodeSub.vnode.vChildNodes.length).to.be.eql(3);
-            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2">before <input type="text" disabled=""> after</div><div class="blues3"></div></div>');
+            expect(vnodeS.outerHTML).to.be.eql('<div class="blueroot"><div class="blues1"></div><div class="blues2">before <input type="text" disabled=""/> after</div><div class="blues3"></div></div>');
         });
 
         it('textContent test 1', function () {
