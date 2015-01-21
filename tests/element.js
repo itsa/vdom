@@ -3054,7 +3054,7 @@
         it('replace Examine replaced node', function () {
             var newNode = nodeSub3.replace('<input>');
             expect(newNode.outerHTML).to.be.eql('<input>');
-            expect(newNode.getOuterHTML()).to.be.eql('<input>');
+            expect(newNode.getOuterHTML()).to.be.eql('<input/>');
             expect(node.childNodes.indexOf(newNode)).to.be.eql(2);
             expect(node.vnode.vChildNodes.indexOf(newNode.vnode)).to.be.eql(2);
         });

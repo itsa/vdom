@@ -108,21 +108,21 @@ module.exports = function (window) {
     };
 
     /**
-     * Returns the an Array with all Elements that have a tagName `i-parcel-*`
+     * Returns the an Array with all itag-Elements
      *
-     * @method getParcels
+     * @method getItags
      * @return {Array}
      *
      */
-    DOCUMENT.getParcels = function() {
+    DOCUMENT.getItags = function() {
         var instance = this,
             findChildren;
-        // i-parcel elements can only exists when the window.ITAGS are defined (by itags.core)
+        // i-tag elements can only exists when the window.ITAGS are defined (by itags.core)
         if (!window.ITAGS) {
             return [];
         }
-        if (instance._parcelList) {
-            return instance._parcelList;
+        if (instance._itagList) {
+            return instance._itagList;
         }
         // when not returned: it would be the first time --> we setup the current list
         // the quickest way is by going through the vdom and inspect the tagNames ourselves:
@@ -132,13 +132,13 @@ module.exports = function (window) {
                 i, vChild;
             for (i=0; i<len; i++) {
                 vChild = vChildren[i];
-                vChild.tag.startsWith('I-PARCEL-') && (DOCUMENT._parcelList[DOCUMENT._parcelList.length]=vChild.domNode);
+                vChild.isItag && (DOCUMENT._itagList[DOCUMENT._itagList.length]=vChild.domNode);
                 findChildren(vChild);
             }
         };
-        Object.protectedProp(instance, '_parcelList', []);
+        Object.protectedProp(instance, '_itagList', []);
         findChildren(instance.getElement('body').vnode);
-        return instance._parcelList;
+        return instance._itagList;
     };
 
     /**

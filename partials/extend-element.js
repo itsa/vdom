@@ -1255,7 +1255,7 @@ module.exports = function (window) {
         * @since 0.0.2
         */
         ElementPrototype.forceIntoView = function(notransition, rectangle) {
-            // TODO: 'notransition' can be calculated with this.getTransition(left) this.getTransition(left) and this.getTransform(translateX) and this.getTransform(translateY)
+            // TODO: 'notransition' can be calculated with this.getTransition(left) this.getTransition(left)
             // TODO: transitioned: http://wibblystuff.blogspot.nl/2014/04/in-page-smooth-scroll-using-css3.html
             console.log(NAME, 'forceIntoView');
             var instance = this,
@@ -1966,6 +1966,17 @@ module.exports = function (window) {
         ElementPrototype._insertBefore = ElementPrototype.insertBefore;
         ElementPrototype.insertBefore = function(domNode, refDomNode, escape) {
             return this.prepend(domNode, escape, refDomNode);
+        };
+
+        /**
+         * Whether the element is an Itag-element
+         *
+         * @method isItag
+         * @return {Boolean}
+         * @since 0.0.1
+         */
+        ElementPrototype.isItag = function() {
+            return this.vnode.isItag;
         };
 
         /**

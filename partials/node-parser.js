@@ -61,6 +61,7 @@ module.exports = function (window) {
             if (nodeType===1) {
                 // ElementNode
                 tag = vnode.tag = domNode.nodeName; // is always uppercase
+                vnode.isItag = ((tag[0]==='I') && (tag[1]==='-'));
                 vnode.ns = xmlNS[tag] || vnode.ns;
 
                 vnode.attrs = {};

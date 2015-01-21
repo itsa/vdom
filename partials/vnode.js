@@ -1126,7 +1126,7 @@ module.exports = function (window) {
                 (size===instance.vChildNodes.length) || (domNode=instance.vChildNodes[instance.vChildNodes.length-1].domNode);
             }
             if (VNode.nodeType===1) {
-                DOCUMENT._parcelList && VNode.tag.startsWith('I-PARCEL-') && !DOCUMENT._parcelList.contains(domNode) && DOCUMENT._parcelList.push(domNode);
+                DOCUMENT._itagList && VNode.isItag && !DOCUMENT._itagList.contains(domNode) && DOCUMENT._itagList.push(domNode);
                 VNode._emit(EV_INSERTED);
             }
             return domNode;
@@ -1200,9 +1200,9 @@ module.exports = function (window) {
                 later(function() {
                     instance._cleanData();
                     if (instance.nodeType===1) {
-                        // if vnode is part of DOCUMENT._parcelList then remove it
-                        if (DOCUMENT._parcelList && instance.tag.startsWith('I-PARCEL-')) {
-                            DOCUMENT._parcelList.remove(instance.domNode);
+                        // if vnode is part of DOCUMENT._itagList then remove it
+                        if (DOCUMENT._itagList && instance.isItag) {
+                            DOCUMENT._itagList.remove(instance.domNode);
                         }
                         // _destroy all its vChildNodes
                         if (vChildNodes) {
@@ -1373,7 +1373,7 @@ module.exports = function (window) {
                 instance.domNode._insertBefore(domNode, refVNode.domNode);
                 (newVNode.nodeType===3) && instance._normalize();
                 if (newVNode.nodeType===1) {
-                    DOCUMENT._parcelList && newVNode.tag.startsWith('I-PARCEL-') && !DOCUMENT._parcelList.contains(domNode) && DOCUMENT._parcelList.push(domNode);
+                    DOCUMENT._itagList && newVNode.isItag && !DOCUMENT._itagList.contains(domNode) && DOCUMENT._itagList.push(domNode);
                     newVNode._emit(EV_INSERTED);
                 }
             }
@@ -1755,7 +1755,7 @@ module.exports = function (window) {
                                 newChild._setChildNodes(bkpChildNodes);
                                 newChild.id && (nodeids[newChild.id]=newChild.domNode);
                                 oldChild._replaceAtParent(newChild);
-                                DOCUMENT._parcelList && newChild.tag.startsWith('I-PARCEL-') && !DOCUMENT._parcelList.contains(newChild.domNode) && DOCUMENT._parcelList.push(newChild.domNode);
+                                DOCUMENT._itagList && newChild.isItag && !DOCUMENT._itagList.contains(newChild.domNode) && DOCUMENT._itagList.push(newChild.domNode);
                                 newChild._emit(EV_INSERTED);
                             }
                             else {
@@ -1806,10 +1806,10 @@ module.exports = function (window) {
                             newChild._setAttrs(bkpAttrs);
                             newChild._setChildNodes(bkpChildNodes);
                             newChild.id && (nodeids[newChild.id]=newChild.domNode);
-                            oldChild.isVoid = newChild.isVoid;
-                            delete oldChild.text;
+oldChild.isVoid = newChild.isVoid;
+delete oldChild.text;
                             instance._emit(EV_CONTENT_CHANGE);
-                            DOCUMENT._parcelList && newChild.tag.startsWith('I-PARCEL-') && !DOCUMENT._parcelList.contains(newChild.domNode) && DOCUMENT._parcelList.push(newChild.domNode);
+                            DOCUMENT._itagList && newChild.isItag && !DOCUMENT._itagList.contains(newChild.domNode) && DOCUMENT._itagList.push(newChild.domNode);
                             newChild._emit(EV_INSERTED);
                             break;
                         case 5: // oldNodeType==TextNode, newNodeType==TextNode
@@ -1859,7 +1859,7 @@ module.exports = function (window) {
                         domNode._appendChild(newChild.domNode);
                         newChild._setAttrs(bkpAttrs);
                         newChild._setChildNodes(bkpChildNodes);
-                        DOCUMENT._parcelList && newChild.tag.startsWith('I-PARCEL-') && !DOCUMENT._parcelList.contains(newChild.domNode) && DOCUMENT._parcelList.push(newChild.domNode);
+                        DOCUMENT._itagList && newChild.isItag && !DOCUMENT._itagList.contains(newChild.domNode) && DOCUMENT._itagList.push(newChild.domNode);
                         newChild._emit(EV_INSERTED);
                         break;
                     case 3: // TextNode
@@ -2096,7 +2096,7 @@ module.exports = function (window) {
                             // vnode.vChildNodes = bkpChildNodes;
                             vnode.id && (nodeids[vnode.id]=vnode.domNode);
                             instance._replaceAtParent(vnode);
-                            DOCUMENT._parcelList && vnode.tag.startsWith('I-PARCEL-') && !DOCUMENT._parcelList.contains(vnode.domNode) && DOCUMENT._parcelList.push(vnode.domNode);
+                            DOCUMENT._itagList && vnode.isItag && !DOCUMENT._itagList.contains(vnode.domNode) && DOCUMENT._itagList.push(vnode.domNode);
                             vnode._emit(EV_INSERTED);
                         }
                         else {
@@ -2109,7 +2109,7 @@ module.exports = function (window) {
                         vnode.domNode.nodeValue = vnode.text;
                         vParent.domNode._replaceChild(vnode.domNode, instance.domNode);
                         instance._replaceAtParent(vnode);
-                        DOCUMENT._parcelList && vnode.tag.startsWith('I-PARCEL-') && !DOCUMENT._parcelList.contains(vnode.domNode) && DOCUMENT._parcelList.push(vnode.domNode);
+                        DOCUMENT._itagList && vnode.isItag && !DOCUMENT._itagList.contains(vnode.domNode) && DOCUMENT._itagList.push(vnode.domNode);
                         vnode._emit(EV_INSERTED);
                     }
                 }
@@ -2122,7 +2122,7 @@ module.exports = function (window) {
                             vnode.attrs = {}; // reset, to force defined by `_setAttrs`
                             vnode.vChildNodes = []; // reset to current state, to force defined by `_setAttrs`
                             isLastChildNode ? vParent.domNode._appendChild(vnode.domNode) : vParent.domNode._insertBefore(vnode.domNode, refDomNode);
-                            DOCUMENT._parcelList && vnode.tag.startsWith('I-PARCEL-') && !DOCUMENT._parcelList.contains(vnode.domNode) && DOCUMENT._parcelList.push(vnode.domNode);
+                            DOCUMENT._itagList && vnode.isItag && !DOCUMENT._itagList.contains(vnode.domNode) && DOCUMENT._itagList.push(vnode.domNode);
                             vnode._emit(EV_INSERTED);
                             vnode._setAttrs(bkpAttrs);
                             vnode._setChildNodes(bkpChildNodes);
