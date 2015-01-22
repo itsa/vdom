@@ -69,6 +69,7 @@ module.exports = function (window) {
         NO_TRANS2 = NO_TRANS+'2', // needed to prevent removal of NO_TRANS when still needed `notrans`
         INVISIBLE = ITSA_+'invisible',
         INVISIBLE_RELATIVE = INVISIBLE+'-relative',
+        INVISIBLE_UNFOCUSABLE = INVISIBLE+'-unfocusable',
         HIDDEN = ITSA_+'hidden',
         REGEXP_NODE_ID = /^#\S+$/,
         LEFT = 'left',
@@ -491,7 +492,7 @@ module.exports = function (window) {
 
             finalNode = node.cloneNode(true);
             finalNode.setClass(NO_TRANS2);
-            finalNode.setClass(INVISIBLE);
+            finalNode.setClass(INVISIBLE_UNFOCUSABLE);
             node.setData(bkpNodeData, finalNode);
 
             startStyle = node.getData(_STARTSTYLE);
@@ -1856,7 +1857,7 @@ module.exports = function (window) {
 
             originalOpacity = instance.getData('_showNodeOpacity');
             if (!originalOpacity && !showPromise && !hidePromise) {
-                originalOpacity = instance.getInlineStyle('opacity');
+                originalOpacity = parseFloat(instance.getInlineStyle('opacity'));
                 instance.setData('_showNodeOpacity', originalOpacity);
             }
             hasOriginalOpacity = !!originalOpacity;
@@ -2272,9 +2273,7 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         ElementPrototype.removeAttr = function(attributeName, silent) {
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
-            this.removeAttribute(attributeName);
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            this.removeAttribute(attributeName, silent);
             return this;
         };
 
@@ -2294,11 +2293,9 @@ module.exports = function (window) {
         ElementPrototype.removeAttrs = function(attributeData, silent) {
             var instance = this;
             Array.isArray(attributeData) || (attributeData=[attributeData]);
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             attributeData.forEach(function(item) {
-                instance.removeAttribute(item);
+                instance.removeAttribute(item, silent);
             });
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
             return instance;
         };
 
@@ -2309,11 +2306,14 @@ module.exports = function (window) {
         *
         * @method removeAttr
         * @param attributeName {String}
+        * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
         * @since 0.0.1
         */
         ElementPrototype._removeAttribute = ElementPrototype.removeAttribute;
-        ElementPrototype.removeAttribute = function(attributeName) {
+        ElementPrototype.removeAttribute = function(attributeName, silent) {
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             this.vnode._removeAttr(attributeName);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
         };
 
        /**
@@ -2322,10 +2322,11 @@ module.exports = function (window) {
          * @method removeAttributeNS
          * @param nameSpace {String} the namespace where to attribuyte should be set in
          * @param attributeName {String}
+         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
         */
         ElementPrototype._removeAttributeNS = ElementPrototype.removeAttributeNS;
-        ElementPrototype.removeAttributeNS = function(nameSpace, attributeName) {
-            this.removeAttribute((nameSpace ? nameSpace+':' : '')+attributeName);
+        ElementPrototype.removeAttributeNS = function(nameSpace, attributeName, silent) {
+            this.removeAttribute((nameSpace ? nameSpace+':' : '')+attributeName, silent);
         };
 
         /**
@@ -2526,8 +2527,8 @@ module.exports = function (window) {
                 clonedElement = instance.cloneNode(true);
                 toStylesExact = vnodeStyles.deepClone();
                 clonedElement.vnode.styles = toStylesExact;
+                clonedElement.setClass(INVISIBLE_UNFOCUSABLE);
                 clonedElement.setAttr(STYLE, clonedElement.vnode.serializeStyles());
-                clonedElement.setClass(INVISIBLE);
                 DOCUMENT.body.append(clonedElement);
                 // clonedElement has `vnodeStyles`, but we change them into `toStylesExact`
 
@@ -2780,9 +2781,7 @@ module.exports = function (window) {
         */
         ElementPrototype.setAttr = function(attributeName, value, silent) {
             var instance = this;
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
-            instance.setAttribute(attributeName, value);
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            instance.setAttribute(attributeName, value, silent);
             return instance;
         };
 
@@ -2794,13 +2793,16 @@ module.exports = function (window) {
          * @method setAttribute
          * @param attributeName {String}
          * @param value {String} the value for the attributeName
+         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
         */
         ElementPrototype._setAttribute = ElementPrototype.setAttribute;
-        ElementPrototype.setAttribute = function(attributeName, value) {
+        ElementPrototype.setAttribute = function(attributeName, value, silent) {
             var instance = this,
                 vnode = instance.vnode;
             (value==='') && (value=null);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             ((value!==null) && (value!==undefined)) ? vnode._setAttr(attributeName, value) : vnode._removeAttr(attributeName);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
         };
 
        /**
@@ -2810,10 +2812,11 @@ module.exports = function (window) {
          * @param nameSpace {String} the namespace where to attribuyte should be set in
          * @param attributeName {String}
          * @param value {String} the value for the attributeName
+         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
         */
         ElementPrototype._setAttributeNS = ElementPrototype.setAttributeNS;
-        ElementPrototype.setAttributeNS = function(nameSpace, attributeName, value) {
-            this.setAttribute((nameSpace ? nameSpace+':' : '')+attributeName, value);
+        ElementPrototype.setAttributeNS = function(nameSpace, attributeName, value, silent) {
+            this.setAttribute((nameSpace ? nameSpace+':' : '')+attributeName, value, silent);
         };
 
        /**
@@ -2835,11 +2838,9 @@ module.exports = function (window) {
         ElementPrototype.setAttrs = function(attributeData, silent) {
             var instance = this;
             Array.isArray(attributeData) || (attributeData=[attributeData]);
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             attributeData.forEach(function(item) {
-                instance.setAttribute(item.name, item.value);
+                instance.setAttribute(item.name, item.value, silent);
             });
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
             return instance;
         };
 
@@ -3080,7 +3081,7 @@ module.exports = function (window) {
                 });
 
                 // clonedElement has `vnodeStyles`, but we change them into `toStylesExact`
-                clonedElement.setClass(INVISIBLE);
+                clonedElement.setClass(INVISIBLE_UNFOCUSABLE);
                 clonedElement.setAttr(STYLE, clonedElement.vnode.serializeStyles());
                 DOCUMENT.body.append(clonedElement);
 
@@ -3479,7 +3480,7 @@ module.exports = function (window) {
         * @return {this|Promise} fulfilled when the element is ready showing up, or rejected when hidden again (using node.hide) before fully showed.
         * @since 0.0.1
         */
-        ElementPrototype.show = function(duration, forceFull) {
+ElementPrototype.show = function(duration, forceFull) {
             var instance = this,
                 showPromise = instance.getData('_showNodeBusy'),
                 hidePromise = instance.getData('_hideNodeBusy'),
@@ -3572,8 +3573,9 @@ module.exports = function (window) {
             to || (to={});
             Array.isArray(to) || (to=[to]);
             to = getVendorCSS(to);
-            time1 = Date.now();
             transitions = Array.isArray(to) ? to.deepClone() : [to.shallowClone()];
+            time1 = Date.now();
+            // transitions = Array.isArray(to) ? to.deepClone() : [to.shallowClone()];
             cleanup = function() {
                 currentInlineTransition = instance.getData('_bkpTransition');
                 currentInlineTransition ? instance.setInlineStyle(TRANSITION, currentInlineTransition) : instance.removeInlineStyle(TRANSITION);
