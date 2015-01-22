@@ -1496,6 +1496,10 @@ module.exports = function (window) {
         _removeAttr: function(attributeName) {
             var instance = this,
                 attributeNameSplitted, ns;
+            if (instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) {
+                console.warn('Not allowed to remove the attribute '+attributeName);
+                return instance;
+            }
             if (instance.attrs[attributeName]!==undefined) {
                 delete instance.attrs[attributeName];
                 // in case of STYLE attribute --> special treatment
@@ -1589,8 +1593,12 @@ module.exports = function (window) {
                 attrs = instance.attrs,
                 prevVal = attrs[attributeName],
                 attributeNameSplitted, ns;
-            // don't check by !== --> value isn't parsed into a String yet
 
+            if (instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) {
+                console.warn('Not allowed to set the attribute '+attributeName);
+                return instance;
+            }
+            // don't check by !== --> value isn't parsed into a String yet
             if (prevVal && ((value===undefined) || (value===null))) {
                 instance._removeAttr(attributeName);
                 return instance;
@@ -1806,8 +1814,8 @@ module.exports = function (window) {
                             newChild._setAttrs(bkpAttrs);
                             newChild._setChildNodes(bkpChildNodes);
                             newChild.id && (nodeids[newChild.id]=newChild.domNode);
-oldChild.isVoid = newChild.isVoid;
-delete oldChild.text;
+                            // oldChild.isVoid = newChild.isVoid;
+                            // delete oldChild.text;
                             instance._emit(EV_CONTENT_CHANGE);
                             DOCUMENT._itagList && newChild.isItag && !DOCUMENT._itagList.contains(newChild.domNode) && DOCUMENT._itagList.push(newChild.domNode);
                             newChild._emit(EV_INSERTED);
@@ -1876,6 +1884,10 @@ delete oldChild.text;
             instance.vChildNodes = newVChildNodes;
             needNormalize && instance._normalize();
             return instance;
+        },
+
+        _setUnchangableAttrs: function(unchangableObj) {
+            this._unchangableAttrs = unchangableObj;
         }
 
     };
