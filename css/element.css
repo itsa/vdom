@@ -22,13 +22,16 @@
 
 /* don't set visibility to hidden --> you cannot set a focus on those items */
 .itsa-invisible,
-.itsa-invisible-relative {
+.itsa-invisible *,
+.itsa-invisible-relative,
+.itsa-invisible-relative * {
     opacity: 0 !important;
 }
 
-.itsa-invisible *,
-.itsa-invisible-relative * {
-    opacity: 0 !important;
+/* don't set visibility to hidden --> you cannot set a focus on those items */
+.itsa-invisible-unfocusable,
+.itsa-invisible-unfocusable * {
+    visibility: hidden !important;
 }
 
 .itsa-transparent {
