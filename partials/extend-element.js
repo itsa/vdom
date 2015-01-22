@@ -3480,7 +3480,7 @@ module.exports = function (window) {
         * @return {this|Promise} fulfilled when the element is ready showing up, or rejected when hidden again (using node.hide) before fully showed.
         * @since 0.0.1
         */
-ElementPrototype.show = function(duration, forceFull) {
+        ElementPrototype.show = function(duration, forceFull) {
             var instance = this,
                 showPromise = instance.getData('_showNodeBusy'),
                 hidePromise = instance.getData('_hideNodeBusy'),
@@ -3504,9 +3504,8 @@ ElementPrototype.show = function(duration, forceFull) {
                 finalValue = (forceFull || !hasOriginalOpacity) ? 1 : originalOpacity;
                 if (showPromise || hidePromise) {
                     freezedOpacity = instance.getInlineStyle('opacity');
-                    duration = (finalValue>0) ? Math.min(1, (freezedOpacity/finalValue))*duration : 0;
+                    duration = (finalValue>0) ? Math.min(1, ((finalValue-freezedOpacity)/finalValue))*duration : 0;
                 }
-
                 promise = instance.transition({property: 'opacity', value: finalValue, duration: duration});
                 instance.setData('_showNodeBusy', promise);
 
