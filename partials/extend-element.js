@@ -3566,13 +3566,14 @@ module.exports = function (window) {
         */
         ElementPrototype.transition = function(to, from) {
             var instance = this,
-                currentInlineTransition, transitions, transitionRun, transitionError, promise, resolveHandle, initialStyle, time1,
+                currentInlineTransition, transitions, transitionRun, transitionError, promise, resolveHandle, initialStyle, time1, intermediateInvoked,
                 initialProperties, cleanup, getCurrentProperties, manipulated, getNoTransProp, transpromise, endIntermediate, time2;
 
             to || (to={});
             Array.isArray(to) || (to=[to]);
             to = getVendorCSS(to);
             time1 = Date.now();
+            transitions = Array.isArray(to) ? to.deepClone() : [to.shallowClone()];
             cleanup = function() {
                 currentInlineTransition = instance.getData('_bkpTransition');
                 currentInlineTransition ? instance.setInlineStyle(TRANSITION, currentInlineTransition) : instance.removeInlineStyle(TRANSITION);
@@ -3612,8 +3613,8 @@ module.exports = function (window) {
                 });
                 return props;
             };
-
             endIntermediate = function(type) {
+                intermediateInvoked = true;
                 if (!promise.isFulfilled) {
                     manipulated = true;
                     instance.setInlineTransitions(getNoTransProp());
@@ -3649,8 +3650,10 @@ module.exports = function (window) {
                         writable: false,
                         value: true
                     });
-                    transpromise.reject(); // prevent transitionpromise to set its own final values after finishing
-                    resolveHandle();
+                    // prevent transitionpromise to set its own final values after finishing
+                    // but only if it is already available:
+                    transpromise && transpromise.reject();
+                    resolveHandle && resolveHandle();
                 }
                 time2 || (time2=Date.now());
                 return new window.Promise(function(resolve) {
@@ -3661,6 +3664,10 @@ module.exports = function (window) {
             };
             promise = new window.Promise(function(resolve, reject) {
                 async(function() {
+                    if (intermediateInvoked) {
+                        reject();
+                        return;
+                    }
                     resolveHandle = resolve;
                     transitionRun = idGenerator('nodeTransition');
                     // only make ready on the last run
@@ -3683,7 +3690,6 @@ module.exports = function (window) {
 
                     // we could use the `to` object and pass into `setInlineTransitions` directly,
                     // however, in case `duration` is not specified, we will define them to 1 sec.
-                    transitions = Array.isArray(to) ? to.deepClone() : [to.shallowClone()];
 
                     // CAUTIOUS: the sum of `duration`+`delay` determines when the transition will be ready.
                     // This leads into separate transitions, we must prevent the promise to fulfill on the

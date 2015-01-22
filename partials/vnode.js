@@ -1194,16 +1194,16 @@ module.exports = function (window) {
 
                 // mark all its vChildNodes so we can see if the node is in the DOM
                 _markRemoved(instance);
+                // if vnode is part of DOCUMENT._itagList then remove it
+                if (DOCUMENT._itagList && instance.isItag) {
+                    DOCUMENT._itagList.remove(instance.domNode);
+                }
 
                 // The definite cleanup needs to be done after a timeout:
                 // someone might need to handle the Element when removed (fe to cleanup specific things)
                 later(function() {
                     instance._cleanData();
                     if (instance.nodeType===1) {
-                        // if vnode is part of DOCUMENT._itagList then remove it
-                        if (DOCUMENT._itagList && instance.isItag) {
-                            DOCUMENT._itagList.remove(instance.domNode);
-                        }
                         // _destroy all its vChildNodes
                         if (vChildNodes) {
                             len = vChildNodes.length;
