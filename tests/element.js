@@ -458,6 +458,13 @@
             expect(nodelist10[0]).to.be.eql(nodeSub3);
         });
 
+        it('getAttr for itags', function () {
+            var nodeDefinition = '<div><div></div><div></div><i-dummytag><div></div></i-dummytag><div></div></div>',
+                newNode = window.document.body.append(nodeDefinition);
+            expect(newNode.getAll('div').length).to.be.eql(3);
+            expect(newNode.getElement('i-dummytag').getAll('div').length).to.be.eql(1);
+        });
+
         it('getAttr', function () {
             expect(node.getAttr('id')).to.be.eql('ITSA');
             expect(node.getAttr('class')).to.be.eql('red blue');
@@ -618,11 +625,27 @@
             expect(node.getElement(':not(.green)')).to.be.eql(nodeSub3);
         });
 
+        it('getElement for itags', function () {
+            var nodeDefinition = '<div><div></div><div></div><i-dummytag><div id="innerid" class="inner"></div></i-dummytag><div></div></div>',
+                newNode = window.document.body.append(nodeDefinition);
+            expect(newNode.getElement('div.inner')===undefined).to.be.true;
+            expect(newNode.getElement('i-dummytag').getElement('div.inner')===undefined).to.be.false;
+            expect(newNode.getElement('#innerid')===null).to.be.true;
+            expect(newNode.getElement('i-dummytag').getElement('#innerid')===null).to.be.false;
+        });
+
         it('getElementById', function () {
             expect(node.getElementById('sub1')).to.be.eql(nodeSub1);
             expect(node.getElementById('sub2')).to.be.eql(nodeSub2);
             expect(node.getElementById('sub3')).to.be.eql(nodeSub3);
             expect(node.getElementById('sub3sub')).to.be.eql(nodeSub3Sub);
+        });
+
+        it('getElementById for itags', function () {
+            var nodeDefinition = '<div><div></div><div></div><i-dummytag><div id="innerid"></div></i-dummytag><div></div></div>',
+                newNode = window.document.body.append(nodeDefinition);
+            expect(newNode.getElementById('innerid')===null).to.be.true;
+            expect(newNode.getElement('i-dummytag').getElementById('innerid')===null).to.be.false;
         });
 
         it('getHTML', function () {

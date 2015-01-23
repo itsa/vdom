@@ -885,11 +885,11 @@ module.exports = function (window) {
         * @return {Boolean} whether the vnode's domNode is equal, or contains the specified Element.
         * @since 0.0.1
         */
-        contains: function(otherVNode) {
+        contains: function(otherVNode, noItagSearch) {
             if (otherVNode && otherVNode.destroyed) {
                 return false;
             }
-            while (otherVNode && (otherVNode!==this)) {
+            while (otherVNode && (otherVNode!==this) && (!noItagSearch || !otherVNode.isItag)) {
                 otherVNode = otherVNode.vParent;
             }
             return (otherVNode===this);
@@ -1583,18 +1583,19 @@ module.exports = function (window) {
         * @method _setAttr
         * @param attributeName {String}
         * @param value {String} the value for the attributeName
+        * @param [force=false] {Boolean} force the attribute to be set, even if restrictions would deny it
         * @private
         * @chainable
         * @since 0.0.1
         */
-        _setAttr: function(attributeName, value) {
+        _setAttr: function(attributeName, value, force) {
             var instance = this,
                 extractStyle, extractClass,
                 attrs = instance.attrs,
                 prevVal = attrs[attributeName],
                 attributeNameSplitted, ns;
 
-            if ((instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) || ((attributeName.length===2) && (attributeName.toLowerCase()==='is'))) {
+            if (!force && ((instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) || ((attributeName.length===2) && (attributeName.toLowerCase()==='is')))) {
                 console.warn('Not allowed to set the attribute '+attributeName);
                 return instance;
             }
@@ -1761,7 +1762,9 @@ module.exports = function (window) {
                     switch (nodeswitch=NODESWITCH[oldChild.nodeType][newChild.nodeType]) {
 /*jshint boss:false */
                         case 1: // oldNodeType==Element, newNodeType==Element
-                            if ((oldChild.tag!==newChild.tag) || ((oldChild.tag==='SCRIPT') && (oldChild.text!==newChild.text))) {
+                            if ((oldChild.tag!==newChild.tag) ||
+                                ((oldChild.tag===newChild.tag) && oldChild.isItag && (oldChild.attrs.is!==newChild.attrs.is)) ||
+                                ((oldChild.tag==='SCRIPT') && (oldChild.text!==newChild.text))) {
                                 // new tag --> completely replace
                                 bkpAttrs = newChild.attrs;
                                 bkpChildNodes = newChild.vChildNodes;
