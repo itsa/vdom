@@ -70,6 +70,8 @@ module.exports = function (window) {
                 len = attributes.length;
                 for (i=0; i<len; i++) {
                     attr = attributes[i];
+                    // always store the `is` attribute in lowercase:
+                    (attr.name.length===2) && (attr.name.toLowerCase()==='is') && (attr.name='is');
                     vnode.attrs[attr.name] = String(attr.value);
                 }
 

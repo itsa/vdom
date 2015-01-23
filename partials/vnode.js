@@ -1496,7 +1496,7 @@ module.exports = function (window) {
         _removeAttr: function(attributeName) {
             var instance = this,
                 attributeNameSplitted, ns;
-            if (instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) {
+            if ((instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) || ((attributeName.length===2) && (attributeName.toLowerCase()==='is'))) {
                 console.warn('Not allowed to remove the attribute '+attributeName);
                 return instance;
             }
@@ -1594,7 +1594,7 @@ module.exports = function (window) {
                 prevVal = attrs[attributeName],
                 attributeNameSplitted, ns;
 
-            if (instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) {
+            if ((instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) || ((attributeName.length===2) && (attributeName.toLowerCase()==='is'))) {
                 console.warn('Not allowed to set the attribute '+attributeName);
                 return instance;
             }
@@ -1659,6 +1659,7 @@ module.exports = function (window) {
        /**
         * Redefines the attributes of both the vnode as well as its related dom-node. The new
         * definition replaces any previous attributes (without touching unmodified attributes).
+        * the `is` attribute cannot be changed.
         *
         * Syncs the new vnode's attributes with the dom.
         *
@@ -1689,6 +1690,16 @@ module.exports = function (window) {
                     attr = newAttrs[i];
                     attrsObj[attr.name] = attr.value;
                 }
+            }
+
+            if (attrs.is) {
+                attrsObj.is = attrs.is;
+            }
+            else {
+                delete attrsObj.is;
+                delete attrsObj.Is;
+                delete attrsObj.iS;
+                delete attrsObj.IS;
             }
 
             // first _remove the attributes that are no longer needed.
@@ -1768,29 +1779,33 @@ module.exports = function (window) {
                             }
                             else {
                                 // same tag --> only update what is needed
-                                // first: we might need to set the class `focussed` when the attributeData says so:
-                                // this happens when an itag gets rerendered: its renderFn doesn't know if any elements
-                                // were focussed
-                                if (oldChild._data && oldChild._data.focussed && !newChild.hasClass('focussed')) {
-                                    newChild.classNames.focussed = true;
-                                    if (newChild.attrs[CLASS]) {
-                                        newChild.attrs[CLASS] = newChild.attrs[CLASS] + ' focussed';
+                                // NOTE: when this._unchangableAttrs exists, an itag-element syncs its UI -->
+                                // In those cases we shouldn't refresh any descendent itag-elements, for they rerender by themselves
+                                if (!oldChild.isItag || !this._unchangableAttrs) {
+                                    // first: we might need to set the class `focussed` when the attributeData says so:
+                                    // this happens when an itag gets rerendered: its renderFn doesn't know if any elements
+                                    // were focussed
+                                    if (oldChild._data && oldChild._data.focussed && !newChild.hasClass('focussed')) {
+                                        newChild.classNames.focussed = true;
+                                        if (newChild.attrs[CLASS]) {
+                                            newChild.attrs[CLASS] = newChild.attrs[CLASS] + ' focussed';
+                                        }
+                                        else {
+                                            newChild.attrs[CLASS] = 'focussed';
+                                        }
                                     }
-                                    else {
-                                        newChild.attrs[CLASS] = 'focussed';
+                                    if (oldChild._data && oldChild._data['fm-tabindex']) {
+                                        // node has the tabindex set by the focusmanager,
+                                        // but that info might got lost with re-rendering of the new element
+                                        newChild.attrs.tabindex = '0';
                                     }
+                                    oldChild._setAttrs(newChild.attrs);
+                                    // next: sync the vChildNodes:
+                                    oldChild._setChildNodes(newChild.vChildNodes);
+                                    // reset ref. to the domNode, for it might have been changed by newChild:
+                                    oldChild.id && (nodeids[oldChild.id]=childDomNode);
+                                    newVChildNodes[i] = oldChild;
                                 }
-                                if (oldChild._data && oldChild._data['fm-tabindex']) {
-                                    // node has the tabindex set by the focusmanager,
-                                    // but that info might got lost with re-rendering of the new element
-                                    newChild.attrs.tabindex = '0';
-                                }
-                                oldChild._setAttrs(newChild.attrs);
-                                // next: sync the vChildNodes:
-                                oldChild._setChildNodes(newChild.vChildNodes);
-                                // reset ref. to the domNode, for it might have been changed by newChild:
-                                oldChild.id && (nodeids[oldChild.id]=childDomNode);
-                                newVChildNodes[i] = oldChild;
                             }
                             break;
                         case 2: // oldNodeType==Element, newNodeType==TextNode
