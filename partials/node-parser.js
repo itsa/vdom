@@ -42,7 +42,8 @@ module.exports = function (window) {
          */
         domNodeToVNode = window._ITSAmodules.NodeParser = function(domNode, parentVNode) {
             var nodeType = domNode.nodeType,
-                vnode, attributes, attr, i, len, childNodes, domChildNode, vChildNodes, tag, childVNode, extractClass, extractStyle;
+                vnode, attributes, attr, i, len, childNodes, domChildNode, vChildNodes, tag,
+                childVNode, extractClass, extractStyle, attributeName;
             if (!NS.VALID_NODE_TYPES[nodeType]) {
                 // only process ElementNodes, TextNodes and CommentNodes
                 return;
@@ -71,8 +72,8 @@ module.exports = function (window) {
                 for (i=0; i<len; i++) {
                     attr = attributes[i];
                     // always store the `is` attribute in lowercase:
-                    (attr.name.length===2) && (attr.name.toLowerCase()==='is') && (attr.name='is');
-                    vnode.attrs[attr.name] = String(attr.value);
+                    attributeName = ((attr.name.length===2) && (attr.name.toLowerCase()==='is')) ? 'is' : attr.name;
+                    vnode.attrs[attributeName] = String(attr.value);
                 }
 
                 vnode.id = vnode.attrs.id;
