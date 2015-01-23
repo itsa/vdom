@@ -1855,6 +1855,7 @@ module.exports = function (window) {
                 hidePromise = instance.getData('_hideNodeBusy'),
                 originalOpacity, hasOriginalOpacity, promise, freezedOpacity, fromOpacity;
 
+            instance.setData('nodeShowed', false); // for any routine who wants to know
             originalOpacity = instance.getData('_showNodeOpacity');
             if (!originalOpacity && !showPromise && !hidePromise) {
                 originalOpacity = parseFloat(instance.getInlineStyle('opacity'));
@@ -1863,6 +1864,10 @@ module.exports = function (window) {
             hasOriginalOpacity = !!originalOpacity;
 
             showPromise && showPromise.freeze();
+            if (showPromise) {
+                showPromise.freeze();
+                instance.removeData('_showNodeBusy');
+            }
             hidePromise && hidePromise.freeze();
 
             if (duration) {
@@ -3486,6 +3491,7 @@ module.exports = function (window) {
                 hidePromise = instance.getData('_hideNodeBusy'),
                 originalOpacity, hasOriginalOpacity, promise, freezedOpacity, finalValue;
 
+            instance.setData('nodeShowed', true); // for any routine who wants to know
             originalOpacity = instance.getData('_showNodeOpacity');
             if (!originalOpacity && !showPromise && !hidePromise) {
                 originalOpacity = instance.getInlineStyle('opacity');
@@ -3494,7 +3500,10 @@ module.exports = function (window) {
             hasOriginalOpacity = !!originalOpacity;
 
             showPromise && showPromise.freeze();
-            hidePromise && hidePromise.freeze();
+            if (hidePromise) {
+                hidePromise.freeze();
+                instance.removeData('_hideNodeBusy');
+            }
 
             if (duration) {
 
