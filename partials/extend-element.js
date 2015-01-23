@@ -1071,7 +1071,7 @@ module.exports = function (window) {
             if (otherElement===this) {
                 return true;
             }
-            return this.vnode.contains(otherElement.vnode);
+            return this.vnode.contains(otherElement.vnode, true);
         };
 
         /**
@@ -2181,7 +2181,7 @@ module.exports = function (window) {
                     for (j=0; (j<len2) && !found; j++) {
                         vChildNode = vChildren[j];
                         vChildNode.matchesSelector(selectors, thisvnode) && (found=vChildNode.domNode);
-                        found || inspectChildren(vChildNode);
+                        found || vChildNode.isItag || inspectChildren(vChildNode); // not dive into itags
                     }
                 };
             while (!firstCharacter && (++i<len)) {
@@ -2216,7 +2216,7 @@ module.exports = function (window) {
                     for (j=0; j<len2; j++) {
                         vChildNode = vChildren[j];
                         vChildNode.matchesSelector(selectors, thisvnode) && (found[found.length]=vChildNode.domNode);
-                        inspectChildren(vChildNode);
+                        vChildNode.isItag || inspectChildren(vChildNode); // not dive into itags
                     }
                 };
             while (!firstCharacter && (++i<len)) {
