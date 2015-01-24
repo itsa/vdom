@@ -63,11 +63,12 @@ module.exports = function (window) {
      *
      * @method contains
      * @param otherElement {Element}
+     * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
      * @return {Boolean} whether the Element is inside the dom.
      * @since 0.0.1
      */
-    DOCUMENT.contains = function(otherElement) {
-        return DOCUMENT.documentElement.contains(otherElement);
+    DOCUMENT.contains = function(otherElement, insideItags) {
+        return DOCUMENT.documentElement.contains(otherElement, insideItags);
     };
 
     /**
@@ -75,11 +76,12 @@ module.exports = function (window) {
      *
      * @method getAll
      * @param cssSelector {String} css-selector to match
+     * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
      * @return {ElementArray} ElementArray of Elements that match the css-selector
      * @since 0.0.1
      */
-    DOCUMENT.getAll = function(cssSelector) {
-        return this.querySelectorAll(cssSelector);
+    DOCUMENT.getAll = function(cssSelector, insideItags) {
+        return this.querySelectorAll(cssSelector, insideItags);
     };
 
     /**
@@ -88,11 +90,12 @@ module.exports = function (window) {
      *
      * @method getElement
      * @param cssSelector {String} css-selector to match
+     * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
      * @return {Element|null} the Element that was search for
      * @since 0.0.1
      */
-    DOCUMENT.getElement = function(cssSelector) {
-        return ((cssSelector[0]==='#') && (cssSelector.indexOf(' ')===-1)) ? this.getElementById(cssSelector.substr(1)) : this.querySelector(cssSelector);
+    DOCUMENT.getElement = function(cssSelector, insideItags) {
+        return ((cssSelector[0]==='#') && (cssSelector.indexOf(' ')===-1)) ? this.getElementById(cssSelector.substr(1)) : this.querySelector(cssSelector, insideItags);
     };
 
     /**
@@ -103,8 +106,8 @@ module.exports = function (window) {
      * @return {Element|null}
      *
      */
-    DOCUMENT.getElementById = function(id) {
-        return nodeids[id] || null; // force `null` instead of `undefined` to be compatible with native getElementById.
+    DOCUMENT.getElementById = function(id, insideItags) {
+        return DOCUMENT.documentElement.getElementById(id, insideItags);
     };
 
     /**
