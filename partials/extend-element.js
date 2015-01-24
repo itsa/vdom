@@ -1065,13 +1065,14 @@ module.exports = function (window) {
          *
          * @method contains
          * @param otherElement {Element}
+         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
          * @return {Boolean} whether this Element contains OR equals otherElement.
          */
-        ElementPrototype.contains = function(otherElement) {
+        ElementPrototype.contains = function(otherElement, insideItags) {
             if (otherElement===this) {
                 return true;
             }
-            return this.vnode.contains(otherElement.vnode, true);
+            return this.vnode.contains(otherElement.vnode, !insideItags);
         };
 
         /**
@@ -1304,11 +1305,12 @@ module.exports = function (window) {
          *
          * @method getAll
          * @param cssSelector {String} css-selector to match
+         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
          * @return {ElementArray} ElementArray of Elements that match the css-selector
          * @since 0.0.1
          */
-        ElementPrototype.getAll = function(cssSelector) {
-            return this.querySelectorAll(cssSelector);
+        ElementPrototype.getAll = function(cssSelector, insideItags) {
+            return this.querySelectorAll(cssSelector, insideItags);
         };
 
        /**
@@ -1408,11 +1410,12 @@ module.exports = function (window) {
         *
         * @method getElement
         * @param cssSelector {String} css-selector to match
+         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
         * @return {Element|null} the Element that was search for
         * @since 0.0.1
         */
-        ElementPrototype.getElement = function(cssSelector) {
-            return ((cssSelector[0]==='#') && (cssSelector.indexOf(' ')===-1)) ? this.getElementById(cssSelector.substr(1)) : this.querySelector(cssSelector);
+        ElementPrototype.getElement = function(cssSelector, insideItags) {
+            return ((cssSelector[0]==='#') && (cssSelector.indexOf(' ')===-1)) ? this.getElementById(cssSelector.substr(1)) : this.querySelector(cssSelector, insideItags);
         };
 
         /**
@@ -1420,12 +1423,13 @@ module.exports = function (window) {
          *
          * @method getElementById
          * @param id {String} id of the Element
+         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
          * @return {Element|null}
          *
          */
-        ElementPrototype.getElementById = function(id) {
+        ElementPrototype.getElementById = function(id, insideItags) {
             var element = nodeids[id];
-            if (element && !this.contains(element)) {
+            if (element && !this.contains(element, insideItags)) {
                 // outside itself
                 return null;
             }
@@ -2166,9 +2170,10 @@ module.exports = function (window) {
          *
          * @method querySelector
          * @param selectors {String} CSS-selector(s) that should match
+         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
          * @return {Element}
          */
-        ElementPrototype.querySelector = function(selectors) {
+        ElementPrototype.querySelector = function(selectors, insideItags) {
             var found,
                 i = -1,
                 len = selectors.length,
@@ -2181,7 +2186,7 @@ module.exports = function (window) {
                     for (j=0; (j<len2) && !found; j++) {
                         vChildNode = vChildren[j];
                         vChildNode.matchesSelector(selectors, thisvnode) && (found=vChildNode.domNode);
-                        found || vChildNode.isItag || inspectChildren(vChildNode); // not dive into itags
+                        found || (!insideItags && vChildNode.isItag) || inspectChildren(vChildNode); // not dive into itags
                     }
                 };
             while (!firstCharacter && (++i<len)) {
@@ -2201,9 +2206,10 @@ module.exports = function (window) {
          *
          * @method querySelectorAll
          * @param selectors {String} CSS-selector(s) that should match
+         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
          * @return {ElementArray} non-life Array (snapshot) with Elements
          */
-        ElementPrototype.querySelectorAll = function(selectors) {
+        ElementPrototype.querySelectorAll = function(selectors, insideItags) {
             var found = ElementArray.createArray(),
                 i = -1,
                 len = selectors.length,
@@ -2216,7 +2222,7 @@ module.exports = function (window) {
                     for (j=0; j<len2; j++) {
                         vChildNode = vChildren[j];
                         vChildNode.matchesSelector(selectors, thisvnode) && (found[found.length]=vChildNode.domNode);
-                        vChildNode.isItag || inspectChildren(vChildNode); // not dive into itags
+                        (!insideItags && vChildNode.isItag) || inspectChildren(vChildNode); // not dive into itags
                     }
                 };
             while (!firstCharacter && (++i<len)) {
