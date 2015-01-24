@@ -1410,7 +1410,7 @@ module.exports = function (window) {
         *
         * @method getElement
         * @param cssSelector {String} css-selector to match
-         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+        * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
         * @return {Element|null} the Element that was search for
         * @since 0.0.1
         */
@@ -1913,7 +1913,7 @@ module.exports = function (window) {
             if (this.vnode.removedFromDOM) {
                 return false;
             }
-            return DOCUMENT.contains(this);
+            return DOCUMENT.contains(this, true);
         };
 
        /**
