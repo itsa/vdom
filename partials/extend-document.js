@@ -31,9 +31,7 @@ module.exports = function (window) {
     // prevent double definition:
     window._ITSAmodules.ExtendDocument = true;
 
-    var NS = require('./vdom-ns.js')(window),
-        nodeids = NS.nodeids,
-        DOCUMENT = window.document;
+    var DOCUMENT = window.document;
 
     // Note: window.document has no prototype
 
