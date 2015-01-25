@@ -889,7 +889,7 @@ module.exports = function (window) {
             if (otherVNode && otherVNode.destroyed) {
                 return false;
             }
-            while (otherVNode && (otherVNode!==this) && (!noItagSearch || !otherVNode.isItag)) {
+            while (otherVNode && (otherVNode!==this) && (!noItagSearch || !otherVNode.isItag || (otherVNode.tag==='I-PARCEL'))) {
                 otherVNode = otherVNode.vParent;
             }
             return (otherVNode===this);
