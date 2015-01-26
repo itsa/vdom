@@ -153,7 +153,7 @@ module.exports = function (window) {
         return str.replace(
             /&(.+?);/g,
             function(str, ent) {
-                return String.fromCharCode( (ent[0]!=='#' ? ENTITY_TO_CODE[ent] : ent[1]==='x') ? parseInt(ent.substr(2),16) : parseInt(ent.substr(1)) );
+                return String.fromCharCode( ent[0]!=='#' ? ENTITY_TO_CODE[ent] : (ent[1]==='x' ? parseInt(ent.substr(2),16) : parseInt(ent.substr(1)) ) );
             }
         );
     };
