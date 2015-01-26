@@ -26,6 +26,7 @@ module.exports = function (window) {
     }
 
     var NS = require('./vdom-ns.js')(window),
+        escapeEntities = NS.EscapeEntities,
         extractor = require('./attribute-extractor.js')(window),
         xmlNS = NS.xmlNS,
         voidElements = NS.voidElements,
@@ -115,7 +116,7 @@ module.exports = function (window) {
             }
             else {
                 // TextNode or CommentNode
-                vnode.text = domNode.nodeValue;
+                vnode.text = escapeEntities(domNode.nodeValue);
             }
             // store vnode's id:
             vnode.storeId();

@@ -51,6 +51,7 @@ module.exports = function (window) {
         // because vnode would be recalculated and might be different from before
         DESTROY_DELAY = 60000,
 
+        unescapeEntities = NS.UnescapeEntities,
         NTH_CHILD_REGEXP = /^(?:(\d*)[n|N])([\+|\-](\d+))?$/, // an+b
         STRING = 'string',
         CLASS = 'class',
@@ -1435,7 +1436,7 @@ module.exports = function (window) {
                         }
                         else if (preChildNode && preChildNode.nodeType===3) {
                             preChildNode.text += vChildNode.text;
-                            preChildNode.domNode.nodeValue = preChildNode.text;
+                            preChildNode.domNode.nodeValue = unescapeEntities(preChildNode.text);
                             domNode._removeChild(vChildNode.domNode);
                             vChildNode._destroy();
                             changed = true;
@@ -1816,7 +1817,7 @@ module.exports = function (window) {
                                 // case2 and case3 should be treated the same
                         case 3: // oldNodeType==Element, newNodeType==Comment
                             oldChild.attrs.id && (delete nodeids[oldChild.attrs.id]);
-                            newChild.domNode.nodeValue = newChild.text;
+                            newChild.domNode.nodeValue = unescapeEntities(newChild.text);
                             domNode._replaceChild(newChild.domNode, childDomNode);
                             newChild.vParent = instance;
                             oldChild._replaceAtParent(newChild);
@@ -1843,7 +1844,8 @@ module.exports = function (window) {
                                 // case5 and case9 should be treated the same
                         case 9: // oldNodeType==Comment, newNodeType==Comment
                             if (oldChild.text!==newChild.text) {
-                                oldChild.domNode.nodeValue = oldChild.text = newChild.text;
+                                oldChild.text = newChild.text;
+                                oldChild.domNode.nodeValue = unescapeEntities(newChild.text);
                                 instance._emit(EV_CONTENT_CHANGE);
                             }
                             newVChildNodes[i] = oldChild;
@@ -1851,7 +1853,7 @@ module.exports = function (window) {
                         case 6: // oldNodeType==TextNode, newNodeType==Comment
                                 // case6 and case8 should be treated the same
                         case 8: // oldNodeType==Comment, newNodeType==TextNode
-                            newChild.domNode.nodeValue = newChild.text;
+                            newChild.domNode.nodeValue = unescapeEntities(newChild.text);
                             domNode._replaceChild(newChild.domNode, childDomNode);
                             newChild.vParent = oldChild.vParent;
                             instance._emit(EV_CONTENT_CHANGE);
@@ -1894,7 +1896,7 @@ module.exports = function (window) {
                         // we need to break through --> no `break`
                         /* falls through */
                     default: // TextNode or CommentNode
-                        newChild.domNode.nodeValue = newChild.text;
+                        newChild.domNode.nodeValue = unescapeEntities(newChild.text);
                         domNode._appendChild(newChild.domNode);
                         instance._emit(EV_CONTENT_CHANGE);
                 }
@@ -2137,7 +2139,7 @@ module.exports = function (window) {
                     }
                     else {
                         id && (delete nodeids[id]);
-                        vnode.domNode.nodeValue = vnode.text;
+                        vnode.domNode.nodeValue = unescapeEntities(vnode.text);
                         vParent.domNode._replaceChild(vnode.domNode, instance.domNode);
                         instance._replaceAtParent(vnode);
                         DOCUMENT._itagList && vnode.isItag && !DOCUMENT._itagList.contains(vnode.domNode) && DOCUMENT._itagList.push(vnode.domNode);
@@ -2159,7 +2161,7 @@ module.exports = function (window) {
                             vnode._setChildNodes(bkpChildNodes);
                             break;
                         default: // TextNode or CommentNode
-                            vnode.domNode.nodeValue = vnode.text;
+                            vnode.domNode.nodeValue = unescapeEntities(vnode.text);
                             isLastChildNode ? vParent.domNode._appendChild(vnode.domNode) : vParent.domNode._appendChild(vnode.domNode, refDomNode);
                     }
                     vnode.storeId();
