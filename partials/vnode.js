@@ -832,18 +832,19 @@ module.exports = function (window) {
     };
 
     _batchEmit = function() {
+        // we will exactly define the 'UI:'-event --> Itags will have another emitterName
         MUTATION_EVENTS.each(function (mutationEvents, vnode) {
             var domNode = vnode.domNode;
             if (mutationEvents[EV_REMOVED]) {
-                domNode.emit(EV_REMOVED);
+                domNode.emit('UI:'+EV_REMOVED);
             }
             else if (mutationEvents[EV_INSERTED]) {
-                domNode.emit(EV_INSERTED);
+                domNode.emit('UI:'+EV_INSERTED);
             }
             else {
                 // contentchange and attributechanges can go hand in hand
                 mutationEvents.each(function(value, evt) {
-                    domNode.emit(evt, (evt===EV_CONTENT_CHANGE) ? null : {changed: value});
+                    domNode.emit('UI:'+evt, (evt===EV_CONTENT_CHANGE) ? null : {changed: value});
                 });
             }
         });
