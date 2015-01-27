@@ -107,11 +107,13 @@ module.exports = function (window) {
          */
         htmlToVNodes = window._ITSAmodules.HtmlParser = function(htmlString, vNodeProto, nameSpace) {
             var i = 0,
-                len = htmlString.length,
                 vnodes = [],
                 parentVNode = arguments[3], // private pass through-argument, only available when internal looped
                 insideTagDefinition, insideComment, innerText, endTagCount, stringMarker, attributeisString, attribute, attributeValue,
-                j, character, character2, vnode, tag, isBeginTag, isEndTag, scriptVNode, extractClass, extractStyle, tagdefinition, is;
+                len, j, character, character2, vnode, tag, isBeginTag, isEndTag, scriptVNode, extractClass, extractStyle, tagdefinition, is;
+
+            htmlString || (htmlString='');
+            len = htmlString.length;
 
             while (i<len) {
                 character = htmlString[i];
