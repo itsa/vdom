@@ -50,7 +50,7 @@ module.exports = function (window) {
 
         // cleanup memory after 1 minute: removed nodes SHOULD NOT be accessed afterwards
         // because vnode would be recalculated and might be different from before
-        DESTROY_DELAY = 60000,
+        DESTROY_DELAY = 3000,
 
         unescapeEntities = NS.UnescapeEntities,
         NTH_CHILD_REGEXP = /^(?:(\d*)[n|N])([\+|\-](\d+))?$/, // an+b
@@ -1152,9 +1152,14 @@ module.exports = function (window) {
         //---- private ------------------------------------------------------------------
 
         _addToTaglist: function() {
-            var instance = this;
-            if (DOCUMENT._itagList && instance.isItag && !(instance._data && !instance._data.ce_destroyed) && !DOCUMENT._itagList.contains(instance.domNode)) {
-                DOCUMENT._itagList.push(instance.domNode);
+            var instance = this,
+                itagList;
+            if (instance.isItag) {
+                itagList = DOCUMENT.getItags(); // also reads the dom if the list isn't build yet
+                instance._data || Object.protectedProp(instance, '_data', {});
+                if (!instance._data.ce_destroyed && !itagList.contains(instance.domNode)) {
+                    itagList.push(instance.domNode);
+                }
             }
         },
 
@@ -1798,7 +1803,7 @@ module.exports = function (window) {
                 vChildNodes = instance.vChildNodes || [],
                 domNode = instance.domNode,
                 forRemoval = [],
-                i, oldChild, newChild, newLength, len, len2, childDomNode, nodeswitch, bkpAttrs, bkpChildNodes, needNormalize, itagRendered;
+                i, oldChild, newChild, newLength, len, len2, childDomNode, nodeswitch, bkpAttrs, bkpChildNodes, needNormalize, itagRendered, prevSuppress;
 
             instance._noSync();
             // first: reset ._vChildren --> by making it empty, its getter will refresh its list on a next call
@@ -1814,6 +1819,9 @@ module.exports = function (window) {
                 if (i < newLength) {
                     newChild = newVChildNodes[i];
                     newChild.vParent || (newChild.vParent=instance);
+
+console.info('switch: '+NODESWITCH[oldChild.nodeType][newChild.nodeType]);
+
 /*jshint boss:true */
                     switch (nodeswitch=NODESWITCH[oldChild.nodeType][newChild.nodeType]) {
 /*jshint boss:false */
@@ -1841,11 +1849,11 @@ module.exports = function (window) {
                             else {
                                 // same tag --> only update what is needed
                                 // NOTE: when this._unchangableAttrs exists, an itag-element syncs its UI -->
-                                newChild.isItag && newChild.domNode.destroyUI(PROTO_SUPPORTED ? null : newChild.__proto__.constructor);
                                 if (oldChild._data) {
                                     // we might need to set the class `itag-rendered` when the attributeData says so:
                                     // this happens when an itag gets refreshed with an unrendered definition
                                     if (oldChild._data.itagRendered && !newChild.hasClass('itag-rendered')) {
+console.info('redefine the .itsa-rendered class');
                                         newChild.classNames['itag-rendered'] = true;
                                         if (newChild.attrs[CLASS]) {
                                             newChild.attrs[CLASS] = newChild.attrs[CLASS] + ' '+'itag-rendered';
@@ -1872,13 +1880,18 @@ module.exports = function (window) {
                                         newChild.attrs.tabindex = '0';
                                     }
                                 }
-                                oldChild._setAttrs(newChild.attrs);
-                                // next: sync the vChildNodes:
-
                                 if (oldChild.isItag) {
+                                    prevSuppress = DOCUMENT._suppressMutationEvents || false;
+                                    DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
+                                    newChild.domNode.destroyUI(PROTO_SUPPORTED ? null : newChild.__proto__.constructor);
+                                    oldChild._setAttrs(newChild.attrs);
                                     newChild._destroy(true); // destroy through the vnode and removing from DOCUMENT._itagList
+                                    DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
                                 }
                                 else {
+console.info(oldChild.tag+' going to set childnodes');
+                                    oldChild._setAttrs(newChild.attrs);
+                                    // next: sync the vChildNodes:
                                     oldChild._setChildNodes(newChild.vChildNodes);
                                 }
                                 // reset ref. to the domNode, for it might have been changed by newChild:
@@ -1952,6 +1965,7 @@ module.exports = function (window) {
             for (i = len; i < newLength; i++) {
                 newChild = newVChildNodes[i];
                 newChild.vParent = instance;
+console.info('adding nodeswith nodeType: '+newChild.nodeType);
                 switch (newChild.nodeType) {
                     case 1: // Element
                         bkpAttrs = newChild.attrs;

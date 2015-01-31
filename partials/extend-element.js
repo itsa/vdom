@@ -932,6 +932,7 @@ module.exports = function (window) {
         ElementPrototype.append = function(content, escape, refElement, silent) {
             var instance = this,
                 vnode = instance.vnode,
+                prevSuppress = DOCUMENT._suppressMutationEvents || false,
                 i, len, item, createdElement, vnodes, vRefElement,
             doAppend = function(oneItem) {
                 escape && (oneItem.nodeType===1) && (oneItem=DOCUMENT.createTextNode(oneItem.getOuterHTML()));
@@ -962,7 +963,7 @@ module.exports = function (window) {
                 doAppend(content);
             }
             vnode._normalizable(true)._normalize();
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
             return createdElement;
         };
 
@@ -1146,9 +1147,10 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         ElementPrototype.empty = function(silent) {
+            var prevSuppress = DOCUMENT._suppressMutationEvents || false;
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             this.vnode.empty();
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
         };
 
         /**
@@ -2091,6 +2093,7 @@ module.exports = function (window) {
         ElementPrototype.prepend = function(content, escape, refElement, silent) {
             var instance = this,
                 vnode = instance.vnode,
+                prevSuppress = DOCUMENT._suppressMutationEvents || false,
                 i, len, item, createdElement, vnodes, vChildNodes, vRefElement,
             doPrepend = function(oneItem) {
                 escape && (oneItem.nodeType===1) && (oneItem=DOCUMENT.createTextNode(oneItem.getOuterHTML()));
@@ -2126,7 +2129,7 @@ module.exports = function (window) {
                 doPrepend(content);
             }
             vnode._normalizable(true)._normalize();
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
             return createdElement;
         };
 
@@ -2266,10 +2269,11 @@ module.exports = function (window) {
         ElementPrototype.remove = function(silent) {
             var instance = this,
                 vnode = instance.vnode,
+                prevSuppress = DOCUMENT._suppressMutationEvents || false,
                 vParent = vnode.vParent;
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             vParent && vParent._removeChild(vnode);
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
             return instance;
         };
 
@@ -2323,9 +2327,10 @@ module.exports = function (window) {
         */
         ElementPrototype._removeAttribute = ElementPrototype.removeAttribute;
         ElementPrototype.removeAttribute = function(attributeName, silent) {
+            var prevSuppress = DOCUMENT._suppressMutationEvents || false;
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             this.vnode._removeAttr(attributeName);
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
         };
 
        /**
@@ -2378,18 +2383,20 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         ElementPrototype.removeClass = function(className, returnPromise, transitionFix, silent) {
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             var instance = this,
-                transPromise = (returnPromise || transitionFix) && getClassTransPromise(instance, REMOVE, className),
-                returnValue = returnPromise ? transPromise : instance;
+                prevSuppress = DOCUMENT._suppressMutationEvents || false,
+                transPromise, returnValue;
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
+            transPromise = (returnPromise || transitionFix) && getClassTransPromise(instance, REMOVE, className);
+            returnValue = returnPromise ? transPromise : instance;
             transPromise || instance.getClassList().remove(className);
             if (silent && DOCUMENT.suppressMutationEvents) {
                 if (returnValue===instance) {
-                    DOCUMENT.suppressMutationEvents(false);
+                    DOCUMENT.suppressMutationEvents(prevSuppress);
                 }
                 else {
                     returnValue.finally(function() {
-                        DOCUMENT.suppressMutationEvents(false);
+                        DOCUMENT.suppressMutationEvents(prevSuppress);
                     });
                 }
             }
@@ -2740,10 +2747,11 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         ElementPrototype.replaceClass = function(prevClassName, newClassName, force, returnPromise, transitionFix, silent) {
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             var instance = this,
-                transPromise = (returnPromise || transitionFix) && getClassTransPromise(instance, REPLACE, newClassName, prevClassName, force),
-                returnValue;
+                prevSuppress = DOCUMENT._suppressMutationEvents || false,
+                transPromise, returnValue;
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
+            transPromise = (returnPromise || transitionFix) && getClassTransPromise(instance, REPLACE, newClassName, prevClassName, force);
             if (force || instance.hasClass(prevClassName)) {
                 returnValue = returnPromise ? transPromise : instance;
                 transPromise || instance.removeClass(prevClassName).setClass(newClassName);
@@ -2751,11 +2759,11 @@ module.exports = function (window) {
             }
             if (silent && DOCUMENT.suppressMutationEvents) {
                 if (returnValue===instance) {
-                    DOCUMENT.suppressMutationEvents(false);
+                    DOCUMENT.suppressMutationEvents(prevSuppress);
                 }
                 else {
                     returnValue.finally(function() {
-                        DOCUMENT.suppressMutationEvents(false);
+                        DOCUMENT.suppressMutationEvents(prevSuppress);
                     });
                 }
             }
@@ -2810,11 +2818,12 @@ module.exports = function (window) {
         ElementPrototype._setAttribute = ElementPrototype.setAttribute;
         ElementPrototype.setAttribute = function(attributeName, value, silent) {
             var instance = this,
+                prevSuppress = DOCUMENT._suppressMutationEvents || false,
                 vnode = instance.vnode;
             (value==='') && (value=null);
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             ((value!==null) && (value!==undefined)) ? vnode._setAttr(attributeName, value) : vnode._removeAttr(attributeName);
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
         };
 
        /**
@@ -2879,18 +2888,20 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         ElementPrototype.setClass = function(className, returnPromise, transitionFix, silent) {
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             var instance = this,
-                transPromise = (returnPromise || transitionFix) && getClassTransPromise(instance, SET, className),
-                returnValue = returnPromise ? transPromise : instance;
+                prevSuppress = DOCUMENT._suppressMutationEvents || false,
+                transPromise, returnValue;
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
+            transPromise = (returnPromise || transitionFix) && getClassTransPromise(instance, SET, className);
+            returnValue = returnPromise ? transPromise : instance;
             transPromise || instance.getClassList().add(className);
             if (silent && DOCUMENT.suppressMutationEvents) {
                 if (returnValue===instance) {
-                    DOCUMENT.suppressMutationEvents(false);
+                    DOCUMENT.suppressMutationEvents(prevSuppress);
                 }
                 else {
                     returnValue.finally(function() {
-                        DOCUMENT.suppressMutationEvents(false);
+                        DOCUMENT.suppressMutationEvents(prevSuppress);
                     });
                 }
             }
@@ -2938,10 +2949,11 @@ module.exports = function (window) {
          * @since 0.0.1
          */
         ElementPrototype.setHTML = function(val, silent) {
-            var instance = this;
+            var instance = this,
+                prevSuppress = DOCUMENT._suppressMutationEvents || false;
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             instance.vnode.innerHTML = val;
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
             return instance;
         };
 
@@ -3243,10 +3255,11 @@ module.exports = function (window) {
          * @since 0.0.1
          */
         ElementPrototype.setOuterHTML = function(val, silent) {
-            var instance = this;
+            var instance = this,
+                prevSuppress = DOCUMENT._suppressMutationEvents || false;
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             instance.vnode.outerHTML = val;
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
             return instance;
         };
 
@@ -3265,10 +3278,11 @@ module.exports = function (window) {
          * @since 0.0.1
          */
         ElementPrototype.setText = function(val, silent) {
-            var instance = this;
+            var instance = this,
+                prevSuppress = DOCUMENT._suppressMutationEvents || false;
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             instance.vnode.textContent = val;
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(false);
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
             return instance;
         };
 
@@ -3788,18 +3802,20 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         ElementPrototype.toggleClass = function(className, forceState, returnPromise, transitionFix, silent) {
-            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
             var instance = this,
-                transPromise = (returnPromise || transitionFix) && getClassTransPromise(instance, TOGGLE, className, forceState),
-                returnValue = returnPromise ? transPromise : instance;
+                prevSuppress = DOCUMENT._suppressMutationEvents || false,
+                transPromise, returnValue;
+            silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
+            transPromise = (returnPromise || transitionFix) && getClassTransPromise(instance, TOGGLE, className, forceState);
+            returnValue = returnPromise ? transPromise : instance;
             transPromise || instance.getClassList().toggle(className, forceState);
             if (silent && DOCUMENT.suppressMutationEvents) {
                 if (returnValue===instance) {
-                    DOCUMENT.suppressMutationEvents(false);
+                    DOCUMENT.suppressMutationEvents(prevSuppress);
                 }
                 else {
                     returnValue.finally(function() {
-                        DOCUMENT.suppressMutationEvents(false);
+                        DOCUMENT.suppressMutationEvents(prevSuppress);
                     });
                 }
             }
