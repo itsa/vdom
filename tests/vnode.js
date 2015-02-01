@@ -862,7 +862,6 @@ module.exports = function (window) {
         for (i=0; i<len; i++) {
             vChild = children[i];
             vChild._emit(EV_REMOVED);
-            _emitDestroyChildren(vChild);
         }
     };
 
@@ -1242,7 +1241,13 @@ module.exports = function (window) {
                 vChildNodes = instance.vChildNodes,
                 len, i, vChildNode, vParent, treeNodes;
             if (!instance.destroyed) {
-                silent || instance._emit(EV_REMOVED);
+                if (!silent) {
+                    // Because we don't wannt to hold down UI-experience (many descendant nodes may be removed),
+                    // we generate EV_REMOVED emission in a future eventcycle:
+                    later(function() {
+                        instance._emit(EV_REMOVED);
+                    }, 5);
+                }
                 Object.protectedProp(instance, 'destroyed', true);
 
                 // first: determine the dom-tree, which module `event-dom` needs to determine where the node was before it was destroyed:
@@ -1367,6 +1372,8 @@ module.exports = function (window) {
             }
             silent = !!DOCUMENT._suppressMutationEvents;
             if (!silent && !instance.destroyed) {
+                // Because we don't wannt to hold down UI-experience (many descendant nodes may be removed),
+                // we generate EV_REMOVED emission in a future eventcycle:
                 mutationEvents = MUTATION_EVENTS.get(instance) || {};
                 if (attribute) {
                     attrMutations = mutationEvents[evt] || [];
@@ -1391,13 +1398,10 @@ module.exports = function (window) {
                     mutationEvents[evt] = true;
                 }
                 MUTATION_EVENTS.set(instance, mutationEvents);
+
                 // now set all parent to have a nodecontentchange:
-                vParent = instance;
-/*jshint boss:true */
-                while (vParent=vParent.vParent) {
-/*jshint boss:false */
-                    vParent._emit(EV_CONTENT_CHANGE);
-                }
+                vParent = instance.vParent;
+                vParent && vParent._emit(EV_CONTENT_CHANGE);
 
                 // in case of removal we need to emit EV_REMOVED for all children right now
                 // for they will be actually removed silently after a delay of 1 minute
@@ -1819,9 +1823,6 @@ module.exports = function (window) {
                 if (i < newLength) {
                     newChild = newVChildNodes[i];
                     newChild.vParent || (newChild.vParent=instance);
-
-console.info('switch: '+NODESWITCH[oldChild.nodeType][newChild.nodeType]);
-
 /*jshint boss:true */
                     switch (nodeswitch=NODESWITCH[oldChild.nodeType][newChild.nodeType]) {
 /*jshint boss:false */
@@ -1853,7 +1854,6 @@ console.info('switch: '+NODESWITCH[oldChild.nodeType][newChild.nodeType]);
                                     // we might need to set the class `itag-rendered` when the attributeData says so:
                                     // this happens when an itag gets refreshed with an unrendered definition
                                     if (oldChild._data.itagRendered && !newChild.hasClass('itag-rendered')) {
-console.info('redefine the .itsa-rendered class');
                                         newChild.classNames['itag-rendered'] = true;
                                         if (newChild.attrs[CLASS]) {
                                             newChild.attrs[CLASS] = newChild.attrs[CLASS] + ' '+'itag-rendered';
@@ -1889,7 +1889,6 @@ console.info('redefine the .itsa-rendered class');
                                     DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
                                 }
                                 else {
-console.info(oldChild.tag+' going to set childnodes');
                                     oldChild._setAttrs(newChild.attrs);
                                     // next: sync the vChildNodes:
                                     oldChild._setChildNodes(newChild.vChildNodes);
@@ -1965,7 +1964,6 @@ console.info(oldChild.tag+' going to set childnodes');
             for (i = len; i < newLength; i++) {
                 newChild = newVChildNodes[i];
                 newChild.vParent = instance;
-console.info('adding nodeswith nodeType: '+newChild.nodeType);
                 switch (newChild.nodeType) {
                     case 1: // Element
                         bkpAttrs = newChild.attrs;
