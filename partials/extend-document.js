@@ -155,14 +155,15 @@ module.exports = function (window) {
      *
      * @method querySelector
      * @param selectors {String} CSS-selector(s) that should match
+     * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
      * @return {Element}
      */
-    DOCUMENT.querySelector = function(selectors) {
+    DOCUMENT.querySelector = function(selectors, insideItags) {
         var docElement = DOCUMENT.documentElement;
         if (docElement.matchesSelector(selectors)) {
             return docElement;
         }
-        return docElement.querySelector(selectors);
+        return docElement.querySelector(selectors, insideItags);
     };
 
     /**
@@ -173,11 +174,12 @@ module.exports = function (window) {
      *
      * @method querySelectorAll
      * @param selectors {String} CSS-selector(s) that should match
+     * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
      * @return {ElementArray} non-life Array (snapshot) with Elements
      */
-    DOCUMENT.querySelectorAll = function(selectors) {
+    DOCUMENT.querySelectorAll = function(selectors, insideItags) {
         var docElement = DOCUMENT.documentElement,
-            elements = docElement.querySelectorAll(selectors);
+            elements = docElement.querySelectorAll(selectors, insideItags);
         docElement.matchesSelector(selectors) && elements.shift(docElement);
         return elements;
     };
