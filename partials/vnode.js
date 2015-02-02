@@ -46,7 +46,9 @@ module.exports = function (window) {
         timers = require('utils/lib/timers.js'),
         async = timers.asyncSilent,
         later = timers.laterSilent,
+/*jshint proto:true */
         PROTO_SUPPORTED = !!Object.__proto__,
+/*jshint proto:false */
 
         // cleanup memory after 1 minute: removed nodes SHOULD NOT be accessed afterwards
         // because vnode would be recalculated and might be different from before
@@ -58,7 +60,6 @@ module.exports = function (window) {
         CLASS = 'class',
         STYLE = 'style',
         ID = 'id',
-        CLASS_ITAG_RENDERED = 'itag-rendered',
         NODE= 'node',
         REMOVE = 'remove',
         INSERT = 'insert',
@@ -1807,7 +1808,7 @@ module.exports = function (window) {
                 vChildNodes = instance.vChildNodes || [],
                 domNode = instance.domNode,
                 forRemoval = [],
-                i, oldChild, newChild, newLength, len, len2, childDomNode, nodeswitch, bkpAttrs, bkpChildNodes, needNormalize, itagRendered, prevSuppress;
+                i, oldChild, newChild, newLength, len, len2, childDomNode, nodeswitch, bkpAttrs, bkpChildNodes, needNormalize, prevSuppress;
 
             instance._noSync();
             // first: reset ._vChildren --> by making it empty, its getter will refresh its list on a next call
@@ -1835,7 +1836,9 @@ module.exports = function (window) {
                                 bkpAttrs = newChild.attrs;
                                 bkpChildNodes = newChild.vChildNodes;
                                 oldChild.attrs.id && (delete nodeids[oldChild.attrs.id]);
+/*jshint proto:true */
                                 oldChild.isItag && oldChild.domNode.destroyUI(PROTO_SUPPORTED ? null : newChild.__proto__.constructor);
+/*jshint proto:false */
                                 newChild.attrs = {}; // reset to force defined by `_setAttrs`
                                 newChild.vChildNodes = []; // reset , to force defined by `_setAttrs`
                                 _tryReplaceChild(domNode, newChild.domNode, childDomNode);
@@ -1883,7 +1886,9 @@ module.exports = function (window) {
                                 if (oldChild.isItag) {
                                     prevSuppress = DOCUMENT._suppressMutationEvents || false;
                                     DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
+/*jshint proto:true */
                                     newChild.domNode.destroyUI(PROTO_SUPPORTED ? null : newChild.__proto__.constructor);
+/*jshint proto:false */
                                     oldChild._setAttrs(newChild.attrs);
                                     newChild._destroy(true); // destroy through the vnode and removing from DOCUMENT._itagList
                                     DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
