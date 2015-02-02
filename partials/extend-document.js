@@ -31,9 +31,16 @@ module.exports = function (window) {
     // prevent double definition:
     window._ITSAmodules.ExtendDocument = true;
 
-    var DOCUMENT = window.document;
+    var DOCUMENT = window.document,
+        activeElementBKP = DOCUMENT.activeElement;
 
     // Note: window.document has no prototype
+
+    Object.defineProperty(DOCUMENT, 'activeElement', {
+        get: function() {
+            return DOCUMENT._activeElement || activeElementBKP;
+        }
+    });
 
     /**
      * Returns a newly created TreeWalker object.
