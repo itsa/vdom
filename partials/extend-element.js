@@ -61,7 +61,6 @@ module.exports = function (window) {
         DOCUMENT = window.document,
         nodeids = NS.nodeids,
         arrayIndexOf = Array.prototype.indexOf,
-        I_PARCEL = 'I-PARCEL',
         POSITION = 'position',
         ITSA_ = 'itsa-',
         BLOCK = ITSA_+'block',
@@ -2190,7 +2189,7 @@ module.exports = function (window) {
                     for (j=0; (j<len2) && !found; j++) {
                         vChildNode = vChildren[j];
                         vChildNode.matchesSelector(selectors, thisvnode) && (found=vChildNode.domNode);
-                        found || (!insideItags && vChildNode.isItag && (vChildNode.tag!==I_PARCEL)) || inspectChildren(vChildNode); // not dive into itags (except from i-parcel)
+                        found || (!insideItags && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags (except from when content is not hidden)
                     }
                 };
             while (!firstCharacter && (++i<len)) {
@@ -2226,7 +2225,7 @@ module.exports = function (window) {
                     for (j=0; j<len2; j++) {
                         vChildNode = vChildren[j];
                         vChildNode.matchesSelector(selectors, thisvnode) && (found[found.length]=vChildNode.domNode);
-                        (!insideItags && vChildNode.isItag && (vChildNode.tag!==I_PARCEL)) || inspectChildren(vChildNode); // not dive into itags
+                        (!insideItags && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags
                     }
                 };
             while (!firstCharacter && (++i<len)) {
