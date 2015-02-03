@@ -3299,10 +3299,11 @@ module.exports = function (window) {
         *
         * @method setValue
         * @param val {String} thenew value to be set
+        * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit. Only appropriate for contenteditable nodes.
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.setValue = function(val) {
+        ElementPrototype.setValue = function(val, silent) {
             var instance = this,
                 prevVal = instance.value,
                 contenteditable = instance.vnode.attrs.contenteditable,
@@ -3312,7 +3313,7 @@ module.exports = function (window) {
                 editable = contenteditable && (contenteditable!=='false'),
                 tag, i, option, len, vChildren;
             if (editable) {
-                instance.setHTML(val);
+                instance.setHTML(val, silent);
             }
             else {
                 tag = instance.getTagName();
