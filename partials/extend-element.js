@@ -3313,12 +3313,14 @@ module.exports = function (window) {
                 editable = contenteditable && (contenteditable!=='false'),
                 tag, i, option, len, vChildren;
             if (editable) {
+                // no need to compare with current html --> when vdom is working, only differences are set
                 instance.setHTML(val, silent);
             }
             else {
                 tag = instance.getTagName();
                 if ((tag==='INPUT') || (tag==='TEXTAREA')) {
-                    instance.value = val;
+                    // don't update when not needed: we don't want to reposition the cursor
+                    (instance.value!==val) && (instance.value=val);
                 }
                 else if (tag==='SELECT') {
                     vChildren = instance.vnode.vChildren;

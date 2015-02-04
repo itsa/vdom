@@ -1243,10 +1243,10 @@ module.exports = function (window) {
                 len, i, vChildNode, vParent, treeNodes;
             if (!instance.destroyed) {
                 if (!silent) {
-                    // Because we don't wannt to hold down UI-experience (many descendant nodes may be removed),
+                    // Because we don't want to hold down UI-experience (many descendant nodes may be removed),
                     // we generate EV_REMOVED emission in a future eventcycle:
                     later(function() {
-                        instance._emit(EV_REMOVED);
+                        instance._emit(EV_REMOVED, null, null, null, true);
                     }, 5);
                 }
                 Object.protectedProp(instance, 'destroyed', true);
@@ -1293,7 +1293,7 @@ module.exports = function (window) {
             return instance;
         },
 
-        _emit: function(evt, attribute, newValue, prevValue) {
+        _emit: function(evt, attribute, newValue, prevValue, destroyEvt) {
            /**
             * Emitted by every Element that gets inserted.
             *
@@ -1372,7 +1372,7 @@ module.exports = function (window) {
                 return;
             }
             silent = !!DOCUMENT._suppressMutationEvents;
-            if (!silent && !instance.destroyed) {
+            if (!silent && (destroyEvt || !instance.destroyed)) {
                 // Because we don't wannt to hold down UI-experience (many descendant nodes may be removed),
                 // we generate EV_REMOVED emission in a future eventcycle:
                 mutationEvents = MUTATION_EVENTS.get(instance) || {};
