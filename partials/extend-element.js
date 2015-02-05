@@ -1161,7 +1161,9 @@ module.exports = function (window) {
          * @since 0.0.1
          */
         ElementPrototype.first = function(cssSelector) {
-            return this.vnode.vParent.firstOfVChildren(cssSelector).domNode;
+            var parent = this.vnode.vParent,
+                firstV = parent && parent.firstOfVChildren(cssSelector);
+            return firstV && firstV.domNode;
         };
 
         /**
@@ -2000,8 +2002,9 @@ module.exports = function (window) {
          * @since 0.0.1
          */
         ElementPrototype.last = function(cssSelector) {
-            var vParent = this.vnode.vParent;
-            return vParent && vParent.lastOfVChildren(cssSelector).domNode;
+            var vParent = this.vnode.vParent,
+                lastV = vParent && vParent.lastOfVChildren(cssSelector);
+            return lastV && lastV.domNode;
         };
 
         /**
