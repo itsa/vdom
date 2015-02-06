@@ -944,8 +944,17 @@ module.exports = function (window) {
             return (otherVNode===this);
         },
 
+       /**
+        * Empties the vnode.
+        *
+        * Syncs with the dom.
+        *
+        * @method empty
+        * @chainable
+        * @since 0.0.1
+        */
         empty: function() {
-            this._setChildNodes([]);
+            return this._setChildNodes([]);
         },
 
        /**

@@ -1157,12 +1157,17 @@ module.exports = function (window) {
          *
          * @method first
          * @param [cssSelector] {String} to return the first Element that matches the css-selector
+         * @param [container] {HTMLElement} the container-element to search within --> this lead into searching out of the same level
          * @return {Element}
          * @since 0.0.1
          */
-        ElementPrototype.first = function(cssSelector) {
-            var parent = this.vnode.vParent,
-                firstV = parent && parent.firstOfVChildren(cssSelector);
+        ElementPrototype.first = function(cssSelector, container) {
+            var parent, firstV;
+            if (container) {
+                return container.querySelector(cssSelector);
+            }
+            parent = this.vnode.vParent;
+            firstV = parent && parent.firstOfVChildren(cssSelector);
             return firstV && firstV.domNode;
         };
 
@@ -1998,12 +2003,18 @@ module.exports = function (window) {
          *
          * @method last
          * @param [cssSelector] {String} to return the last Element that matches the css-selector
+         * @param [container] {HTMLElement} the container-element to search within --> this lead into searching out of the same level
          * @return {Element}
          * @since 0.0.1
          */
-        ElementPrototype.last = function(cssSelector) {
-            var vParent = this.vnode.vParent,
-                lastV = vParent && vParent.lastOfVChildren(cssSelector);
+        ElementPrototype.last = function(cssSelector, container) {
+            var vParent, lastV, found;;
+            if (container) {
+                found = container.querySelectorAll(cssSelector);
+                return found[found.length-1];
+            }
+            vParent = this.vnode.vParent;
+            lastV = vParent && vParent.lastOfVChildren(cssSelector);
             return lastV && lastV.domNode;
         };
 
@@ -2051,13 +2062,17 @@ module.exports = function (window) {
          *
          * @method next
          * @param [cssSelector] {String} css-selector to be used as a filter
+         * @param [container] {HTMLElement} the container-element to search within --> this lead into searching out of the same level
          * @return {Element|null}
          * @type Element
          * @since 0.0.1
          */
-        ElementPrototype.next = function(cssSelector) {
+        ElementPrototype.next = function(cssSelector, container) {
             var vnode = this.vnode,
                 found, vNextElement, firstCharacter, i, len;
+            if (container) {
+                return container.querySelector(cssSelector, false, this, 2) || null;
+            }
             if (!cssSelector) {
                 vNextElement = vnode.vNextElement;
                 return vNextElement && vNextElement.domNode;
@@ -2140,13 +2155,18 @@ module.exports = function (window) {
          *
          * @method previous
          * @param [cssSelector] {String} css-selector to be used as a filter
+         * @param [container] {HTMLElement} the container-element to search within --> this lead into searching out of the same level
          * @return {Element|null}
          * @type Element
          * @since 0.0.1
          */
-        ElementPrototype.previous = function(cssSelector) {
+        ElementPrototype.previous = function(cssSelector, container) {
             var vnode = this.vnode,
                 found, vPreviousElement, firstCharacter, i, len;
+            if (container) {
+                found = container.querySelectorAll(cssSelector, false, this, 4)[0];
+                return found || null;
+            }
             if (!cssSelector) {
                 vPreviousElement = vnode.vPreviousElement;
                 return vPreviousElement && vPreviousElement.domNode;
@@ -2177,9 +2197,15 @@ module.exports = function (window) {
          * @method querySelector
          * @param selectors {String} CSS-selector(s) that should match
          * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [refNode] {HTMLElement} reference-node where the found node should be `before` or `after`: specified by domPosition
+         * @param [domPosition] {Number} The position to accept, compared to `refNode`. Should be either:
+         * <ul>
+         *     <li>Node.DOCUMENT_POSITION_PRECEDING === 2 (this Element comes before otherElement)</li>
+         *     <li>Node.DOCUMENT_POSITION_FOLLOWING === 4 (this Element comes after otherElement)</li>
+         * </ul>
          * @return {Element}
          */
-        ElementPrototype.querySelector = function(selectors, insideItags) {
+        ElementPrototype.querySelector = function(selectors, insideItags, refNode, domPosition) {
             var found,
                 i = -1,
                 len = selectors.length,
@@ -2191,7 +2217,9 @@ module.exports = function (window) {
                         j, vChildNode;
                     for (j=0; (j<len2) && !found; j++) {
                         vChildNode = vChildren[j];
-                        vChildNode.matchesSelector(selectors, thisvnode) && (found=vChildNode.domNode);
+                        if (vChildNode.matchesSelector(selectors, thisvnode) && (!refNode || ((vChildNode.domNode.compareDocumentPosition(refNode) & domPosition)===domPosition))) {
+                            found = vChildNode.domNode;
+                        }
                         found || (!insideItags && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags (except from when content is not hidden)
                     }
                 };
@@ -2213,9 +2241,15 @@ module.exports = function (window) {
          * @method querySelectorAll
          * @param selectors {String} CSS-selector(s) that should match
          * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [refNode] {HTMLElement} reference-node where the found nodes should be `before` or `after`: specified by domPosition
+         * @param [domPosition] {Number} The position to accept, compared to `refNode`. Should be either:
+         * <ul>
+         *     <li>Node.DOCUMENT_POSITION_PRECEDING === 2 (this Element comes before otherElement)</li>
+         *     <li>Node.DOCUMENT_POSITION_FOLLOWING === 4 (this Element comes after otherElement)</li>
+         * </ul>
          * @return {ElementArray} non-life Array (snapshot) with Elements
          */
-        ElementPrototype.querySelectorAll = function(selectors, insideItags) {
+        ElementPrototype.querySelectorAll = function(selectors, insideItags, refNode, domPosition) {
             var found = ElementArray.createArray(),
                 i = -1,
                 len = selectors.length,
@@ -2227,7 +2261,9 @@ module.exports = function (window) {
                         j, vChildNode;
                     for (j=0; j<len2; j++) {
                         vChildNode = vChildren[j];
-                        vChildNode.matchesSelector(selectors, thisvnode) && (found[found.length]=vChildNode.domNode);
+                        if (vChildNode.matchesSelector(selectors, thisvnode) && (!refNode || ((vChildNode.domNode.compareDocumentPosition(refNode) & domPosition)===domPosition))) {
+                            found[found.length] = vChildNode.domNode;
+                        }
                         (!insideItags && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags
                     }
                 };

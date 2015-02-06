@@ -57,6 +57,64 @@ var createHashMap = require('js-ext/extra/hashmap.js').createMap,
     },
 /*jshint proto:false */
     charToEntity = {},
+
+// Void Elements - HTML 4.01
+    DEFAULT_VOID = createHashMap({
+        AREA: true,
+        BASE: true,
+        BASEFONT: true,
+        BR: true,
+        COL: true,
+        FRAME: true,
+        HR: true,
+        IMG: true,
+        INPUT: true,
+        ISINDEX: true,
+        LINK: true,
+        META: true,
+        PARAM: true,
+        EMBED: true
+    }),
+
+    // Block Elements - HTML 4.01
+    DEFAULT_NON_BLOCK = createHashMap({
+        ADDRESS: true,
+        APPLET: true,
+        BLOCKQUITE: true,
+        BUTTON: true,
+        CENTER: true,
+        DD: true,
+        DEL: true,
+        DIR: true,
+        DIV: true,
+        DL: true,
+        DT: true,
+        FIELDSET: true,
+        FORM: true,
+        FRAMESET: true,
+        IFRAME: true,
+        INS: true,
+        ISINDEX: true,
+        LI: true,
+        MAP: true,
+        MENU: true,
+        NOFRAMES: true,
+        NOSCRIPT: true,
+        OBJECT: true,
+        OL: true,
+        P: true,
+        PRE: true,
+        SCRIPT: true,
+        TABLE: true,
+        TBODY: true,
+        TD: true,
+        TFOOT: true,
+        TH: true,
+        THEAD: true,
+        TR: true,
+        UL: true
+    }),
+
     entityName;
 
 for (entityName in ENTITY_TO_CODE) {
@@ -110,7 +168,7 @@ module.exports = function (window) {
      * @type Object
      * @since 0.0.1
      */
-    NS.nonVoidElements || (NS.nonVoidElements=createHashMap());
+    NS.nonVoidElements || (NS.nonVoidElements=DEFAULT_NON_BLOCK);
 
     /**
      * A hash to identify what tagNames are equal to `SCRIPT` or `STYLE`.
@@ -147,7 +205,7 @@ module.exports = function (window) {
      * @type Object
      * @since 0.0.1
      */
-    NS.voidElements || (NS.voidElements=createHashMap());
+    NS.voidElements || (NS.voidElements=DEFAULT_VOID);
 
     NS.UnescapeEntities = function(str) {
         return str.replace(
