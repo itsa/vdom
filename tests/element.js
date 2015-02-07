@@ -170,19 +170,47 @@
 
         it('compareDocumentPosition', function () {
             var dummyNode = window.document.createElement('div');
+
             // one of elements in not part of the dom:
-            expect(node.compareDocumentPosition(dummyNode)).to.be.eql(1);
-            expect(dummyNode.compareDocumentPosition(node)).to.be.eql(1);
+            expect(node.compareDocumentPosition(dummyNode)).to.be.equal(1, 'check 1');
+            expect(dummyNode.compareDocumentPosition(node)).to.be.equal(1, 'check 2');
             // equal element:
-            expect(node.compareDocumentPosition(node)).to.be.eql(0);
+            expect(node.compareDocumentPosition(node)).to.be.equal(0, 'check 3');
             // element comes before and is sibling
-            expect(nodeSub1.compareDocumentPosition(nodeSub2)).to.be.eql(2);
+            expect(nodeSub1.compareDocumentPosition(nodeSub2)).to.be.equal(4, 'check 4');
             // element comes after and is sibling
-            expect(nodeSub2.compareDocumentPosition(nodeSub1)).to.be.eql(4);
+            expect(nodeSub2.compareDocumentPosition(nodeSub1)).to.be.equal(2, 'check 5');
             // element contains
-            expect(node.compareDocumentPosition(nodeSub1)).to.be.eql(20);
+            expect(node.compareDocumentPosition(nodeSub1)).to.be.equal(20, 'check 6');
             // element is ancestor
-            expect(nodeSub1.compareDocumentPosition(node)).to.be.eql(10);
+            expect(nodeSub1.compareDocumentPosition(node)).to.be.equal(10, 'check 7');
+
+            var inspectedNode = '<ul style="opacity: 0;">';
+                inspectedNode += '<li id="li1"></li>';
+                inspectedNode += '<li id="li2"></li>';
+                inspectedNode += '<li id="li3"></li>';
+                inspectedNode += '<li id="li4"></li>';
+                inspectedNode += '<li id="li5">';
+                    inspectedNode += '<ul>';
+                        inspectedNode += '<li id="li6"></li>';
+                        inspectedNode += '<li id="li7"></li>';
+                        inspectedNode += '<li id="li8"></li>';
+                    inspectedNode += '</ul>';
+                inspectedNode += '</li>';
+                inspectedNode += '<li id="li9"></li>';
+            inspectedNode += '</ul>';
+
+            var insertednode = window.document.body.append(inspectedNode);
+
+            var li1 = window.document.getElement('#li1');
+            var li5 = window.document.getElement('#li5');
+            var li6 = window.document.getElement('#li6');
+            var li9 = window.document.getElement('#li9');
+            expect(li1.compareDocumentPosition(li5)).to.be.equal(4, 'li1 v.s. li5');
+            expect(li1.compareDocumentPosition(li6)).to.be.equal(4, 'li1 v.s. li6');
+            expect(li9.compareDocumentPosition(li5)).to.be.equal(2, 'li9 v.s. li5');
+            expect(li9.compareDocumentPosition(li6)).to.be.equal(2, 'li9 v.s. li6');
+            insertednode.remove();
 
         });
 
@@ -348,6 +376,12 @@
             expect(nodeSub3.first()).to.be.eql(nodeSub1);
         });
 
+        it('first with container', function () {
+            expect(nodeSub1.first(null, node)).to.be.eql(nodeSub1);
+            expect(nodeSub3.first(null, node)).to.be.eql(nodeSub1);
+            expect(nodeSub3Sub.first(null, node)).to.be.eql(nodeSub1);
+        });
+
         it('firstOfChildren', function () {
             expect(node.firstOfChildren()).to.be.eql(nodeSub1);
             expect(nodeSub1.firstOfChildren()===null).to.be.true;
@@ -461,7 +495,7 @@
         it('getAttr for itags', function () {
             var nodeDefinition = '<div><div></div><div></div><i-dummytag><div></div></i-dummytag><div></div></div>',
                 newNode = window.document.body.append(nodeDefinition);
-            expect(newNode.getAll('div').length).to.be.eql(3);
+            expect(newNode.getAll('div').length).to.be.eql(4);
             expect(newNode.getElement('i-dummytag').getAll('div').length).to.be.eql(1);
         });
 
@@ -628,9 +662,9 @@
         it('getElement for itags', function () {
             var nodeDefinition = '<div><div></div><div></div><i-dummytag><div id="innerid" class="inner"></div></i-dummytag><div></div></div>',
                 newNode = window.document.body.append(nodeDefinition);
-            expect(newNode.getElement('div.inner')===undefined).to.be.true;
+            expect(newNode.getElement('div.inner')===undefined).to.be.false;
             expect(newNode.getElement('i-dummytag').getElement('div.inner')===undefined).to.be.false;
-            expect(newNode.getElement('#innerid')===null).to.be.true;
+            expect(newNode.getElement('#innerid')===null).to.be.false;
             expect(newNode.getElement('i-dummytag').getElement('#innerid')===null).to.be.false;
         });
 
@@ -644,7 +678,7 @@
         it('getElementById for itags', function () {
             var nodeDefinition = '<div><div></div><div></div><i-dummytag><div id="innerid"></div></i-dummytag><div></div></div>',
                 newNode = window.document.body.append(nodeDefinition);
-            expect(newNode.getElementById('innerid')===null).to.be.true;
+            expect(newNode.getElementById('innerid')===null).to.be.false;
             expect(newNode.getElement('i-dummytag').getElementById('innerid')===null).to.be.false;
         });
 
@@ -1196,6 +1230,11 @@
             expect(nodeSub3.last()).to.be.eql(nodeSub3);
         });
 
+        it('last with container', function () {
+            expect(nodeSub1.last(null, node)).to.be.eql(nodeSub3Sub);
+            expect(nodeSub3.last(null, node)).to.be.eql(nodeSub3Sub);
+            expect(nodeSub3Sub.last(null, node)).to.be.eql(nodeSub3Sub);
+        });
         it('lastOfChildren', function () {
             expect(node.lastOfChildren()).to.be.eql(nodeSub3);
             expect(nodeSub1.lastOfChildren()===null).to.be.true;
@@ -1279,6 +1318,47 @@
             expect(nodeSub2.next('~ div')).to.eql(nodeSub3);
         });
 
+        it('next with container', function () {
+            var inspectedNode = '<ul style="opacity: 0;">';
+                inspectedNode += '<li id="li-1"></li>';
+                inspectedNode += '<li id="li-2"></li>';
+                inspectedNode += '<li id="li-3"></li>';
+                inspectedNode += '<li id="li-4"></li>';
+                inspectedNode += '<li id="li-5">';
+                    inspectedNode += '<ul>';
+                        inspectedNode += '<li id="li-6"></li>';
+                        inspectedNode += '<li id="li-7"></li>';
+                        inspectedNode += '<li id="li-8">';
+                           inspectedNode += '<ul>';
+                                inspectedNode += '<li id="li-9"></li>';
+                                inspectedNode += '<li id="li-10"></li>';
+                           inspectedNode += '</ul>';
+                        inspectedNode += '</li>';
+                        inspectedNode += '<li id="li-11"></li>';
+                        inspectedNode += '<li id="li-12"></li>';
+                    inspectedNode += '</ul>';
+                inspectedNode += '</li>';
+                inspectedNode += '<li id="li-13"></li>';
+                inspectedNode += '<li id="li-14">';
+                    inspectedNode += '<ul>';
+                        inspectedNode += '<li id="li-15"></li>';
+                        inspectedNode += '<li id="li-16"></li>';
+                    inspectedNode += '</ul>';
+                inspectedNode += '</li>';
+                inspectedNode += '<li id="li-17"></li>';
+            inspectedNode += '</ul>';
+
+            var insertednode = window.document.body.append(inspectedNode);
+            var liNode = window.document.getElement('#li-3');
+
+            for (var nr=4; nr<=17; nr++) {
+                liNode = liNode.next('li', insertednode);
+                expect(liNode.getId()).to.be.equal('li-'+nr);
+            }
+
+            insertednode.remove();
+        });
+
         it('previous', function () {
             expect(nodeSub1.previous()===undefined).to.be.true;
             expect(nodeSub3.previous()).to.be.eql(nodeSub2);
@@ -1293,6 +1373,51 @@
 
             expect(nodeSub2.previous('~ div')).to.eql(nodeSub1);
             expect(nodeSub2.previous('~ div')).to.eql(nodeSub1);
+        });
+
+        it('previous with container', function () {
+            var inspectedNode = '<ul style="opacity: 0;">';
+                inspectedNode += '<li id="li-a1"></li>';
+                inspectedNode += '<li id="li-a2"></li>';
+                inspectedNode += '<li id="li-a3"></li>';
+                inspectedNode += '<li id="li-a4"></li>';
+                inspectedNode += '<li id="li-a5">';
+                    inspectedNode += '<ul>';
+                        inspectedNode += '<li id="li-a6"></li>';
+                        inspectedNode += '<li id="li-a7"></li>';
+                        inspectedNode += '<li id="li-a8">';
+                           inspectedNode += '<ul>';
+                                inspectedNode += '<li id="li-a9"></li>';
+                                inspectedNode += '<li id="li-a10"></li>';
+                           inspectedNode += '</ul>';
+                        inspectedNode += '</li>';
+                        inspectedNode += '<li id="li-a11"></li>';
+                        inspectedNode += '<li id="li-a12"></li>';
+                    inspectedNode += '</ul>';
+                inspectedNode += '</li>';
+                inspectedNode += '<li id="li-a13"></li>';
+                inspectedNode += '<li id="li-a14">';
+                    inspectedNode += '<ul>';
+                        inspectedNode += '<li id="li-a15"></li>';
+                        inspectedNode += '<li id="li-a16"></li>';
+                    inspectedNode += '</ul>';
+                inspectedNode += '</li>';
+                inspectedNode += '<li id="li-a17"></li>';
+                inspectedNode += '<li id="li-a18"></li>';
+                inspectedNode += '<li id="li-a19"></li>';
+                inspectedNode += '<li id="li-a20"></li>';
+                inspectedNode += '<li id="li-a21"></li>';
+            inspectedNode += '</ul>';
+
+            var insertednode = window.document.body.append(inspectedNode);
+            var liNode = window.document.getElement('#li-a19');
+
+            for (var nr=18; nr>0; nr--) {
+                liNode = liNode.previous('li', insertednode);
+                expect(liNode.getId()).to.be.equal('li-a'+nr);
+            }
+
+            insertednode.remove();
         });
 
         it('querySelector', function () {

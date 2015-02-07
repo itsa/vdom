@@ -1036,7 +1036,8 @@ module.exports = function (window) {
         ElementPrototype.compareDocumentPosition = function(otherElement) {
             // see http://ejohn.org/blog/comparing-document-position/
             var instance = this,
-                parent, index1, index2, vChildNodes;
+                parent, index1, index2, vChildNodes, vnode, otherVNode,
+                i_instance, i_other, sameLevel, arrayInstance, arrayOther;
             if (instance===otherElement) {
                 return 0;
             }
@@ -1051,13 +1052,51 @@ module.exports = function (window) {
             }
             parent = instance.getParent();
             vChildNodes = parent.vnode.vChildNodes;
-            index1 = vChildNodes.indexOf(instance.vnode);
-            index2 = vChildNodes.indexOf(otherElement.vnode);
+            vnode = instance.vnode;
+            otherVNode = otherElement.vnode;
+            index1 = vChildNodes.indexOf(vnode);
+            index2 = vChildNodes.indexOf(otherVNode);
+            if ((index1!==-1) && (index2!==-1)) {
+                if (index1<index2) {
+                    return 4;
+                }
+                else {
+                    return 2;
+                }
+            }
+            // still not found, now we need to inspect the tree-structure of both elements
+            // and determine at what point (up-down the tree) the elements are going to differ
+            arrayInstance = [];
+            arrayOther = [];
+            arrayInstance[0] = vnode;
+            while (vnode=vnode.vParent) {
+                arrayInstance[arrayInstance.length] = vnode;
+            }
+            arrayOther[0] = otherVNode;
+            while (otherVNode=otherVNode.vParent) {
+                arrayOther[arrayOther.length] = otherVNode;
+            }
+            i_instance = arrayInstance.length - 1;
+            i_other = arrayOther.length - 1;
+            sameLevel = true;
+            while (sameLevel && (i_instance>=0) && (i_other>=0)) {
+                // starts with the most upper element
+                vnode = arrayInstance[i_instance];
+                otherVNode = arrayOther[i_other];
+                sameLevel = (vnode===otherVNode);
+                i_instance--;
+                i_other--;
+            }
+            // now we are out and we should be able to compare `vnode` and `otherVNode` which lie at the same level though are different
+            parent = vnode.vParent;
+            vChildNodes = parent.vChildNodes;
+            index1 = vChildNodes.indexOf(vnode);
+            index2 = vChildNodes.indexOf(otherVNode);
             if (index1<index2) {
-                return 2;
+                return 4;
             }
             else {
-                return 4;
+                return 2;
             }
         };
 
@@ -2008,7 +2047,7 @@ module.exports = function (window) {
          * @since 0.0.1
          */
         ElementPrototype.last = function(cssSelector, container) {
-            var vParent, lastV, found;;
+            var vParent, lastV, found;
             if (container) {
                 found = container.querySelectorAll(cssSelector);
                 return found[found.length-1];
@@ -2164,8 +2203,8 @@ module.exports = function (window) {
             var vnode = this.vnode,
                 found, vPreviousElement, firstCharacter, i, len;
             if (container) {
-                found = container.querySelectorAll(cssSelector, false, this, 4)[0];
-                return found || null;
+                found = container.querySelectorAll(cssSelector, false, this, 4);
+                return (found.length>0) ? found[found.length-1] :  null;
             }
             if (!cssSelector) {
                 vPreviousElement = vnode.vPreviousElement;
@@ -2208,21 +2247,22 @@ module.exports = function (window) {
         ElementPrototype.querySelector = function(selectors, insideItags, refNode, domPosition) {
             var found,
                 i = -1,
-                len = selectors.length,
-                firstCharacter, startvnode,
                 thisvnode = this.vnode,
-                inspectChildren = function(vnode) {
-                    var vChildren = vnode.vChildren,
-                        len2 = vChildren ? vChildren.length : 0,
-                        j, vChildNode;
-                    for (j=0; (j<len2) && !found; j++) {
-                        vChildNode = vChildren[j];
-                        if (vChildNode.matchesSelector(selectors, thisvnode) && (!refNode || ((vChildNode.domNode.compareDocumentPosition(refNode) & domPosition)===domPosition))) {
-                            found = vChildNode.domNode;
-                        }
-                        found || (!insideItags && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags (except from when content is not hidden)
+                len, firstCharacter, startvnode, inspectChildren;
+            selectors || (selectors='*');
+            len = selectors.length;
+            inspectChildren = function(vnode) {
+                var vChildren = vnode.vChildren,
+                    len2 = vChildren ? vChildren.length : 0,
+                    j, vChildNode;
+                for (j=0; (j<len2) && !found; j++) {
+                    vChildNode = vChildren[j];
+                    if (vChildNode.matchesSelector(selectors, thisvnode) && (!refNode || ((vChildNode.domNode.compareDocumentPosition(refNode) & domPosition)!==0))) {
+                        found = vChildNode.domNode;
                     }
-                };
+                    found || (!insideItags && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags (except from when content is not hidden)
+                }
+            };
             while (!firstCharacter && (++i<len)) {
                 firstCharacter = selectors[i];
                 (firstCharacter===' ') && (firstCharacter=null);
@@ -2252,21 +2292,22 @@ module.exports = function (window) {
         ElementPrototype.querySelectorAll = function(selectors, insideItags, refNode, domPosition) {
             var found = ElementArray.createArray(),
                 i = -1,
-                len = selectors.length,
-                firstCharacter, startvnode,
                 thisvnode = this.vnode,
-                inspectChildren = function(vnode) {
-                    var vChildren = vnode.vChildren,
-                        len2 = vChildren ? vChildren.length : 0,
-                        j, vChildNode;
-                    for (j=0; j<len2; j++) {
-                        vChildNode = vChildren[j];
-                        if (vChildNode.matchesSelector(selectors, thisvnode) && (!refNode || ((vChildNode.domNode.compareDocumentPosition(refNode) & domPosition)===domPosition))) {
-                            found[found.length] = vChildNode.domNode;
-                        }
-                        (!insideItags && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags
+                len, firstCharacter, startvnode, inspectChildren;
+            selectors || (selectors='*');
+            len = selectors.length,
+            inspectChildren = function(vnode) {
+                var vChildren = vnode.vChildren,
+                    len2 = vChildren ? vChildren.length : 0,
+                    j, vChildNode;
+                for (j=0; j<len2; j++) {
+                    vChildNode = vChildren[j];
+                    if (vChildNode.matchesSelector(selectors, thisvnode) && (!refNode || ((vChildNode.domNode.compareDocumentPosition(refNode) & domPosition)!==0))) {
+                        found[found.length] = vChildNode.domNode;
                     }
-                };
+                    (!insideItags && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags
+                }
+            };
             while (!firstCharacter && (++i<len)) {
                 firstCharacter = selectors[i];
                 (firstCharacter===' ') && (firstCharacter=null);
