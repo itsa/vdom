@@ -1101,16 +1101,18 @@ module.exports = function (window) {
         };
 
         /**
-         * Indicating whether this Element contains OR equals otherElement.
+         * Indicating whether this Element contains OR equals otherElement. If you need only to be sure the other Element lies inside,
+         * but not equals itself, set `excludeItself` true.
          *
          * @method contains
          * @param otherElement {Element}
          * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [excludeItself] {Boolean} to exclude itsefl as a hit
          * @return {Boolean} whether this Element contains OR equals otherElement.
          */
-        ElementPrototype.contains = function(otherElement, insideItags) {
+        ElementPrototype.contains = function(otherElement, excludeItself, insideItags) {
             if (otherElement===this) {
-                return true;
+                return !excludeItself;
             }
             return this.vnode.contains(otherElement.vnode, !insideItags);
         };
@@ -1477,7 +1479,7 @@ module.exports = function (window) {
          */
         ElementPrototype.getElementById = function(id, insideItags) {
             var element = nodeids[id];
-            if (element && !this.contains(element, insideItags)) {
+            if (element && !this.contains(element, true, insideItags)) {
                 // outside itself
                 return null;
             }
@@ -1838,8 +1840,7 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         ElementPrototype.hasFocusInside = function() {
-            var activeElement = DOCUMENT.activeElement;
-            return ((DOCUMENT.activeElement!==this) && this.contains(activeElement));
+            return this.contains(DOCUMENT.activeElement, true);
         };
 
        /**
@@ -1961,7 +1962,7 @@ module.exports = function (window) {
             if (this.vnode.removedFromDOM) {
                 return false;
             }
-            return DOCUMENT.contains(this, true);
+            return DOCUMENT.contains(this, false, true);
         };
 
        /**
