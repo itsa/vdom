@@ -22,13 +22,15 @@
         VENDOR_TRANSFORM_PROPERTY = generateVendorCSSProp(TRANSFORM),
         VENDOR_TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window),
         async = require('utils/lib/timers.js').async,
+        DOCUMENT = window.document,
         SUPPORT_INLINE_PSEUDO_STYLES = window.document._supportInlinePseudoStyles,
-        node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub, nodeSub3SubText, container, containerSub1, containerSub2, containerSub3, cssnode;
+        node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub, nodeSub3SubText, container, containerSub1, containerSub2, containerSub3, cssnode, bodyNode,
+        divnode1, divnode2, buttonnode, buttonnode2, buttonnode3, buttonnode4;
 
     chai.use(require('chai-as-promised'));
 
     describe('Methods', function () {
-        this.timeout(30000);
+        this.timeout(5000);
 
         // bodyNode looks like this:
         /*
@@ -77,93 +79,35 @@
         afterEach(function() {
             window.document.body.removeChild(node);
         });
+        /*
+        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;">
+            <div id="sub1" class="green yellow"></div>
+            <div id="sub2" class="green yellow"></div>
+            <div id="sub3">
+                <div id="sub3sub" class="green yellow"></div>
+                extra text
+            </div>
+        </div>
+        */
 
-        it('next with container', function () {
-            var inspectedNode = '<ul style="opacity: 0;">';
-                inspectedNode += '<li id="li-1"></li>';
-                inspectedNode += '<li id="li-2"></li>';
-                inspectedNode += '<li id="li-3"></li>';
-                inspectedNode += '<li id="li-4"></li>';
-                inspectedNode += '<li id="li-5">';
-                    inspectedNode += '<ul>';
-                        inspectedNode += '<li id="li-6"></li>';
-                        inspectedNode += '<li id="li-7"></li>';
-                        inspectedNode += '<li id="li-8">';
-                           inspectedNode += '<ul>';
-                                inspectedNode += '<li id="li-9"></li>';
-                                inspectedNode += '<li id="li-10"></li>';
-                           inspectedNode += '</ul>';
-                        inspectedNode += '</li>';
-                        inspectedNode += '<li id="li-11"></li>';
-                        inspectedNode += '<li id="li-12"></li>';
-                    inspectedNode += '</ul>';
-                inspectedNode += '</li>';
-                inspectedNode += '<li id="li-13"></li>';
-                inspectedNode += '<li id="li-14">';
-                    inspectedNode += '<ul>';
-                        inspectedNode += '<li id="li-15"></li>';
-                        inspectedNode += '<li id="li-16"></li>';
-                    inspectedNode += '</ul>';
-                inspectedNode += '</li>';
-                inspectedNode += '<li id="li-17"></li>';
-            inspectedNode += '</ul>';
+        it('previous', function () {
+            // expect(nodeSub1.previous()===undefined).to.be.true;
+            // expect(nodeSub3.previous()).to.be.eql(nodeSub2);
+            // expect(nodeSub3.previous('.green')).to.be.eql(nodeSub2);
+            // expect(nodeSub3.previous(':not(.green)')===null).to.be.true;
 
-            var insertednode = window.document.body.append(inspectedNode);
-            var liNode = window.document.getElement('#li-3');
+            // expect(nodeSub3.previous('> div')===null).to.be.true;
+            // expect(nodeSub1.previous('> div')===null).to.be.true;
 
-            for (var nr=4; nr<=17; nr++) {
-                liNode = liNode.next('li', insertednode);
-                expect(liNode.getId()).to.be.equal('li-'+nr);
-            }
+            // expect(nodeSub3.previous('+ div')).to.eql(nodeSub2);
+            // expect(nodeSub3.previous('+ div')).to.eql(nodeSub2);
 
-            insertednode.remove();
+            expect(nodeSub3.previous('~ div')).to.eql(nodeSub2);
+            expect(nodeSub2.previous('~ div')===null).to.be.true;
         });
 
-        it('previous with container', function () {
-            var inspectedNode = '<ul style="opacity: 0;">';
-                inspectedNode += '<li id="li-a1"></li>';
-                inspectedNode += '<li id="li-a2"></li>';
-                inspectedNode += '<li id="li-a3"></li>';
-                inspectedNode += '<li id="li-a4"></li>';
-                inspectedNode += '<li id="li-a5">';
-                    inspectedNode += '<ul>';
-                        inspectedNode += '<li id="li-a6"></li>';
-                        inspectedNode += '<li id="li-a7"></li>';
-                        inspectedNode += '<li id="li-a8">';
-                           inspectedNode += '<ul>';
-                                inspectedNode += '<li id="li-a9"></li>';
-                                inspectedNode += '<li id="li-a10"></li>';
-                           inspectedNode += '</ul>';
-                        inspectedNode += '</li>';
-                        inspectedNode += '<li id="li-a11"></li>';
-                        inspectedNode += '<li id="li-a12"></li>';
-                    inspectedNode += '</ul>';
-                inspectedNode += '</li>';
-                inspectedNode += '<li id="li-a13"></li>';
-                inspectedNode += '<li id="li-a14">';
-                    inspectedNode += '<ul>';
-                        inspectedNode += '<li id="li-a15"></li>';
-                        inspectedNode += '<li id="li-a16"></li>';
-                    inspectedNode += '</ul>';
-                inspectedNode += '</li>';
-                inspectedNode += '<li id="li-a17"></li>';
-                inspectedNode += '<li id="li-a18"></li>';
-                inspectedNode += '<li id="li-a19"></li>';
-                inspectedNode += '<li id="li-a20"></li>';
-                inspectedNode += '<li id="li-a21"></li>';
-            inspectedNode += '</ul>';
-
-            var insertednode = window.document.body.append(inspectedNode);
-            var liNode = window.document.getElement('#li-a19');
-
-            for (var nr=18; nr>0; nr--) {
-                liNode = liNode.previous('li', insertednode);
-                expect(liNode.getId()).to.be.equal('li-a'+nr);
-            }
-
-            insertednode.remove();
-        });
     });
+
 
 
 }(global.window || require('node-win')));

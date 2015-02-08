@@ -1069,11 +1069,15 @@ module.exports = function (window) {
             arrayInstance = [];
             arrayOther = [];
             arrayInstance[0] = vnode;
+/*jshint boss:true */
             while (vnode=vnode.vParent) {
+/*jshint boss:false */
                 arrayInstance[arrayInstance.length] = vnode;
             }
             arrayOther[0] = otherVNode;
+/*jshint boss:true */
             while (otherVNode=otherVNode.vParent) {
+/*jshint boss:false */
                 arrayOther[arrayOther.length] = otherVNode;
             }
             i_instance = arrayInstance.length - 1;

@@ -632,6 +632,16 @@
             expect(node.getData('dummy2')).to.be.eql(20);
         });
 
+        /*
+        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;">
+            <div id="sub1" class="green yellow"></div>
+            <div id="sub2" class="green yellow"></div>
+            <div id="sub3">
+                <div id="sub3sub" class="green yellow"></div>
+                extra text
+            </div>
+        </div>
+        */
         it('getElement', function () {
             expect(node.getElement('div')).to.be.eql(nodeSub1);
             expect(node.getElement('.green')).to.be.eql(nodeSub1);
@@ -655,6 +665,11 @@
 
             expect(nodeSub1.getElement('> div')===undefined).to.be.true;
             expect(nodeSub3.getElement('> div')).to.be.eql(nodeSub3Sub);
+
+            expect(node.getElement('>div >div')).to.be.eql(nodeSub3Sub);
+            expect(node.getElement('>div div')).to.be.eql(nodeSub3Sub);
+            expect(node.getElement('div >div')).to.be.eql(nodeSub3Sub);
+            expect(node.getElement('div div')).to.be.eql(nodeSub3Sub);
 
             expect(node.getElement(':not(.green)')).to.be.eql(nodeSub3);
         });
@@ -1241,6 +1256,18 @@
             expect(nodeSub3.lastOfChildren()).to.be.eql(nodeSub3Sub);
         });
 
+        /*
+        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;">
+            <div id="sub1" class="green yellow"></div>
+            <div id="sub2" class="green yellow"></div>
+            <div id="sub3">
+                <div id="sub3sub" class="green yellow"></div>
+                extra text
+            </div>
+        </div>
+        */
+
+
         it('matches', function () {
             expect(node.matches('#ITSA')).to.be.true;
             expect(node.matches('#ITSA.red')).to.be.true;
@@ -1270,6 +1297,10 @@
             expect(nodeSub1.matches('div#ITSA div.green.yellow')).to.be.true;
 
             expect(nodeSub1.matches('body div#ITSA div.green.yellow')).to.be.true;
+            expect(nodeSub1.matches('>div >div')).to.be.true;
+            expect(nodeSub1.matches('>div div')).to.be.true;
+            expect(nodeSub1.matches('div >div')).to.be.true;
+            expect(nodeSub1.matches('div div')).to.be.true;
         });
 
         it('matchesSelector', function () {
@@ -1371,8 +1402,8 @@
             expect(nodeSub3.previous('+ div')).to.eql(nodeSub2);
             expect(nodeSub3.previous('+ div')).to.eql(nodeSub2);
 
-            expect(nodeSub2.previous('~ div')).to.eql(nodeSub1);
-            expect(nodeSub2.previous('~ div')).to.eql(nodeSub1);
+            expect(nodeSub3.previous('~ div')).to.eql(nodeSub2);
+            expect(nodeSub2.previous('~ div')===null).to.be.true;
         });
 
         it('previous with container', function () {
