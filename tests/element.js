@@ -672,6 +672,14 @@
             expect(node.getElement('div div')).to.be.eql(nodeSub3Sub);
 
             expect(node.getElement(':not(.green)')).to.be.eql(nodeSub3);
+            // check another issue that went wrong:
+            var el = window.document.body.append('<div style="opacity:0;"><span id="check-element" class="red" data-x="2"></span></div>');
+            var spannode = window.document.getElement('#check-element');
+            expect(el.getElement('.red[data-x]')).to.be.equal(spannode);
+            expect(el.getElement('.red[data-x="2"]')).to.be.equal(spannode);
+            expect(el.getElement('[data-x].red')).to.be.equal(spannode);
+            expect(el.getElement('[data-x="2"].red')).to.be.equal(spannode);
+            el.remove();
         });
 
         it('getElement for itags', function () {
