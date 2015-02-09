@@ -1110,8 +1110,8 @@ module.exports = function (window) {
          *
          * @method contains
          * @param otherElement {Element}
-         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
          * @param [excludeItself] {Boolean} to exclude itsefl as a hit
+         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
          * @return {Boolean} whether this Element contains OR equals otherElement.
          */
         ElementPrototype.contains = function(otherElement, excludeItself, insideItags) {

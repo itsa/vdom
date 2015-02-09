@@ -1202,6 +1202,13 @@
             expect(nodeSub3Sub.inside('.green')).to.be.false;
             expect(nodeSub3Sub.inside('.red')).to.be.eql(node);
             expect(nodeSub3Sub.inside('#ITSA')).to.be.eql(node);
+
+            var extranode = window.document.body.append('<ul id="extra0" style="opacity: 0;"><li><ul id="extra1"><li id="extra2"></li></ul></li></ul>');
+            var extra0 = window.document.getElement('#extra0');
+            var extra1 = window.document.getElement('#extra1');
+            expect(extra1.inside('>li >ul')).to.be.false;
+            expect(window.document.getElement('#extra2').inside('>li >ul')).to.be.equal(extra1);
+            extranode.remove();
         });
 
         it('insidePos', function () {
