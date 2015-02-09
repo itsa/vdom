@@ -339,78 +339,70 @@ module.exports = function (window) {
     _matchesOneSelector = function(vnode, selector, relatedVNode) {
         var selList = _splitSelector(selector),
             size = selList.length,
-            originalVNode = vnode,
-            firstSelectorChar = selector[0],
-            i, selectorItem, selMatch, directMatch, vParentvChildren, indexRelated;
+            selMatch = false,
+            i, selectorItem, last,
+            rightvnode, relationMatch, checkRelation;
 
-        if (size===0) {
+        if (STORABLE_SPLIT_CHARACTER[selList[size-1]]) {
             return false;
         }
 
-        selectorItem = selList[size-1];
-        selMatch = _matchesSelectorItem(vnode, selectorItem);
-        for (i=size-2; (selMatch && (i>=0)); i--) {
-            selectorItem = selList[i];
-            if (SIBLING_MATCH_CHARACTER[selectorItem]) {
-                // need to search through the same level
-                if (--i>=0) {
-                    directMatch = (selectorItem==='+');
-                    selectorItem = selList[i];
-                    // need to search the previous siblings
-                    vnode = vnode.vPreviousElement;
-                    if (!vnode) {
-                        return false;
-                    }
-                    if (directMatch) {
-                        // should be immediate match
-                        selMatch = _matchesSelectorItem(vnode, selectorItem);
-                    }
-                    else {
-                        while (vnode && !(selMatch=_matchesSelectorItem(vnode, selectorItem))) {
-                            vnode = vnode.vPreviousElement;
-                        }
-                    }
-                }
-            }
-            else {
-                // need to search up the tree
-                vnode = vnode.vParent;
-                if (!vnode || ((vnode===relatedVNode) && (selectorItem!=='>'))) {
-                    return false;
-                }
-                if (selectorItem==='>') {
-                    if (--i>=0) {
-                        selectorItem = selList[i];
-                       // should be immediate match
-                        selMatch = _matchesSelectorItem(vnode, selectorItem);
-                    }
-                }
-                else {
-                    while (!(selMatch=_matchesSelectorItem(vnode, selectorItem))) {
-                        vnode = vnode.vParent;
-                        if (!vnode || (vnode===relatedVNode)) {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-        if (selMatch && relatedVNode && STORABLE_SPLIT_CHARACTER[firstSelectorChar]) {
+        relationMatch = function(leftVNode, rightVNode, relationCharacter) {
+            var match, vParent, vChildren;
             // when `selector` starts with `>`, `~` or `+`, then
             // there should also be a match comparing a related node!
-            switch (firstSelectorChar) {
+            switch (relationCharacter) {
                 case '>':
-                    selMatch = (relatedVNode.vChildren.indexOf(originalVNode)!==-1);
+                    leftVNode || (leftVNode=rightVNode.vParent);
+                    match = (leftVNode.vChildren.indexOf(rightVNode)!==-1);
                 break;
                 case '~':
-                    vParentvChildren = originalVNode.vParent.vChildren;
-                    indexRelated = vParentvChildren.indexOf(relatedVNode);
-                    selMatch = (indexRelated!==-1) && (indexRelated<vParentvChildren.indexOf(originalVNode));
+                    leftVNode || (leftVNode=rightVNode.vFirstElement);
+                    vParent = leftVNode.vParent;
+                    vChildren = vParent && vParent.vChildren;
+                    match = vParent && (vChildren.indexOf(leftVNode)<vChildren.indexOf(rightVNode));
                 break;
                 case '+':
-                    selMatch = (originalVNode.vPreviousElement === relatedVNode);
+                    leftVNode || (leftVNode=rightVNode.vPreviousElement);
+                    match = (leftVNode.vNextElement === rightVNode);
+            }
+            return !!match;
+        };
+        last = size - 1;
+        i = last;
+        while (vnode && ((selMatch || (i===last)) && (i>=0))) {
+            selectorItem = selList[i];
+            if (STORABLE_SPLIT_CHARACTER[selectorItem]) {
+                checkRelation = selectorItem;
+                i--;
+            }
+            else {
+                selMatch = _matchesSelectorItem(vnode, selectorItem);
+                if (!selMatch && (i===last)) {
+                    return false;
+                }
+                while (!selMatch && vnode && (i!==last)) {
+                    // may also look at nodes higher in the chain
+                    vnode = SIBLING_MATCH_CHARACTER[selList[i+1]] ? vnode.vPreviousElement : vnode.vParent;
+                    selMatch = vnode && _matchesSelectorItem(vnode, selectorItem);
+                }
+                selMatch && checkRelation && vnode && (selMatch=relationMatch(vnode, rightvnode, checkRelation));
+                rightvnode = vnode;
+                if (vnode) {
+                    // do a precheck on the next checkRelation:
+                    // and determine whether to set the vnode upper the tree or at the previous sibling:
+                    vnode = SIBLING_MATCH_CHARACTER[selList[i-1]] ? vnode.vPreviousElement : vnode.vParent;
+                }
+                if (selMatch) {
+                    checkRelation = false;
+                    i--;
+                }
             }
         }
+        if ((rightvnode===relatedVNode) || (i!==-1)) {
+            selMatch = false;
+        }
+        selMatch && checkRelation && rightvnode && (selMatch=relationMatch(relatedVNode, rightvnode, checkRelation));
         return selMatch;
     };
 
@@ -944,8 +936,17 @@ module.exports = function (window) {
             return (otherVNode===this);
         },
 
+       /**
+        * Empties the vnode.
+        *
+        * Syncs with the dom.
+        *
+        * @method empty
+        * @chainable
+        * @since 0.0.1
+        */
         empty: function() {
-            this._setChildNodes([]);
+            return this._setChildNodes([]);
         },
 
        /**
@@ -1838,7 +1839,7 @@ module.exports = function (window) {
                                 bkpChildNodes = newChild.vChildNodes;
                                 oldChild.attrs.id && (delete nodeids[oldChild.attrs.id]);
 /*jshint proto:true */
-                                oldChild.isItag && oldChild.domNode.destroyUI(PROTO_SUPPORTED ? null : newChild.__proto__.constructor);
+                                oldChild.isItag && oldChild.domNode.destroyUI && oldChild.domNode.destroyUI(PROTO_SUPPORTED ? null : newChild.__proto__.constructor);
 /*jshint proto:false */
                                 newChild.attrs = {}; // reset to force defined by `_setAttrs`
                                 newChild.vChildNodes = []; // reset , to force defined by `_setAttrs`
@@ -1888,7 +1889,7 @@ module.exports = function (window) {
                                     prevSuppress = DOCUMENT._suppressMutationEvents || false;
                                     DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
 /*jshint proto:true */
-                                    newChild.domNode.destroyUI(PROTO_SUPPORTED ? null : newChild.__proto__.constructor);
+                                    newChild.domNode.destroyUI && newChild.domNode.destroyUI(PROTO_SUPPORTED ? null : newChild.__proto__.constructor);
 /*jshint proto:false */
                                     oldChild._setAttrs(newChild.attrs);
                                     newChild._destroy(true); // destroy through the vnode and removing from DOCUMENT._itagList

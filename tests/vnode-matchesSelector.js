@@ -798,6 +798,12 @@
             buttonnode2.vnode.matchesSelector('#div2 > button').should.be.true;
             buttonnode3.vnode.matchesSelector('#div2 > button').should.be.true;
             buttonnode4.vnode.matchesSelector('#div2 > button').should.be.false;
+
+            buttonnode.vnode.matchesSelector('>div >button').should.be.true;
+            buttonnode.vnode.matchesSelector('>div button').should.be.true;
+            buttonnode.vnode.matchesSelector('div >button').should.be.true;
+
+            divnode1.vnode.matchesSelector('>div >button').should.be.false;
         });
 
         it('+ element"', function () {
