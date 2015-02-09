@@ -927,13 +927,14 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         contains: function(otherVNode, noItagSearch) {
+            var instance = this;
             if (otherVNode && otherVNode.destroyed) {
                 return false;
             }
-            while (otherVNode && (otherVNode!==this) && (!noItagSearch || !otherVNode.isItag || !otherVNode.domNode.contentHidden)) {
+            while (otherVNode && (otherVNode!==instance) && (!noItagSearch || !instance.isItag || !instance.domNode.contentHidden)) {
                 otherVNode = otherVNode.vParent;
             }
-            return (otherVNode===this);
+            return (otherVNode===instance);
         },
 
        /**

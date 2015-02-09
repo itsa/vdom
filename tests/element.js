@@ -1367,7 +1367,7 @@
                         inspectedNode += '<li id="li-6"></li>';
                         inspectedNode += '<li id="li-7"></li>';
                         inspectedNode += '<li id="li-8">';
-                           inspectedNode += '<ul>';
+                           inspectedNode += '<ul id="ul-1">';
                                 inspectedNode += '<li id="li-9"></li>';
                                 inspectedNode += '<li id="li-10"></li>';
                            inspectedNode += '</ul>';
@@ -1378,7 +1378,7 @@
                 inspectedNode += '</li>';
                 inspectedNode += '<li id="li-13"></li>';
                 inspectedNode += '<li id="li-14">';
-                    inspectedNode += '<ul>';
+                    inspectedNode += '<ul id="ul-2">';
                         inspectedNode += '<li id="li-15"></li>';
                         inspectedNode += '<li id="li-16"></li>';
                     inspectedNode += '</ul>';
@@ -1393,6 +1393,14 @@
                 liNode = liNode.next('li', insertednode);
                 expect(liNode.getId()).to.be.equal('li-'+nr);
             }
+
+            liNode = window.document.getElement('#li-6');
+            liNode = liNode.next('ul', insertednode);
+            expect(liNode.getId()).to.be.equal('ul-1');
+
+            liNode = window.document.getElement('#li-9');
+            liNode = liNode.next('ul', insertednode);
+            expect(liNode.getId()).to.be.equal('ul-2');
 
             insertednode.remove();
         });
