@@ -174,6 +174,55 @@
             expect(vnode.vChildNodes[5].innerHTML).to.be.eql('<div></div>some text');
         });
 
+        it('getHTML', function () {
+            expect(vnode.getHTML()).to.be.eql('<img id="imgone" alt="http://google.com/img1.jpg" class="yellow"/>'+
+                                              'just a textnode'+
+                                              '<!--just a commentnode-->'+
+                                              'just a second textnode'+
+                                              '<div>'+
+                                              '<ul>'+
+                                              '<li id="li1">first</li>'+
+                                              '<li id="li2">second</li>'+
+                                              '<li id="li3"></li>'+
+                                              '</ul>'+
+                                              '</div>'+
+                                              '<div>'+
+                                                  '<div></div>'+
+                                                  'some text'+
+                                              '</div>');
+            expect(vnode.vChildNodes[0].getHTML()).to.be.eql('');
+            expect(vnode.vChildNodes[1].getHTML()===undefined).to.be.true;
+            expect(vnode.vChildNodes[2].getHTML()===undefined).to.be.true;
+            expect(vnode.vChildNodes[3].getHTML()===undefined).to.be.true;
+            expect(vnode.vChildNodes[4].getHTML()).to.be.eql('<ul>'+
+                                                              '<li id="li1">first</li>'+
+                                                              '<li id="li2">second</li>'+
+                                                              '<li id="li3"></li>'+
+                                                              '</ul>');
+                expect(vnode.vChildNodes[4].vChildNodes[0].getHTML()).to.be.eql('<li id="li1">first</li>'+
+                                                                                  '<li id="li2">second</li>'+
+                                                                                  '<li id="li3"></li>');
+                    expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[0].getHTML()).to.be.eql('first');
+                    expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[1].getHTML()).to.be.eql('second');
+                    expect(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[2].getHTML()).to.be.eql('');
+            expect(vnode.vChildNodes[5].getHTML()).to.be.eql('<div></div>some text');
+            expect(vnode.getHTML(vnode.vChildNodes[4].domNode)).to.be.eql('<img id="imgone" alt="http://google.com/img1.jpg" class="yellow"/>'+
+                                              'just a textnode'+
+                                              '<!--just a commentnode-->'+
+                                              'just a second textnode'+
+                                              '<div>'+
+                                                  '<div></div>'+
+                                                  'some text'+
+                                              '</div>');
+            expect(vnode.getHTML([vnode.vChildNodes[0].domNode, vnode.vChildNodes[4].domNode])).to.be.eql('just a textnode'+
+                                              '<!--just a commentnode-->'+
+                                              'just a second textnode'+
+                                              '<div>'+
+                                                  '<div></div>'+
+                                                  'some text'+
+                                              '</div>');
+        });
+
         it('isVoid', function () {
             expect(vnode.isVoid).to.be.false;
                 expect(vnode.vChildNodes[0].isVoid).to.be.true;

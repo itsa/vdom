@@ -459,6 +459,18 @@
             expect(vnode.attrs.items).to.be.eql('["item1","item2","item3","item4","item5"]');
         });
 
+        it('Nested comment nodes', function () {
+            var vnodes = htmlToVNodes('<!--some comment<!--nested comment-->some more-->', vNodeProto),
+                vnode, childvnode;
+
+            expect(vnodes.length).to.be.eql(1);
+
+            vnode = vnodes[0];
+            expect(vnode.nodeType).to.be.eql(8);
+            expect(vnode.text).to.be.eql('some comment<!--nested comment-->some more');
+            expect(vnode.vParent===undefined).to.be.true;
+        });
+
     });
 
 }(global.window || require('node-win')));

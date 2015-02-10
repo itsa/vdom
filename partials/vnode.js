@@ -973,6 +973,42 @@ module.exports = function (window) {
             return found;
         },
 
+        /**
+         * Gets the innerHTML of the vnode representing the dom-node.
+         * You may exclude HTMLElement (node-type=1) by specifying `exclude`.
+         *
+         * Only valid for nodetype=1 (HTMLElements)
+         *
+         * @method getHTML
+         * @param [exclude] {Array|HTMLElement} an array of HTMLElements - or just 1 - to be excluded
+         * @return {String|undefined} the innerHTML without the elements specified, or `undefined` when not an HTMLElement
+         * @since 0.0.1
+         */
+        getHTML: function(exclude) {
+            var instance = this,
+                html, vChildNodes, len, i, vChildNode;
+            if (instance.nodeType===1) {
+                Array.isArray(exclude) || (exclude=[exclude]);
+                html = '';
+                vChildNodes = instance.vChildNodes;
+                len = vChildNodes ? vChildNodes.length : 0;
+                for (i=0; i<len; i++) {
+                    vChildNode = vChildNodes[i];
+                    switch (vChildNode.nodeType) {
+                        case 1:
+                            exclude.contains(vChildNode.domNode) || (html+=vChildNode.outerHTML);
+                            break;
+                        case 3:
+                            html += vChildNode.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                            break;
+                        case 8:
+                            html += '<!--' + vChildNode.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '-->';
+                    }
+                }
+            }
+            return html;
+        },
+
        /**
         * Checks whether the vnode has any vChildNodes (nodeType of 1, 3 or 8).
         *
@@ -1564,7 +1600,7 @@ module.exports = function (window) {
         _removeAttr: function(attributeName) {
             var instance = this,
                 attributeNameSplitted, ns;
-            if ((instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) || ((attributeName.length===2) && (attributeName.toLowerCase()==='is'))) {
+            if (instance.isItag && ((instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) || ((attributeName.length===2) && (attributeName.toLowerCase()==='is')))) {
                 console.warn('Not allowed to remove the attribute '+attributeName);
                 return instance;
             }
@@ -1605,7 +1641,7 @@ module.exports = function (window) {
         _removeChild: function(VNode) {
             var instance = this,
                 domNode = VNode.domNode,
-                hadFocus = domNode.hasFocus() && (VNode.attrs['fm-lastitem']==='true'),
+                hadFocus = domNode && domNode.hasFocus && domNode.hasFocus() && (VNode.attrs['fm-lastitem']==='true'),
                 parentVNode = VNode.vParent;
             VNode._destroy();
             _tryRemoveDomNode(instance.domNode, VNode.domNode);
@@ -1664,7 +1700,7 @@ module.exports = function (window) {
                 domNode = instance.domNode,
                 attributeNameSplitted, ns;
 
-            if (!force && ((instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) || ((attributeName.length===2) && (attributeName.toLowerCase()==='is')))) {
+            if (!force && instance.isItag && ((instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) || ((attributeName.length===2) && (attributeName.toLowerCase()==='is')))) {
                 console.warn('Not allowed to set the attribute '+attributeName);
                 return instance;
             }
@@ -1729,7 +1765,7 @@ module.exports = function (window) {
        /**
         * Redefines the attributes of both the vnode as well as its related dom-node. The new
         * definition replaces any previous attributes (without touching unmodified attributes).
-        * the `is` attribute cannot be changed.
+        * the `is` attribute cannot be changed for itags.
         *
         * Syncs the new vnode's attributes with the dom.
         *
@@ -1762,14 +1798,16 @@ module.exports = function (window) {
                 }
             }
 
-            if (attrs.is) {
-                attrsObj.is = attrs.is;
-            }
-            else {
-                delete attrsObj.is;
-                delete attrsObj.Is;
-                delete attrsObj.iS;
-                delete attrsObj.IS;
+            if (instance.isItag) {
+                if (attrs.is) {
+                    attrsObj.is = attrs.is;
+                }
+                else {
+                    delete attrsObj.is;
+                    delete attrsObj.Is;
+                    delete attrsObj.iS;
+                    delete attrsObj.IS;
+                }
             }
 
             // first _remove the attributes that are no longer needed.
@@ -2106,27 +2144,7 @@ module.exports = function (window) {
          */
         innerHTML: {
             get: function() {
-                var instance = this,
-                    html, vChildNodes, len, i, vChildNode;
-                if (instance.nodeType===1) {
-                    html = '';
-                    vChildNodes = instance.vChildNodes;
-                    len = vChildNodes ? vChildNodes.length : 0;
-                    for (i=0; i<len; i++) {
-                        vChildNode = vChildNodes[i];
-                        switch (vChildNode.nodeType) {
-                            case 1:
-                                html += vChildNode.outerHTML;
-                                break;
-                            case 3:
-                                html += vChildNode.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                                break;
-                            case 8:
-                                html += '<!--' + vChildNode.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '-->';
-                        }
-                    }
-                }
-                return html;
+                return this.getHTML();
             },
             set: function(v) {
                 this._setChildNodes(htmlToVNodes(v, vNodeProto, this.ns));

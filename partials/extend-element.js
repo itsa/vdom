@@ -1497,11 +1497,12 @@ module.exports = function (window) {
          * Use this method instead of `innerHTML`
          *
          * @method getHTML
+         * @param [exclude] {Array|HTMLElement} an array of HTMLElements - or just 1 - to be excluded
          * @return {String}
          * @since 0.0.1
          */
-        ElementPrototype.getHTML = function() {
-            return this.vnode.innerHTML;
+        ElementPrototype.getHTML = function(exclude) {
+            return exclude ? this.vnode.getHTML(exclude) : this.vnode.innerHTML;
         };
 
        /**
