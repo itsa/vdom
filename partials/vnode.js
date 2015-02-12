@@ -1191,7 +1191,7 @@ module.exports = function (window) {
         */
         setHTML: function(content, suppressItagRender) {
             var instance = this;
-            instance._setChildNodes(htmlToVNodes(content, vNodeProto, instance.ns, null, suppressItagRender));
+            instance._setChildNodes(htmlToVNodes(content, vNodeProto, instance.ns, null, suppressItagRender), suppressItagRender);
             return instance;
         },
 
@@ -1621,10 +1621,10 @@ module.exports = function (window) {
         * @chainable
         * @since 0.0.1
         */
-        _removeAttr: function(attributeName) {
+        _removeAttr: function(attributeName, suppressItagRender) {
             var instance = this,
                 attributeNameSplitted, ns;
-            if (instance.isItag && ((instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) || ((attributeName.length===2) && (attributeName.toLowerCase()==='is')))) {
+            if (instance.isItag && !suppressItagRender && ((instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) || ((attributeName.length===2) && (attributeName.toLowerCase()==='is')))) {
                 console.warn('Not allowed to remove the attribute '+attributeName);
                 return instance;
             }
@@ -1716,7 +1716,7 @@ module.exports = function (window) {
         * @chainable
         * @since 0.0.1
         */
-        _setAttr: function(attributeName, value, force) {
+        _setAttr: function(attributeName, value, force, suppressItagRender) {
             var instance = this,
                 extractStyle, extractClass,
                 attrs = instance.attrs,
@@ -1724,7 +1724,7 @@ module.exports = function (window) {
                 domNode = instance.domNode,
                 attributeNameSplitted, ns;
 
-            if (!force && instance.isItag && ((instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) || ((attributeName.length===2) && (attributeName.toLowerCase()==='is')))) {
+            if (instance.isItag && !force && !suppressItagRender && ((instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) || ((attributeName.length===2) && (attributeName.toLowerCase()==='is')))) {
                 console.warn('Not allowed to set the attribute '+attributeName);
                 return instance;
             }
@@ -1799,7 +1799,7 @@ module.exports = function (window) {
         * @chainable
         * @since 0.0.1
         */
-        _setAttrs: function(newAttrs) {
+        _setAttrs: function(newAttrs, suppressItagRender) {
             // does sync the DOM
             var instance = this,
                 attrsObj, attr, attrs, i, key, keys, len, value;
@@ -1822,7 +1822,7 @@ module.exports = function (window) {
                 }
             }
 
-            if (instance.isItag) {
+            if (instance.isItag && !suppressItagRender) {
                 if (attrs.is) {
                     attrsObj.is = attrs.is;
                 }
@@ -1867,7 +1867,7 @@ module.exports = function (window) {
         * @chainable
         * @since 0.0.1
         */
-        _setChildNodes: function(newVChildNodes) {
+        _setChildNodes: function(newVChildNodes, suppressItagRender) {
             // does sync the DOM
             var instance = this,
                 vChildNodes = instance.vChildNodes || [],
@@ -1908,7 +1908,7 @@ module.exports = function (window) {
                                 newChild.vChildNodes = []; // reset , to force defined by `_setAttrs`
                                 _tryReplaceChild(domNode, newChild.domNode, childDomNode);
                                 newChild.vParent = instance;
-                                newChild._setAttrs(bkpAttrs);
+                                newChild._setAttrs(bkpAttrs, suppressItagRender);
                                 newChild._setChildNodes(bkpChildNodes);
                                 newChild.id && (nodeids[newChild.id]=newChild.domNode);
                                 oldChild._replaceAtParent(newChild);
@@ -1954,12 +1954,12 @@ module.exports = function (window) {
 /*jshint proto:true */
                                     newChild.domNode.destroyUI && newChild.domNode.destroyUI(PROTO_SUPPORTED ? null : newChild.__proto__.constructor);
 /*jshint proto:false */
-                                    oldChild._setAttrs(newChild.attrs);
+                                    oldChild._setAttrs(newChild.attrs, suppressItagRender);
                                     newChild._destroy(true); // destroy through the vnode and removing from DOCUMENT._itagList
                                     DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
                                 }
                                 else {
-                                    oldChild._setAttrs(newChild.attrs);
+                                    oldChild._setAttrs(newChild.attrs, suppressItagRender);
                                     // next: sync the vChildNodes:
                                     oldChild._setChildNodes(newChild.vChildNodes);
                                 }
@@ -1986,7 +1986,7 @@ module.exports = function (window) {
                             newChild.attrs = {}; // reset, to force defined by `_setAttrs`
                             newChild.vChildNodes = []; // reset to current state, to force defined by `_setAttrs`
                             _tryReplaceChild(domNode, newChild.domNode, childDomNode);
-                            newChild._setAttrs(bkpAttrs);
+                            newChild._setAttrs(bkpAttrs, suppressItagRender);
                             newChild._setChildNodes(bkpChildNodes);
                             newChild.id && (nodeids[newChild.id]=newChild.domNode);
                             // oldChild.isVoid = newChild.isVoid;
@@ -2041,7 +2041,7 @@ module.exports = function (window) {
                         newChild.attrs = {}; // reset, to force defined by `_setAttrs`
                         newChild.vChildNodes = []; // reset to current state, to force defined by `_setAttrs`
                         domNode._appendChild(newChild.domNode);
-                        newChild._setAttrs(bkpAttrs);
+                        newChild._setAttrs(bkpAttrs, suppressItagRender);
                         newChild._setChildNodes(bkpChildNodes);
                         newChild._addToTaglist();
                         newChild._emit(EV_INSERTED);
