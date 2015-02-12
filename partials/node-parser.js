@@ -117,6 +117,7 @@ module.exports = function (window) {
             else {
                 // TextNode or CommentNode
                 vnode.text = escapeEntities(domNode.nodeValue);
+                // vnode.text = (nodeType===3) ? escapeEntities(domNode.nodeValue) : domNode.nodeValue;
             }
             // store vnode's id:
             vnode.storeId();

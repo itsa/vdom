@@ -90,53 +90,15 @@
         </div>
         */
 
-        it('next with container', function () {
-            var inspectedNode = '<ul style="opacity: 0;">';
-                inspectedNode += '<li id="li-1"></li>';
-                inspectedNode += '<li id="li-2"></li>';
-                inspectedNode += '<li id="li-3"></li>';
-                inspectedNode += '<li id="li-4"></li>';
-                inspectedNode += '<li id="li-5">';
-                    inspectedNode += '<ul>';
-                        inspectedNode += '<li id="li-6"></li>';
-                        inspectedNode += '<li id="li-7"></li>';
-                        inspectedNode += '<li id="li-8">';
-                           inspectedNode += '<ul id="ul-1">';
-                                inspectedNode += '<li id="li-9"></li>';
-                                inspectedNode += '<li id="li-10"></li>';
-                           inspectedNode += '</ul>';
-                        inspectedNode += '</li>';
-                        inspectedNode += '<li id="li-11"></li>';
-                        inspectedNode += '<li id="li-12"></li>';
-                    inspectedNode += '</ul>';
-                inspectedNode += '</li>';
-                inspectedNode += '<li id="li-13"></li>';
-                inspectedNode += '<li id="li-14">';
-                    inspectedNode += '<ul id="ul-2">';
-                        inspectedNode += '<li id="li-15"></li>';
-                        inspectedNode += '<li id="li-16"></li>';
-                    inspectedNode += '</ul>';
-                inspectedNode += '</li>';
-                inspectedNode += '<li id="li-17"></li>';
-            inspectedNode += '</ul>';
-
-            var insertednode = window.document.body.append(inspectedNode);
-            var liNode = window.document.getElement('#li-3');
-
-            for (var nr=4; nr<=17; nr++) {
-                liNode = liNode.next('li', insertednode);
-                expect(liNode.getId()).to.be.equal('li-'+nr);
-            }
-
-            liNode = window.document.getElement('#li-6');
-            liNode = liNode.next('ul', insertednode);
-            expect(liNode.getId()).to.be.equal('ul-1');
-
-            liNode = window.document.getElement('#li-9');
-            liNode = liNode.next('ul', insertednode);
-            expect(liNode.getId()).to.be.equal('ul-2');
-
-            insertednode.remove();
+        it('getElement', function () {
+            // check another issue that went wrong:
+            var el = window.document.body.append('<div style="opacity:0;"><span id="check-element" class="red" data-x="2"></span></div>');
+            var spannode = window.document.getElement('#check-element');
+            expect(el.getElement('.red[data-x]')).to.be.equal(spannode);
+            expect(el.getElement('.red[data-x="2"]')).to.be.equal(spannode);
+            expect(el.getElement('[data-x].red')).to.be.equal(spannode);
+            expect(el.getElement('[data-x="2"].red')).to.be.equal(spannode);
+            el.remove();
         });
 
     });

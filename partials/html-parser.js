@@ -105,11 +105,10 @@ module.exports = function (window) {
          * @return {Array} array with `vnodes`
          * @since 0.0.1
          */
-        htmlToVNodes = window._ITSAmodules.HtmlParser = function(htmlString, vNodeProto, nameSpace) {
+        htmlToVNodes = window._ITSAmodules.HtmlParser = function(htmlString, vNodeProto, nameSpace, parentVNode, suppressItagRender) {
             var i = 0,
                 vnodes = [],
-                parentVNode = arguments[3], // private pass through-argument, only available when internal looped
-                insideTagDefinition, insideComment, innerText, endTagCount, stringMarker, attributeisString, attribute, attributeValue,
+                insideTagDefinition, insideComment, innerText, endTagCount, stringMarker, attributeisString, attribute, attributeValue, nestedComments,
                 len, j, character, character2, vnode, tag, isBeginTag, isEndTag, scriptVNode, extractClass, extractStyle, tagdefinition, is;
 
             htmlString || (htmlString='');
@@ -220,7 +219,7 @@ module.exports = function (window) {
                             vnode.vChildNodes = [scriptVNode];
                         }
                         else {
-                            vnode.vChildNodes = (innerText!=='') ? htmlToVNodes(innerText, vNodeProto, vnode.ns, vnode) : [];
+                            vnode.vChildNodes = (innerText!=='') ? htmlToVNodes(innerText, vNodeProto, vnode.ns, vnode, suppressItagRender) : [];
                         }
                     }
                     else {
@@ -229,10 +228,10 @@ module.exports = function (window) {
 
                     //vnode.domNode can only be set after inspecting the attributes --> there might be an `is` attribute
                     tagdefinition = tag.toLowerCase();
-                    if ((is=vnode.attrs.is) && !is.contains('-')) {
+                    if (vnode.isItag && (is=vnode.attrs.is) && !is.contains('-')) {
                         tagdefinition = tag + '#' + is;
                     }
-                    vnode.domNode = vnode.ns ? DOCUMENT.createElementNS(vnode.ns, tagdefinition) : DOCUMENT.createElement(tagdefinition);
+                    vnode.domNode = vnode.ns ? DOCUMENT.createElementNS(vnode.ns, tagdefinition) : DOCUMENT.createElement(tagdefinition, suppressItagRender);
                     // create circular reference:
                     vnode.domNode._vnode = vnode;
 
@@ -243,17 +242,27 @@ module.exports = function (window) {
                 }
 
                 else if (insideComment) {
+                    if (character+character2+htmlString[i+2]+htmlString[i+3]==='<!--') {
+                        nestedComments++;
+                    }
                     if (character+character2+htmlString[i+2]==='-->') {
-                        // close vnode
-                        // move index to last character of comment
-                        i = i+2;
-                        vnode.domNode = DOCUMENT.createComment('');
-                        // create circular reference:
-                        vnode.domNode._vnode = vnode;
-                        vnodes[vnodes.length] = vnode;
-                        // reset vnode to force create a new one
-                        vnode = null;
-                        insideComment = false;
+                        // should we close  the vnode?
+                        nestedComments--;
+                        if (nestedComments<0) {
+                            // yes close the commentnode
+                            // move index to last character of comment
+                            i = i+2;
+                            vnode.domNode = DOCUMENT.createComment('');
+                            // create circular reference:
+                            vnode.domNode._vnode = vnode;
+                            vnodes[vnodes.length] = vnode;
+                            // reset vnode to force create a new one
+                            vnode = null;
+                            insideComment = false;
+                        }
+                        else {
+                            vnode.text += character;
+                        }
                     }
                     else {
                         vnode.text += character;
@@ -319,6 +328,7 @@ module.exports = function (window) {
                         // move index to first character of comment
                         i = i+4;
                         insideComment = true;
+                        nestedComments = 0;
                     }
                     else {
                         if (!vnode) {
