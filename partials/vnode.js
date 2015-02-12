@@ -1167,8 +1167,32 @@ module.exports = function (window) {
             return domNode;
         },
 
+       /**
+        * Returns the vnode's style in a serialized form: the way it appears in the dom.
+        *
+        * @method serializeStyles
+        * @return {String} vnode's style
+        * @since 0.0.1
+        */
         serializeStyles: function() {
             return extractor.serializeStyles(this.styles);
+        },
+
+       /**
+        * Sets the vnode's and dom-nodes inner HTML.
+        *
+        * Syncs with the dom. Can be invoked multiple times without issues.
+        *
+        * @method setHTML
+        * @param content {String} the innerHTML
+        * @param [suppressItagRender] {Boolean} to suppress Itags from rendering
+        * @chainable
+        * @since 0.0.1
+        */
+        setHTML: function(content, suppressItagRender) {
+            var instance = this;
+            instance._setChildNodes(htmlToVNodes(content, vNodeProto, instance.ns, null, suppressItagRender));
+            return instance;
         },
 
        /**
@@ -2147,7 +2171,7 @@ module.exports = function (window) {
                 return this.getHTML();
             },
             set: function(v) {
-                this._setChildNodes(htmlToVNodes(v, vNodeProto, this.ns));
+                this.setHTML(v);
             }
         },
 
