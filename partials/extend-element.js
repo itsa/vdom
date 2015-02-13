@@ -71,7 +71,6 @@ module.exports = function (window) {
         INVISIBLE_RELATIVE = INVISIBLE+'-relative',
         INVISIBLE_UNFOCUSABLE = INVISIBLE+'-unfocusable',
         HIDDEN = ITSA_+'hidden',
-        REGEXP_NODE_ID = /^#\S+$/,
         LEFT = 'left',
         TOP = 'top',
         BORDER = 'border',
@@ -3457,7 +3456,7 @@ module.exports = function (window) {
         ElementPrototype.setXY = function(x, y, constrain, notransition) {
             console.log(NAME, 'setXY '+x+','+y);
             var instance = this,
-                dif, match, constrainNode, byExactId, parent, clone, promise,
+                dif, constrainNode, parent, clone, promise,
                 containerTop, containerRight, containerLeft, containerBottom, requestedX, requestedY,
                 transObject, xtrans, ytrans, inlinePosition, globalPosition, invisibleClass;
 
@@ -3482,16 +3481,7 @@ module.exports = function (window) {
                 }
                 else {
                     if (typeof constrain === STRING) {
-                        match = false;
-                        constrainNode = instance.getParent();
-                        byExactId = REGEXP_NODE_ID.test(constrain);
-                        while (constrainNode && constrainNode.matchesSelector && !match) {
-                            match = byExactId ? (constrainNode.id===constrain.substr(1)) : constrainNode.matchesSelector(constrain);
-                            // if there is a match, then make sure x and y fall within the region
-                            match || (constrainNode=constrainNode.getParent());
-                        }
-                        // if Element found, then bound it to `constrain` as if the argument `constrain` was an Element
-                        match && (constrain=constrainNode);
+                        constrainNode = instance.inside(constrain);
                     }
                     if (constrain.matchesSelector) {
                         // Element --> we need to search the rectangle
