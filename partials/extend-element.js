@@ -2651,13 +2651,15 @@ module.exports = function (window) {
 
                     if (toStylesExact[group] && (toStylesExact[group][prop]!==fromStyles[group][prop])) {
                         transproperty = instance.getTransition(prop, (group==='element') ? null : group);
+                        if (transproperty) {
                         transtime = transproperty.delay+transproperty.duration;
-                        maxtranstime = Math.max(maxtranstime, transtime);
-                        if (transtime>0) {
-                            transCount++;
-                            // TODO: transitionProperties supposes that we DO NOT have pseudo transitions!
-                            // as soon we do, we need to split this object for each 'group'
-                            transitionProperties[prop] = true;
+                            maxtranstime = Math.max(maxtranstime, transtime);
+                            if (transtime>0) {
+                                transCount++;
+                                // TODO: transitionProperties supposes that we DO NOT have pseudo transitions!
+                                // as soon we do, we need to split this object for each 'group'
+                                transitionProperties[prop] = true;
+                            }
                         }
                     }
                 }
@@ -3154,20 +3156,22 @@ module.exports = function (window) {
                     (property===VENDOR_TRANSFORM_PROPERTY) || (fromStyles[group][property]=instance.getStyle(property, pseudo));
                     if (fromStyles[group][property]!==value) {
                         transproperty = instance.getTransition(property, (group==='element') ? null : group);
-                        transtime = transproperty.delay+transproperty.duration;
-                        maxtranstime = Math.max(maxtranstime, transtime);
-                        if (transtime>0) {
-                            hasTransitionedStyle = true;
-                            transCount++;
-                            // TODO: transitionProperties supposes that we DO NOT have pseudo transitions!
-                            // as soon we do, we need to split this object for each 'group'
-                            transitionProperties[property] = true;
-                            transitionedProps[transitionedProps.length] = {
-                                group: group,
-                                property: property,
-                                value: value,
-                                pseudo: pseudo
-                            };
+                        if (transproperty) {
+                            transtime = transproperty.delay+transproperty.duration;
+                            maxtranstime = Math.max(maxtranstime, transtime);
+                            if (transtime>0) {
+                                hasTransitionedStyle = true;
+                                transCount++;
+                                // TODO: transitionProperties supposes that we DO NOT have pseudo transitions!
+                                // as soon we do, we need to split this object for each 'group'
+                                transitionProperties[property] = true;
+                                transitionedProps[transitionedProps.length] = {
+                                    group: group,
+                                    property: property,
+                                    value: value,
+                                    pseudo: pseudo
+                                };
+                            }
                         }
                     }
                 }
