@@ -3485,7 +3485,7 @@ module.exports = function (window) {
                         match = false;
                         constrainNode = instance.getParent();
                         byExactId = REGEXP_NODE_ID.test(constrain);
-                        while (constrainNode.matchesSelector && !match) {
+                        while (constrainNode && constrainNode.matchesSelector && !match) {
                             match = byExactId ? (constrainNode.id===constrain.substr(1)) : constrainNode.matchesSelector(constrain);
                             // if there is a match, then make sure x and y fall within the region
                             match || (constrainNode=constrainNode.getParent());
