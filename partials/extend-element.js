@@ -153,7 +153,8 @@ module.exports = function (window) {
         htmlToVFragments = function(html, nameSpace) {
             var vnodes = htmlToVNodes(html, vNodeProto, nameSpace),
                 len = vnodes.length,
-                vnode, i, bkpAttrs, bkpVChildNodes;
+                vnode, i, bkpAttrs, bkpVChildNodes, scriptContent, _scripts, _scriptVNodes, scriptVNode;
+
             for (i=0; i<len; i++) {
                 vnode = vnodes[i];
                 if (vnode.nodeType===1) {
@@ -915,6 +916,30 @@ module.exports = function (window) {
             return transitions;
         };
 
+        /**
+         * Inserts a system-HTMLElement. These are child-Elements, just like other children, but they have a slightly different behaviour:
+         *
+         * <ul>
+         *     <li>They get inserted as the first of the children</li>
+         *     <li>They don't show up when querying</li>
+         *     <li>They retain whenever new content is set for the parent-Element</li>
+         * </ul>
+         *
+         * System-Elements are useful f.e. when you want to add special features to an Element, like scrolling or resizing. You can add `helper-elements`
+         * (the system-elements) which keep hidden (protected) and retain whenever the Element changes his content.
+         *
+         * @method addSystemElement
+         * @param content {Element|ElementArray|String} content to append
+         * @param [escape] {Boolean} whether to insert `escaped` content, leading it into only text inserted
+         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+         * @return {Element} the created Element (or the last when multiple)
+         */
+        ElementPrototype.addSystemElement = function(content, escape, silent) {
+            var systemElement = this.prepend(content, escape, null, silent);
+            systemElement.vnode._systemNode = true;
+            return systemElement;
+        };
+
        /**
         * Appends an Element or an Element's string-representation at the end of Element's innerHTML, or before the `refElement`.
         *
@@ -1110,14 +1135,14 @@ module.exports = function (window) {
          * @method contains
          * @param otherElement {Element}
          * @param [excludeItself] {Boolean} to exclude itsefl as a hit
-         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
          * @return {Boolean} whether this Element contains OR equals otherElement.
          */
-        ElementPrototype.contains = function(otherElement, excludeItself, insideItags) {
+        ElementPrototype.contains = function(otherElement, excludeItself, inspectProtectedNodes) {
             if (otherElement===this) {
                 return !excludeItself;
             }
-            return this.vnode.contains(otherElement.vnode, !insideItags);
+            return this.vnode.contains(otherElement.vnode, !inspectProtectedNodes);
         };
 
         /**
@@ -1186,13 +1211,14 @@ module.exports = function (window) {
         *
         * @method empty
         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+        * @param [full=false] {Boolean} whether system-nodes should be removed as well
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.empty = function(silent) {
+        ElementPrototype.empty = function(silent, full) {
             var prevSuppress = DOCUMENT._suppressMutationEvents || false;
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
-            this.vnode.empty();
+            this.vnode.empty(full);
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
         };
 
@@ -1358,12 +1384,12 @@ module.exports = function (window) {
          *
          * @method getAll
          * @param cssSelector {String} css-selector to match
-         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
          * @return {ElementArray} ElementArray of Elements that match the css-selector
          * @since 0.0.1
          */
-        ElementPrototype.getAll = function(cssSelector, insideItags) {
-            return this.querySelectorAll(cssSelector, insideItags);
+        ElementPrototype.getAll = function(cssSelector, inspectProtectedNodes) {
+            return this.querySelectorAll(cssSelector, inspectProtectedNodes);
         };
 
        /**
@@ -1463,12 +1489,12 @@ module.exports = function (window) {
         *
         * @method getElement
         * @param cssSelector {String} css-selector to match
-        * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
         * @return {Element|null} the Element that was search for
         * @since 0.0.1
         */
-        ElementPrototype.getElement = function(cssSelector, insideItags) {
-            return ((cssSelector[0]==='#') && (cssSelector.indexOf(' ')===-1)) ? this.getElementById(cssSelector.substr(1)) : this.querySelector(cssSelector, insideItags);
+        ElementPrototype.getElement = function(cssSelector, inspectProtectedNodes) {
+            return ((cssSelector[0]==='#') && (cssSelector.indexOf(' ')===-1)) ? this.getElementById(cssSelector.substr(1)) : this.querySelector(cssSelector, inspectProtectedNodes);
         };
 
         /**
@@ -1476,13 +1502,13 @@ module.exports = function (window) {
          *
          * @method getElementById
          * @param id {String} id of the Element
-         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
          * @return {Element|null}
          *
          */
-        ElementPrototype.getElementById = function(id, insideItags) {
+        ElementPrototype.getElementById = function(id, inspectProtectedNodes) {
             var element = nodeids[id];
-            if (element && !this.contains(element, true, insideItags)) {
+            if (element && !this.contains(element, true, inspectProtectedNodes)) {
                 // outside itself
                 return null;
             }
@@ -2240,7 +2266,7 @@ module.exports = function (window) {
          *
          * @method querySelector
          * @param selectors {String} CSS-selector(s) that should match
-         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
          * @param [refNode] {HTMLElement} reference-node where the found node should be `before` or `after`: specified by domPosition
          * @param [domPosition] {Number} The position to accept, compared to `refNode`. Should be either:
          * <ul>
@@ -2249,7 +2275,7 @@ module.exports = function (window) {
          * </ul>
          * @return {Element}
          */
-        ElementPrototype.querySelector = function(selectors, insideItags, refNode, domPosition) {
+        ElementPrototype.querySelector = function(selectors, inspectProtectedNodes, refNode, domPosition) {
             var found,
                 i = -1,
                 thisvnode = this.vnode,
@@ -2265,7 +2291,7 @@ module.exports = function (window) {
                     if (vChildNode.matchesSelector(selectors, thisvnode) && (!refNode || ((vChildNode.domNode.compareDocumentPosition(refNode) & domPosition)!==0))) {
                         found = vChildNode.domNode;
                     }
-                    found || (!insideItags && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags (except from when content is not hidden)
+                    found || (!inspectProtectedNodes && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags (except from when content is not hidden)
                 }
             };
             while (!firstCharacter && (++i<len)) {
@@ -2285,7 +2311,7 @@ module.exports = function (window) {
          *
          * @method querySelectorAll
          * @param selectors {String} CSS-selector(s) that should match
-         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
          * @param [refNode] {HTMLElement} reference-node where the found nodes should be `before` or `after`: specified by domPosition
          * @param [domPosition] {Number} The position to accept, compared to `refNode`. Should be either:
          * <ul>
@@ -2294,7 +2320,7 @@ module.exports = function (window) {
          * </ul>
          * @return {ElementArray} non-life Array (snapshot) with Elements
          */
-        ElementPrototype.querySelectorAll = function(selectors, insideItags, refNode, domPosition) {
+        ElementPrototype.querySelectorAll = function(selectors, inspectProtectedNodes, refNode, domPosition) {
             var found = ElementArray.createArray(),
                 i = -1,
                 thisvnode = this.vnode,
@@ -2310,7 +2336,7 @@ module.exports = function (window) {
                     if (vChildNode.matchesSelector(selectors, thisvnode) && (!refNode || ((vChildNode.domNode.compareDocumentPosition(refNode) & domPosition)!==0))) {
                         found[found.length] = vChildNode.domNode;
                     }
-                    (!insideItags && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags
+                    (!inspectProtectedNodes && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags
                 }
             };
             while (!firstCharacter && (++i<len)) {

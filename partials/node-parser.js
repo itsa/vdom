@@ -28,6 +28,7 @@ module.exports = function (window) {
     var NS = require('./vdom-ns.js')(window),
         escapeEntities = NS.EscapeEntities,
         extractor = require('./attribute-extractor.js')(window),
+        asyncSilent = require('utils/lib/timers.js').asyncSilent,
         xmlNS = NS.xmlNS,
         voidElements = NS.voidElements,
         nonVoidElements = NS.nonVoidElements,
@@ -44,7 +45,7 @@ module.exports = function (window) {
         domNodeToVNode = window._ITSAmodules.NodeParser = function(domNode, parentVNode) {
             var nodeType = domNode.nodeType,
                 vnode, attributes, attr, i, len, childNodes, domChildNode, vChildNodes, tag,
-                childVNode, extractClass, extractStyle, attributeName;
+                childVNode, extractClass, extractStyle, attributeName, parentNode;
             if (!NS.VALID_NODE_TYPES[nodeType]) {
                 // only process ElementNodes, TextNodes and CommentNodes
                 return;
@@ -98,18 +99,34 @@ module.exports = function (window) {
                 }
 
                 if (!vnode.isVoid) {
-                    // in case of 'SCRIPT' or 'STYLE' tags --> just use the innertext, all other tags need to be extracted
-                    if (NS.SCRIPT_OR_STYLE_TAG[tag]) {
-                        vnode.text = domNode.textContent;
+                    vChildNodes = vnode.vChildNodes = [];
+                    childNodes = domNode.childNodes;
+                    len = childNodes.length;
+
+if (tag==='SCRIPT') {
+console.warn('SCRIPT: '+len);
+}
+                    for (i=0; i<len; i++) {
+                        domChildNode = childNodes[i];
+                        childVNode = domNodeToVNode(domChildNode, vnode);
+                        vChildNodes[vChildNodes.length] = childVNode;
                     }
-                    else {
-                        vChildNodes = vnode.vChildNodes = [];
-                        childNodes = domNode.childNodes;
-                        len = childNodes.length;
-                        for (i=0; i<len; i++) {
-                            domChildNode = childNodes[i];
-                            childVNode = domNodeToVNode(domChildNode, vnode);
-                            vChildNodes[vChildNodes.length] = childVNode;
+                    if (tag==='SCRIPT') {
+                        // we register its content to its vParent abd will remove it from the dom
+                        // asyncrouniously after the dom is parsed
+                        if (!parentVNode) {
+                            // try to look in the dom for its parent
+                            parentNode = domNode.parentNode;
+                            parentVNode = parentNode && parentNode.vnode;
+                        }
+                        if (parentVNode) {
+                            if (len>0) {
+                                parentVNode._scripts || (parentVNode._scripts=[]);
+                                parentVNode._scripts[parentVNode._scripts.length] = vChildNodes[0].text;
+                            }
+                            asyncSilent(function() {
+                                parentVNode._removeChild(vnode);
+                            });
                         }
                     }
                 }
