@@ -25,21 +25,21 @@
 /*
         it('inserting scriptnode executed', function () {
             window.a = 0;
-            var node = body.append('<script>window.a++;</script>');
+            var node = body.append('<xscript>window.a++;</xscript>');
             expect(window.a).to.be.equal(1);
             delete window.a;
         });
 */
         it('inserting scriptnode being removed', function (done) {
-            var node = body.append('<script>//test &nbsp;</script>');
+            var node = body.append('<xscript>// test</xscript>');
             laterSilent(function() {
                 expect(node.inDOM()).to.be.false;
                 done();
-            } ,50);
+            } ,500);
         });
 /*
         it('inserting scriptnode stored data at _scripts', function () {
-            var node = body.append('<script>//test &nbsp;</script>');
+            var node = body.append('<xscript>//test &nbsp;</xscript>');
             expect(body.vnode._scripts).to.be.equal(['//test &nbsp;']);
         });
 

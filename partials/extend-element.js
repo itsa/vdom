@@ -158,17 +158,40 @@ module.exports = function (window) {
             for (i=0; i<len; i++) {
                 vnode = vnodes[i];
                 if (vnode.nodeType===1) {
-                    // same tag --> only update what is needed
-                    bkpAttrs = vnode.attrs;
-                    bkpVChildNodes = vnode.vChildNodes;
+                    if (vnode.tag==='SCRIPT') {
+                        scriptContent = vnode.vChildNodes[0].text;
+                        // check if the parent has this script set:
+                        // parent didn't had the script set: we will process
+                        // but we need to remove the node once it is set
+                        // also: the script's content will be stored on is parent,
+                        // so we know can compare future comparision.
+                        _scripts || (_scripts=[]);
+                        _scripts[_scripts.length] = scriptContent;
+                        _scriptVNodes || (_scriptVNodes=[]);
+                        _scriptVNodes[_scriptVNodes.length] = vnode;
+                        // CREATE INNER TEXTNODE
+                        scriptVNode = Object.create(vNodeProto);
+                        scriptVNode.nodeType = 3;
+                        scriptVNode.domNode = DOCUMENT.createTextNode(scriptContent);
+                        // create circular reference:
+                        scriptVNode.domNode._vnode = scriptVNode;
+                        scriptVNode.text = scriptContent;
+                        scriptVNode.vParent = vnode;
+                        vnode.vChildNodes = [scriptVNode];
+                    }
+                    else {
+                        // same tag --> only update what is needed
+                        bkpAttrs = vnode.attrs;
+                        bkpVChildNodes = vnode.vChildNodes;
 
-                    // reset, to force creation of inner domNodes:
-                    vnode.attrs = {};
-                    vnode.vChildNodes = [];
+                        // reset, to force creation of inner domNodes:
+                        vnode.attrs = {};
+                        vnode.vChildNodes = [];
 
-                    // next: sync the vnodes:
-                    vnode._setAttrs(bkpAttrs);
-                    vnode._setChildNodes(bkpVChildNodes);
+                        // next: sync the vnodes:
+                        vnode._setAttrs(bkpAttrs);
+                        vnode._setChildNodes(bkpVChildNodes);
+                    }
                 }
                 else {
                     vnode.domNode.nodeValue = vnode.text;
@@ -176,7 +199,9 @@ module.exports = function (window) {
             }
             return {
                 isFragment: true,
-                vnodes: vnodes
+                vnodes: vnodes,
+                _scripts: _scripts,
+                _scriptVNodes: _scriptVNodes
             };
         },
         toCamelCase = function(input) {
@@ -935,7 +960,14 @@ module.exports = function (window) {
          * @return {Element} the created Element (or the last when multiple)
          */
         ElementPrototype.addSystemElement = function(content, escape, silent) {
-            var systemElement = this.prepend(content, escape, null, silent);
+            var instance = this,
+                vChildNodes = instance.vnode.vChildNodes,
+                len = vChildNodes.length,
+                systemElement, refElement, i;
+            for (i=0; (i<len) && !refElement; i++) {
+                vChildNodes[i]._systemNode || (refElement=vChildNodes[i].domNode);
+            }
+            systemElement = refElement ? instance.prepend(content, escape, refElement, silent) : instance.append(content, escape, refElement, silent);
             systemElement.vnode._systemNode = true;
             return systemElement;
         };
@@ -956,7 +988,7 @@ module.exports = function (window) {
             var instance = this,
                 vnode = instance.vnode,
                 prevSuppress = DOCUMENT._suppressMutationEvents || false,
-                i, len, item, createdElement, vnodes, vRefElement,
+                i, len, item, createdElement, vnodes, vRefElement, _scripts, scriptcontent,
             doAppend = function(oneItem) {
                 escape && (oneItem.nodeType===1) && (oneItem=DOCUMENT.createTextNode(oneItem.getOuterHTML()));
                 createdElement = refElement ? vnode._insertBefore(oneItem.vnode, refElement.vnode) : vnode._appendChild(oneItem.vnode);
@@ -973,6 +1005,23 @@ module.exports = function (window) {
                 len = vnodes.length;
                 for (i=0; i<len; i++) {
                     doAppend(vnodes[i].domNode);
+                }
+/*jshint boss:true */
+                if (_scripts=content._scripts) {
+/*jshint boss:false */
+                    len = _scripts.length;
+                    vnode._scripts || (vnode._scripts=[]);
+                    for (i=0; i<len; i++) {
+                        scriptcontent = _scripts[i];
+                        if (!vnode._scripts.contains(scriptcontent)) {
+                            vnode._scripts[vnode._scripts.length] = scriptcontent;
+/*jshint -W083 */
+                            async(function() {
+                                vnode._removeChild(content._scriptVNodes[i]);
+                            });
+/*jshint +W083 */
+                        }
+                    }
                 }
             }
             else if (Array.isArray(content)) {
@@ -1142,7 +1191,7 @@ module.exports = function (window) {
             if (otherElement===this) {
                 return !excludeItself;
             }
-            return this.vnode.contains(otherElement.vnode, !inspectProtectedNodes);
+            return !!otherElement && this.vnode.contains(otherElement.vnode, !inspectProtectedNodes);
         };
 
         /**
@@ -2181,7 +2230,7 @@ module.exports = function (window) {
             var instance = this,
                 vnode = instance.vnode,
                 prevSuppress = DOCUMENT._suppressMutationEvents || false,
-                i, len, item, createdElement, vnodes, vChildNodes, vRefElement,
+                i, len, item, createdElement, vnodes, vChildNodes, _scripts, scriptcontent,
             doPrepend = function(oneItem) {
                 escape && (oneItem.nodeType===1) && (oneItem=DOCUMENT.createTextNode(oneItem.getOuterHTML()));
                 createdElement = refElement ? vnode._insertBefore(oneItem.vnode, refElement.vnode) : vnode._appendChild(oneItem.vnode);
@@ -2192,8 +2241,12 @@ module.exports = function (window) {
             vnode._noSync()._normalizable(false);
             if (!refElement) {
                 vChildNodes = vnode.vChildNodes;
-                vRefElement = vChildNodes && vChildNodes[0];
-                refElement = vRefElement && vRefElement.domNode;
+                if (vChildNodes) {
+                    len = vChildNodes.length;
+                    for (i=0; (i<len) && !refElement; i++) {
+                        vChildNodes[i]._systemNode || (refElement=vChildNodes[i].domNode);
+                    }
+                }
             }
             (typeof content===STRING) && (content=htmlToVFragments(content, vnode.ns));
             if (content.isFragment) {
@@ -2202,6 +2255,23 @@ module.exports = function (window) {
                 // to manage TextNodes which might get merged, we loop downwards:
                 for (i=len-1; i>=0; i--) {
                     doPrepend(vnodes[i].domNode);
+                }
+/*jshint boss:true */
+                if (_scripts=content._scripts) {
+/*jshint boss:false */
+                    len = _scripts.length;
+                    vnode._scripts || (vnode._scripts=[]);
+                    for (i=0; i<len; i++) {
+                        scriptcontent = _scripts[i];
+                        if (!vnode._scripts.contains(scriptcontent)) {
+                            vnode._scripts[vnode._scripts.length] = scriptcontent;
+/*jshint -W083 */
+                            async(function() {
+                                vnode._removeChild(content._scriptVNodes[i]);
+                            });
+/*jshint +W083 */
+                        }
+                    }
                 }
             }
             else if (Array.isArray(content)) {
@@ -2285,13 +2355,25 @@ module.exports = function (window) {
             inspectChildren = function(vnode) {
                 var vChildren = vnode.vChildren,
                     len2 = vChildren ? vChildren.length : 0,
-                    j, vChildNode;
+                    j, vChildNode, noDeep;
                 for (j=0; (j<len2) && !found; j++) {
                     vChildNode = vChildren[j];
                     if (vChildNode.matchesSelector(selectors, thisvnode) && (!refNode || ((vChildNode.domNode.compareDocumentPosition(refNode) & domPosition)!==0))) {
-                        found = vChildNode.domNode;
+                        if (!vChildNode._systemNode || inspectProtectedNodes) {
+                            found = vChildNode.domNode;
+                        }
                     }
-                    found || (!inspectProtectedNodes && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags (except from when content is not hidden)
+                    if (!found) {
+                        if (!inspectProtectedNodes) {
+                            if (vChildNode._systemNode || (vChildNode.isItag && vChildNode.domNode.contentHidden)) {
+                                noDeep = true;
+                            }
+                        }
+                        else {
+                            noDeep = false;
+                        }
+                        noDeep || inspectChildren(vChildNode);
+                    }
                 }
             };
             while (!firstCharacter && (++i<len)) {
@@ -2330,13 +2412,23 @@ module.exports = function (window) {
             inspectChildren = function(vnode) {
                 var vChildren = vnode.vChildren,
                     len2 = vChildren ? vChildren.length : 0,
-                    j, vChildNode;
+                    j, vChildNode, noDeep;
                 for (j=0; j<len2; j++) {
                     vChildNode = vChildren[j];
                     if (vChildNode.matchesSelector(selectors, thisvnode) && (!refNode || ((vChildNode.domNode.compareDocumentPosition(refNode) & domPosition)!==0))) {
-                        found[found.length] = vChildNode.domNode;
+                        if (!vChildNode._systemNode || inspectProtectedNodes) {
+                            found[found.length] = vChildNode.domNode;
+                        }
                     }
-                    (!inspectProtectedNodes && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags
+                    if (!inspectProtectedNodes) {
+                        if (vChildNode._systemNode || (vChildNode.isItag && vChildNode.domNode.contentHidden)) {
+                            noDeep = true;
+                        }
+                    }
+                    else {
+                        noDeep = false;
+                    }
+                    noDeep || inspectChildren(vChildNode);
                 }
             };
             while (!firstCharacter && (++i<len)) {

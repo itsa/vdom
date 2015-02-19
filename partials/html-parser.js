@@ -105,12 +105,12 @@ module.exports = function (window) {
          * @return {Array} array with `vnodes`
          * @since 0.0.1
          */
-        htmlToVNodes = window._ITSAmodules.HtmlParser = function(htmlString, vNodeProto, nameSpace, parentVNode, suppressItagRender) {
+        htmlToVNodes = window._ITSAmodules.HtmlParser = function(htmlString, vNodeProto, nameSpace, parentVNode, suppressItagRender, scriptsAllowed) {
             var i = 0,
                 vnodes = [],
                 insideTagDefinition, insideComment, innerText, endTagCount, stringMarker, attributeisString, attribute, attributeValue, nestedComments,
                 len, j, character, character2, vnode, tag, isBeginTag, isEndTag, scriptVNode, extractClass, extractStyle, tagdefinition, is;
-
+scriptsAllowed = true;
             htmlString || (htmlString='');
             len = htmlString.length;
 
@@ -226,11 +226,22 @@ module.exports = function (window) {
                         i++; // compensate for the '>'
                     }
 
-                    //vnode.domNode can only be set after inspecting the attributes --> there might be an `is` attribute
-                    tagdefinition = tag.toLowerCase();
-                    if (vnode.isItag && (is=vnode.attrs.is) && !is.contains('-')) {
-                        tagdefinition = tag + '#' + is;
+                    // just to be sure there won't be a `script`-tag passed inside the argument (something modern browsers never let happen):
+                    (tag==='SCRIPT') && (tag==='XSCRIPT');
+
+                    // the string-parser expects </xscript> for `script`-tags
+                    if ((tag==='XSCRIPT') && scriptsAllowed) {
+                        tagdefinition = 'script';
+                        vnode.tag = 'SCRIPT';
                     }
+                    else {
+                        tagdefinition = tag.toLowerCase();
+                        //vnode.domNode can only be set after inspecting the attributes --> there might be an `is` attribute
+                        if (vnode.isItag && (is=vnode.attrs.is) && !is.contains('-')) {
+                            tagdefinition = tag + '#' + is;
+                        }
+                    }
+
                     vnode.domNode = vnode.ns ? DOCUMENT.createElementNS(vnode.ns, tagdefinition) : DOCUMENT.createElement(tagdefinition, suppressItagRender);
                     // create circular reference:
                     vnode.domNode._vnode = vnode;

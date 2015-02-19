@@ -112,7 +112,7 @@ console.warn('SCRIPT: '+len);
                         vChildNodes[vChildNodes.length] = childVNode;
                     }
                     if (tag==='SCRIPT') {
-                        // we register its content to its vParent abd will remove it from the dom
+                        // we register its content to its vParent and will remove it from the dom
                         // asyncrouniously after the dom is parsed
                         if (!parentVNode) {
                             // try to look in the dom for its parent

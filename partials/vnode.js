@@ -928,11 +928,14 @@ module.exports = function (window) {
         */
         contains: function(otherVNode, noProtectedSearch) {
             var instance = this;
-            if (otherVNode && otherVNode.destroyed) {
+            if (otherVNode && (otherVNode.destroyed || (noProtectedSearch && otherVNode._systemNode))) {
                 return false;
             }
-            while (otherVNode && (otherVNode!==instance) && (!noProtectedSearch || !instance.isItag || !instance._systemNode || !instance.domNode.contentHidden)) {
+            while (otherVNode && (otherVNode!==instance)) {
                 otherVNode = otherVNode.vParent;
+                if (otherVNode && noProtectedSearch && (otherVNode._systemNode || (otherVNode.isItag && otherVNode.domNode.contentHidden))) {
+                    return false;
+                }
             }
             return (otherVNode===instance);
         },
@@ -997,7 +1000,7 @@ module.exports = function (window) {
                     vChildNode = vChildNodes[i];
                     switch (vChildNode.nodeType) {
                         case 1:
-                            exclude.contains(vChildNode.domNode) || (html+=vChildNode.outerHTML);
+                            exclude.contains(vChildNode.domNode) || vChildNode._systemNode || (html+=vChildNode.outerHTML);
                             break;
                         case 3:
                             html += vChildNode.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -1507,8 +1510,12 @@ module.exports = function (window) {
                     newVNode._addToTaglist();
                     newVNode._emit(EV_INSERTED);
                 }
+                return domNode;
             }
-            return domNode;
+            else {
+                console.warn('trying to insert before, but no ref-node found. Will append the new node');
+                return instance._appendChild(newVNode);
+            }
         },
 
        /**
@@ -1870,7 +1877,7 @@ module.exports = function (window) {
         * @chainable
         * @since 0.0.1
         */
-        _setChildNodes: function(newVChildNodes, suppressItagRender, suppressRetainingSystemElements) {
+        _setChildNodes: function(newVChildNodes, suppressItagRender, removeSystemElements) {
             // does sync the DOM
             var instance = this,
                 vChildNodes = instance.vChildNodes || [],
@@ -1890,18 +1897,17 @@ module.exports = function (window) {
 
             // we need to add the systemNodes -if any- to the new newVChildNodes: they should be retained.
             // SystemNodes are always places at the beginning, so they won't get reshuffled:
-            if (!suppressRetainingSystemElements) {
+            if (!removeSystemElements) {
                 for (i=0; i<len; i++) {
                     oldChild = vChildNodes[i];
                     if (oldChild._systemNode) {
-                        newVChildNodes.insertAt(oldChild, 0);
+                        newVChildNodes.insertAt(oldChild, i);
                     }
                     else {
                         break;
                     }
                 }
             }
-
             newLength = newVChildNodes.length;
             for (i=0; i<len; i++) {
                 oldChild = vChildNodes[i];
@@ -1939,6 +1945,8 @@ module.exports = function (window) {
                                     instance._scripts[instance._scripts.length] = scriptContent;
                 /*jshint -W083 */
                                     async(function() {
+console.warn('going to remove');
+console.warn(newChild);
                                         instance._removeChild(newChild);
                                     });
                 /*jshint +W083 */
@@ -2115,6 +2123,8 @@ module.exports = function (window) {
                                 instance._scripts[instance._scripts.length] = scriptContent;
             /*jshint -W083 */
                                 async(function() {
+console.warn('going to remove');
+console.warn(newChild);
                                     instance._removeChild(newChild);
                                 });
             /*jshint +W083 */
@@ -2316,7 +2326,7 @@ module.exports = function (window) {
                     instance.isVoid && (html += '/');
                     html += '>';
                     if (!instance.isVoid) {
-                        html += instance.innerHTML + '</' + instance.tag.toLowerCase() + '>';
+                        html += (instance.isItag ? '' : instance.innerHTML) + '</' + instance.tag.toLowerCase() + '>';
                     }
                 }
                 return html;
