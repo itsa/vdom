@@ -150,13 +150,37 @@ module.exports = function (window) {
             zIndex: true
         },
         // CSS_PROPS_TO_CALCULATE.transform is set later on by the vendor specific transform-property
-        htmlToVFragments = function(html, nameSpace) {
-            var vnodes = htmlToVNodes(html, vNodeProto, nameSpace),
+        htmlToVFragments = function(html, nameSpace, allowScripts) {
+            var vnodes = htmlToVNodes(html, vNodeProto, nameSpace, null, null, allowScripts),
                 len = vnodes.length,
-                vnode, i, bkpAttrs, bkpVChildNodes;
+                _cleanupStyle = false,
+                vnode, i, bkpAttrs, bkpVChildNodes, scriptContent, _scripts, _scriptVNodes, scriptVNode;
+
             for (i=0; i<len; i++) {
                 vnode = vnodes[i];
                 if (vnode.nodeType===1) {
+                    (vnode.tag==='STYLE') && (_cleanupStyle=true);
+                    if (vnode.tag==='SCRIPT') {
+                        scriptContent = (vnode.attrs && vnode.attrs.src) ? vnode.attrs.src : vnode.vChildNodes[0].text;
+                        // check if the parent has this script set:
+                        // parent didn't had the script set: we will process
+                        // but we need to remove the node once it is set
+                        // also: the script's content will be stored on is parent,
+                        // so we know can compare future comparision.
+                        _scripts || (_scripts=[]);
+                        _scripts[_scripts.length] = scriptContent;
+                        _scriptVNodes || (_scriptVNodes=[]);
+                        _scriptVNodes[_scriptVNodes.length] = vnode;
+                        // CREATE INNER TEXTNODE
+                        scriptVNode = Object.create(vNodeProto);
+                        scriptVNode.nodeType = 3;
+                        scriptVNode.domNode = DOCUMENT.createTextNode(scriptContent);
+                        // create circular reference:
+                        scriptVNode.domNode._vnode = scriptVNode;
+                        scriptVNode.text = scriptContent;
+                        scriptVNode.vParent = vnode;
+                        vnode.vChildNodes = [scriptVNode];
+                    }
                     // same tag --> only update what is needed
                     bkpAttrs = vnode.attrs;
                     bkpVChildNodes = vnode.vChildNodes;
@@ -175,7 +199,10 @@ module.exports = function (window) {
             }
             return {
                 isFragment: true,
-                vnodes: vnodes
+                vnodes: vnodes,
+                _scripts: _scripts,
+                _scriptVNodes: _scriptVNodes,
+                _cleanupStyle: _cleanupStyle
             };
         },
         toCamelCase = function(input) {
@@ -915,6 +942,37 @@ module.exports = function (window) {
             return transitions;
         };
 
+        /**
+         * Inserts a system-HTMLElement. These are child-Elements, just like other children, but they have a slightly different behaviour:
+         *
+         * <ul>
+         *     <li>They get inserted as the first of the children</li>
+         *     <li>They don't show up when querying</li>
+         *     <li>They retain whenever new content is set for the parent-Element</li>
+         * </ul>
+         *
+         * System-Elements are useful f.e. when you want to add special features to an Element, like scrolling or resizing. You can add `helper-elements`
+         * (the system-elements) which keep hidden (protected) and retain whenever the Element changes his content.
+         *
+         * @method addSystemElement
+         * @param content {Element|ElementArray|String} content to append
+         * @param [escape] {Boolean} whether to insert `escaped` content, leading it into only text inserted
+         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+         * @return {Element} the created Element (or the last when multiple)
+         */
+        ElementPrototype.addSystemElement = function(content, escape, silent) {
+            var instance = this,
+                vChildNodes = instance.vnode.vChildNodes,
+                len = vChildNodes.length,
+                systemElement, refElement, i;
+            for (i=0; (i<len) && !refElement; i++) {
+                vChildNodes[i]._systemNode || (refElement=vChildNodes[i].domNode);
+            }
+            systemElement = refElement ? instance.prepend(content, escape, refElement, silent) : instance.append(content, escape, refElement, silent);
+            systemElement.vnode._systemNode = true;
+            return systemElement;
+        };
+
        /**
         * Appends an Element or an Element's string-representation at the end of Element's innerHTML, or before the `refElement`.
         *
@@ -924,14 +982,15 @@ module.exports = function (window) {
         * @param [escape] {Boolean} whether to insert `escaped` content, leading it into only text inserted
         * @param [refElement] {Element} reference Element where the content should be appended
         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+        * @param [allowScripts=false] {Boolean} whether scripts are allowed --> these should be defined with `xscript` instead of `script`
         * @return {Element} the created Element (or the last when multiple)
         * @since 0.0.1
         */
-        ElementPrototype.append = function(content, escape, refElement, silent) {
+        ElementPrototype.append = function(content, escape, refElement, silent, allowScripts) {
             var instance = this,
                 vnode = instance.vnode,
                 prevSuppress = DOCUMENT._suppressMutationEvents || false,
-                i, len, item, createdElement, vnodes, vRefElement,
+                i, len, item, createdElement, vnodes, vRefElement, _scripts, scriptcontent,
             doAppend = function(oneItem) {
                 escape && (oneItem.nodeType===1) && (oneItem=DOCUMENT.createTextNode(oneItem.getOuterHTML()));
                 createdElement = refElement ? vnode._insertBefore(oneItem.vnode, refElement.vnode) : vnode._appendChild(oneItem.vnode);
@@ -942,13 +1001,27 @@ module.exports = function (window) {
                 vRefElement = refElement.vnode.vNext;
                 refElement = vRefElement && vRefElement.domNode;
             }
-            (typeof content===STRING) && (content=htmlToVFragments(content, vnode.ns));
+            (typeof content===STRING) && (content=htmlToVFragments(content, vnode.ns, allowScripts));
             if (content.isFragment) {
                 vnodes = content.vnodes;
                 len = vnodes.length;
                 for (i=0; i<len; i++) {
                     doAppend(vnodes[i].domNode);
                 }
+/*jshint boss:true */
+                if (_scripts=content._scripts) {
+/*jshint boss:false */
+                    len = _scripts.length;
+                    vnode._scripts || (vnode._scripts=[]);
+                    for (i=0; i<len; i++) {
+                        scriptcontent = _scripts[i];
+                        if (!vnode._scripts.contains(scriptcontent)) {
+                            vnode._scripts[vnode._scripts.length] = scriptcontent;
+                        }
+                    }
+                }
+                // in case a style-tag was added, we need to cleanup double definitions:
+                content._cleanupStyle && vnode._cleanupStyle();
             }
             else if (Array.isArray(content)) {
                 len = content.length;
@@ -1110,14 +1183,14 @@ module.exports = function (window) {
          * @method contains
          * @param otherElement {Element}
          * @param [excludeItself] {Boolean} to exclude itsefl as a hit
-         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
          * @return {Boolean} whether this Element contains OR equals otherElement.
          */
-        ElementPrototype.contains = function(otherElement, excludeItself, insideItags) {
+        ElementPrototype.contains = function(otherElement, excludeItself, inspectProtectedNodes) {
             if (otherElement===this) {
                 return !excludeItself;
             }
-            return this.vnode.contains(otherElement.vnode, !insideItags);
+            return !!otherElement && this.vnode.contains(otherElement.vnode, !inspectProtectedNodes);
         };
 
         /**
@@ -1186,13 +1259,14 @@ module.exports = function (window) {
         *
         * @method empty
         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+        * @param [full=false] {Boolean} whether system-nodes should be removed as well
         * @chainable
         * @since 0.0.1
         */
-        ElementPrototype.empty = function(silent) {
+        ElementPrototype.empty = function(silent, full) {
             var prevSuppress = DOCUMENT._suppressMutationEvents || false;
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
-            this.vnode.empty();
+            this.vnode.empty(full);
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
         };
 
@@ -1358,12 +1432,12 @@ module.exports = function (window) {
          *
          * @method getAll
          * @param cssSelector {String} css-selector to match
-         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
          * @return {ElementArray} ElementArray of Elements that match the css-selector
          * @since 0.0.1
          */
-        ElementPrototype.getAll = function(cssSelector, insideItags) {
-            return this.querySelectorAll(cssSelector, insideItags);
+        ElementPrototype.getAll = function(cssSelector, inspectProtectedNodes) {
+            return this.querySelectorAll(cssSelector, inspectProtectedNodes);
         };
 
        /**
@@ -1463,12 +1537,12 @@ module.exports = function (window) {
         *
         * @method getElement
         * @param cssSelector {String} css-selector to match
-        * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
         * @return {Element|null} the Element that was search for
         * @since 0.0.1
         */
-        ElementPrototype.getElement = function(cssSelector, insideItags) {
-            return ((cssSelector[0]==='#') && (cssSelector.indexOf(' ')===-1)) ? this.getElementById(cssSelector.substr(1)) : this.querySelector(cssSelector, insideItags);
+        ElementPrototype.getElement = function(cssSelector, inspectProtectedNodes) {
+            return ((cssSelector[0]==='#') && (cssSelector.indexOf(' ')===-1)) ? this.getElementById(cssSelector.substr(1)) : this.querySelector(cssSelector, inspectProtectedNodes);
         };
 
         /**
@@ -1476,13 +1550,13 @@ module.exports = function (window) {
          *
          * @method getElementById
          * @param id {String} id of the Element
-         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
          * @return {Element|null}
          *
          */
-        ElementPrototype.getElementById = function(id, insideItags) {
+        ElementPrototype.getElementById = function(id, inspectProtectedNodes) {
             var element = nodeids[id];
-            if (element && !this.contains(element, true, insideItags)) {
+            if (element && !this.contains(element, true, inspectProtectedNodes)) {
                 // outside itself
                 return null;
             }
@@ -2148,14 +2222,15 @@ module.exports = function (window) {
         * @param [escape] {Boolean} whether to insert `escaped` content, leading it into only text inserted
         * @param [refElement] {Element} reference Element where the content should be prepended
         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+        * @param [allowScripts=false] {Boolean} whether scripts are allowed --> these should be defined with `xscript` instead of `script`
         * @return {Element} the created Element (or the last when multiple)
         * @since 0.0.1
         */
-        ElementPrototype.prepend = function(content, escape, refElement, silent) {
+        ElementPrototype.prepend = function(content, escape, refElement, silent, allowScripts) {
             var instance = this,
                 vnode = instance.vnode,
                 prevSuppress = DOCUMENT._suppressMutationEvents || false,
-                i, len, item, createdElement, vnodes, vChildNodes, vRefElement,
+                i, len, item, createdElement, vnodes, vChildNodes, _scripts, scriptcontent,
             doPrepend = function(oneItem) {
                 escape && (oneItem.nodeType===1) && (oneItem=DOCUMENT.createTextNode(oneItem.getOuterHTML()));
                 createdElement = refElement ? vnode._insertBefore(oneItem.vnode, refElement.vnode) : vnode._appendChild(oneItem.vnode);
@@ -2166,10 +2241,14 @@ module.exports = function (window) {
             vnode._noSync()._normalizable(false);
             if (!refElement) {
                 vChildNodes = vnode.vChildNodes;
-                vRefElement = vChildNodes && vChildNodes[0];
-                refElement = vRefElement && vRefElement.domNode;
+                if (vChildNodes) {
+                    len = vChildNodes.length;
+                    for (i=0; (i<len) && !refElement; i++) {
+                        vChildNodes[i]._systemNode || (refElement=vChildNodes[i].domNode);
+                    }
+                }
             }
-            (typeof content===STRING) && (content=htmlToVFragments(content, vnode.ns));
+            (typeof content===STRING) && (content=htmlToVFragments(content, vnode.ns, allowScripts));
             if (content.isFragment) {
                 vnodes = content.vnodes;
                 len = vnodes.length;
@@ -2177,6 +2256,20 @@ module.exports = function (window) {
                 for (i=len-1; i>=0; i--) {
                     doPrepend(vnodes[i].domNode);
                 }
+/*jshint boss:true */
+                if (_scripts=content._scripts) {
+/*jshint boss:false */
+                    len = _scripts.length;
+                    vnode._scripts || (vnode._scripts=[]);
+                    for (i=0; i<len; i++) {
+                        scriptcontent = _scripts[i];
+                        if (!vnode._scripts.contains(scriptcontent)) {
+                            vnode._scripts[vnode._scripts.length] = scriptcontent;
+                        }
+                    }
+                }
+                // in case a style-tag was added, we need to cleanup double definitions:
+                content._cleanupStyle && vnode._cleanupStyle();
             }
             else if (Array.isArray(content)) {
                 len = content.length;
@@ -2240,7 +2333,7 @@ module.exports = function (window) {
          *
          * @method querySelector
          * @param selectors {String} CSS-selector(s) that should match
-         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
          * @param [refNode] {HTMLElement} reference-node where the found node should be `before` or `after`: specified by domPosition
          * @param [domPosition] {Number} The position to accept, compared to `refNode`. Should be either:
          * <ul>
@@ -2249,7 +2342,7 @@ module.exports = function (window) {
          * </ul>
          * @return {Element}
          */
-        ElementPrototype.querySelector = function(selectors, insideItags, refNode, domPosition) {
+        ElementPrototype.querySelector = function(selectors, inspectProtectedNodes, refNode, domPosition) {
             var found,
                 i = -1,
                 thisvnode = this.vnode,
@@ -2259,13 +2352,25 @@ module.exports = function (window) {
             inspectChildren = function(vnode) {
                 var vChildren = vnode.vChildren,
                     len2 = vChildren ? vChildren.length : 0,
-                    j, vChildNode;
+                    j, vChildNode, noDeep;
                 for (j=0; (j<len2) && !found; j++) {
                     vChildNode = vChildren[j];
                     if (vChildNode.matchesSelector(selectors, thisvnode) && (!refNode || ((vChildNode.domNode.compareDocumentPosition(refNode) & domPosition)!==0))) {
-                        found = vChildNode.domNode;
+                        if (!vChildNode._systemNode || inspectProtectedNodes) {
+                            found = vChildNode.domNode;
+                        }
                     }
-                    found || (!insideItags && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags (except from when content is not hidden)
+                    if (!found) {
+                        if (!inspectProtectedNodes) {
+                            if (vChildNode._systemNode || (vChildNode.isItag && vChildNode.domNode.contentHidden)) {
+                                noDeep = true;
+                            }
+                        }
+                        else {
+                            noDeep = false;
+                        }
+                        noDeep || inspectChildren(vChildNode);
+                    }
                 }
             };
             while (!firstCharacter && (++i<len)) {
@@ -2285,7 +2390,7 @@ module.exports = function (window) {
          *
          * @method querySelectorAll
          * @param selectors {String} CSS-selector(s) that should match
-         * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+         * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
          * @param [refNode] {HTMLElement} reference-node where the found nodes should be `before` or `after`: specified by domPosition
          * @param [domPosition] {Number} The position to accept, compared to `refNode`. Should be either:
          * <ul>
@@ -2294,7 +2399,7 @@ module.exports = function (window) {
          * </ul>
          * @return {ElementArray} non-life Array (snapshot) with Elements
          */
-        ElementPrototype.querySelectorAll = function(selectors, insideItags, refNode, domPosition) {
+        ElementPrototype.querySelectorAll = function(selectors, inspectProtectedNodes, refNode, domPosition) {
             var found = ElementArray.createArray(),
                 i = -1,
                 thisvnode = this.vnode,
@@ -2304,13 +2409,23 @@ module.exports = function (window) {
             inspectChildren = function(vnode) {
                 var vChildren = vnode.vChildren,
                     len2 = vChildren ? vChildren.length : 0,
-                    j, vChildNode;
+                    j, vChildNode, noDeep;
                 for (j=0; j<len2; j++) {
                     vChildNode = vChildren[j];
                     if (vChildNode.matchesSelector(selectors, thisvnode) && (!refNode || ((vChildNode.domNode.compareDocumentPosition(refNode) & domPosition)!==0))) {
-                        found[found.length] = vChildNode.domNode;
+                        if (!vChildNode._systemNode || inspectProtectedNodes) {
+                            found[found.length] = vChildNode.domNode;
+                        }
                     }
-                    (!insideItags && vChildNode.isItag && vChildNode.domNode.contentHidden) || inspectChildren(vChildNode); // not dive into itags
+                    if (!inspectProtectedNodes) {
+                        if (vChildNode._systemNode || (vChildNode.isItag && vChildNode.domNode.contentHidden)) {
+                            noDeep = true;
+                        }
+                    }
+                    else {
+                        noDeep = false;
+                    }
+                    noDeep || inspectChildren(vChildNode);
                 }
             };
             while (!firstCharacter && (++i<len)) {
@@ -3031,14 +3146,15 @@ module.exports = function (window) {
          * @method setHTML
          * @param val {String} the new value to be set
          * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+         * @param [allowScripts=false] {Boolean} whether scripts are allowed --> these should be defined with `xscript` instead of `script`
          * @chainable
          * @since 0.0.1
          */
-        ElementPrototype.setHTML = function(val, silent) {
+        ElementPrototype.setHTML = function(val, silent, allowScripts) {
             var instance = this,
                 prevSuppress = DOCUMENT._suppressMutationEvents || false;
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
-            instance.vnode.innerHTML = val;
+            instance.vnode.setHTML(val, null, allowScripts);
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
             return instance;
         };
