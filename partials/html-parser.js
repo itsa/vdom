@@ -105,12 +105,12 @@ module.exports = function (window) {
          * @return {Array} array with `vnodes`
          * @since 0.0.1
          */
-        htmlToVNodes = window._ITSAmodules.HtmlParser = function(htmlString, vNodeProto, nameSpace, parentVNode, suppressItagRender, scriptsAllowed) {
+        htmlToVNodes = window._ITSAmodules.HtmlParser = function(htmlString, vNodeProto, nameSpace, parentVNode, suppressItagRender, allowScripts) {
             var i = 0,
                 vnodes = [],
                 insideTagDefinition, insideComment, innerText, endTagCount, stringMarker, attributeisString, attribute, attributeValue, nestedComments,
                 len, j, character, character2, vnode, tag, isBeginTag, isEndTag, scriptVNode, extractClass, extractStyle, tagdefinition, is;
-scriptsAllowed = true;
+
             htmlString || (htmlString='');
             len = htmlString.length;
 
@@ -219,7 +219,7 @@ scriptsAllowed = true;
                             vnode.vChildNodes = [scriptVNode];
                         }
                         else {
-                            vnode.vChildNodes = (innerText!=='') ? htmlToVNodes(innerText, vNodeProto, vnode.ns, vnode, suppressItagRender) : [];
+                            vnode.vChildNodes = (innerText!=='') ? htmlToVNodes(innerText, vNodeProto, vnode.ns, vnode, suppressItagRender, allowScripts) : [];
                         }
                     }
                     else {
@@ -230,7 +230,7 @@ scriptsAllowed = true;
                     (tag==='SCRIPT') && (tag==='XSCRIPT');
 
                     // the string-parser expects </xscript> for `script`-tags
-                    if ((tag==='XSCRIPT') && scriptsAllowed) {
+                    if ((tag==='XSCRIPT') && allowScripts) {
                         tagdefinition = 'script';
                         vnode.tag = 'SCRIPT';
                     }
@@ -242,7 +242,7 @@ scriptsAllowed = true;
                         }
                     }
 
-                    vnode.domNode = vnode.ns ? DOCUMENT.createElementNS(vnode.ns, tagdefinition) : DOCUMENT.createElement(tagdefinition, suppressItagRender);
+                    vnode.domNode = vnode.ns ? DOCUMENT.createElementNS(vnode.ns, tagdefinition) : DOCUMENT.createElement(tagdefinition, suppressItagRender, allowScripts);
                     // create circular reference:
                     vnode.domNode._vnode = vnode;
 

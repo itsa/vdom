@@ -951,6 +951,7 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         empty: function(full) {
+            delete this._scripts;
             return this._setChildNodes([], null, full);
         },
 
@@ -1190,12 +1191,13 @@ module.exports = function (window) {
         * @method setHTML
         * @param content {String} the innerHTML
         * @param [suppressItagRender] {Boolean} to suppress Itags from rendering
+        * @param [allowScripts=false] {Boolean} whether scripts are allowed --> these should be defined with `xscript` instead of `script`
         * @chainable
         * @since 0.0.1
         */
-        setHTML: function(content, suppressItagRender) {
+        setHTML: function(content, suppressItagRender, allowScripts) {
             var instance = this;
-            instance._setChildNodes(htmlToVNodes(content, vNodeProto, instance.ns, null, suppressItagRender), suppressItagRender);
+            instance._setChildNodes(htmlToVNodes(content, vNodeProto, instance.ns, null, suppressItagRender, allowScripts), suppressItagRender);
             return instance;
         },
 
@@ -1243,20 +1245,30 @@ module.exports = function (window) {
         _appendChild: function(VNode) {
             var instance = this,
                 domNode = VNode.domNode,
-                size;
-            VNode._moveToParent(instance);
-            instance.domNode._appendChild(domNode);
-            if (VNode.nodeType===3) {
-                size = instance.vChildNodes.length;
-                instance._normalize();
-                // if the size changed, then the domNode was merged
-                (size===instance.vChildNodes.length) || (domNode=instance.vChildNodes[instance.vChildNodes.length-1].domNode);
+                size, noProccessScript, scriptContent;
+            if ((VNode.tag==='SCRIPT') && instance._scripts) {
+                // first check if the script already ran:
+                scriptContent = (VNode.attrs && VNode.attrs.src) ? VNode.attrs.src : VNode.vChildNodes[0].text;
+                instance._scripts.some(function(script) {
+                    noProccessScript = (scriptContent===script);
+                    return noProccessScript;
+                });
             }
-            if (VNode.nodeType===1) {
-                VNode._addToTaglist();
-                VNode._emit(EV_INSERTED);
+            if (!noProccessScript) {
+                VNode._moveToParent(instance);
+                instance.domNode._appendChild(domNode);
+                if (VNode.nodeType===3) {
+                    size = instance.vChildNodes.length;
+                    instance._normalize();
+                    // if the size changed, then the domNode was merged
+                    (size===instance.vChildNodes.length) || (domNode=instance.vChildNodes[instance.vChildNodes.length-1].domNode);
+                }
+                if (VNode.nodeType===1) {
+                    VNode._addToTaglist();
+                    VNode._emit(EV_INSERTED);
+                }
+                return domNode;
             }
-            return domNode;
         },
 
        /**
@@ -1280,6 +1292,14 @@ module.exports = function (window) {
             return instance;
         },
 
+       /**
+        * Cleans up (empties) vnode's `_data`
+        *
+        * @method _cleanData
+        * @private
+        * @chainable
+        * @since 0.0.1
+        */
         _cleanData: function() {
             var instance = this,
                 data = instance._data;
@@ -1289,6 +1309,38 @@ module.exports = function (window) {
                 }
             );
             return instance;
+        },
+
+       /**
+        * Cleans up (removes) duplicated `style` definitions.
+        *
+        * @method _cleanupStyle
+        * @private
+        * @chainable
+        * @since 0.0.1
+        */
+        _cleanupStyle: function() {
+            var instance = this,
+                compare = [],
+                removal = [],
+                vChildren = instance.vChildren,
+                len = vChildren.length,
+                vChild, i, styleContent;
+            for (i=0; i<len; i++) {
+                vChild = vChildren[i];
+                if (vChild.tag==='STYLE') {
+                    styleContent = vChild.vChildNodes[0].text;
+                    if (compare.contains(styleContent)) {
+                        removal[removal.length] = vChild;
+                    }
+                    else {
+                        compare[compare.length] = styleContent;
+                    }
+                }
+            }
+            removal.forEach(function(vnode) {
+                instance._removeChild(vnode);
+            });
         },
 
        /**
@@ -1501,20 +1553,31 @@ module.exports = function (window) {
         _insertBefore: function(newVNode, refVNode) {
             var instance = this,
                 domNode = newVNode.domNode,
-                index = instance.vChildNodes.indexOf(refVNode);
-            if (index!==-1) {
-                newVNode._moveToParent(instance, index);
-                instance.domNode._insertBefore(domNode, refVNode.domNode);
-                (newVNode.nodeType===3) && instance._normalize();
-                if (newVNode.nodeType===1) {
-                    newVNode._addToTaglist();
-                    newVNode._emit(EV_INSERTED);
-                }
-                return domNode;
+                index = instance.vChildNodes.indexOf(refVNode),
+                noProccessScript, scriptContent;
+            if ((newVNode.tag==='SCRIPT') && instance._scripts) {
+                // first check if the script already ran:
+                scriptContent = (newVNode.attrs && newVNode.attrs.src) ? newVNode.attrs.src : newVNode.vChildNodes[0].text;
+                instance._scripts.some(function(script) {
+                    noProccessScript = (scriptContent===script);
+                    return noProccessScript;
+                });
             }
-            else {
-                console.warn('trying to insert before, but no ref-node found. Will append the new node');
-                return instance._appendChild(newVNode);
+            if (!noProccessScript) {
+                if (index!==-1) {
+                    newVNode._moveToParent(instance, index);
+                    instance.domNode._insertBefore(domNode, refVNode.domNode);
+                    (newVNode.nodeType===3) && instance._normalize();
+                    if (newVNode.nodeType===1) {
+                        newVNode._addToTaglist();
+                        newVNode._emit(EV_INSERTED);
+                    }
+                    return domNode;
+                }
+                else {
+                    console.warn('trying to insert before, but no ref-node found. Will append the new node');
+                    return instance._appendChild(newVNode);
+                }
             }
         },
 
@@ -1883,7 +1946,7 @@ module.exports = function (window) {
                 vChildNodes = instance.vChildNodes || [],
                 domNode = instance.domNode,
                 forRemoval = [],
-                i, oldChild, newChild, newLength, len, len2, childDomNode, nodeswitch, bkpAttrs,
+                i, oldChild, newChild, newLength, len, len2, childDomNode, nodeswitch, bkpAttrs, cleanupStyle,
                 process, bkpChildNodes, needNormalize, prevSuppress, scriptContent, _scripts, scriptLen, j;
 
             instance._noSync();
@@ -1916,6 +1979,8 @@ module.exports = function (window) {
                 if (i < newLength) {
                     newChild = newVChildNodes[i];
                     newChild.vParent || (newChild.vParent=instance);
+                    // in case a `style` tag is set --> we want to cleanup posible double definitions
+                    (newChild.tag==='STYLE') && (cleanupStyle=true);
 /*jshint boss:true */
                     switch (nodeswitch=NODESWITCH[oldChild.nodeType][newChild.nodeType]) {
 /*jshint boss:false */
@@ -1925,7 +1990,7 @@ module.exports = function (window) {
                             // where the innerHTML is stored. They don't get re-inserted when they are already present inside this hash
                             // This way we prevent scripts from running multiple times
                             if (newChild.tag==='SCRIPT') {
-                                scriptContent = newChild.vChildNodes[0].text;
+                                scriptContent = (newChild.attrs && newChild.attrs.src) ? newChild.attrs.src : newChild.vChildNodes[0].text;
                                 // check if the parent has this script set:
                                 process = true;
 /*jshint boss:true */
@@ -1943,13 +2008,6 @@ module.exports = function (window) {
                                     // so we know can compare future comparision.
                                     instance._scripts || (instance._scripts=[]);
                                     instance._scripts[instance._scripts.length] = scriptContent;
-                /*jshint -W083 */
-                                    async(function() {
-console.warn('going to remove');
-console.warn(newChild);
-                                        instance._removeChild(newChild);
-                                    });
-                /*jshint +W083 */
                                 }
                             }
                             else {
@@ -2096,6 +2154,8 @@ console.warn(newChild);
             for (i = len; i < newLength; i++) {
                 newChild = newVChildNodes[i];
                 newChild.vParent = instance;
+                // in case a `style` tag is set --> we want to cleanup posible double definitions
+                (newChild.tag==='STYLE') && (cleanupStyle=true);
                 switch (newChild.nodeType) {
                     case 1: // Element
                         // Firts check if the tag is a script:
@@ -2103,7 +2163,7 @@ console.warn(newChild);
                         // where the innerHTML is stored. They don't get re-inserted when they are already present inside this hash
                         // This way we prevent scripts from running multiple times
                         if (newChild.tag==='SCRIPT') {
-                            scriptContent = newChild.vChildNodes[0].text;
+                            scriptContent = (newChild.attrs && newChild.attrs.src) ? newChild.attrs.src : newChild.vChildNodes[0].text;
                             // check if the parent has this script set:
                             process = true;
 /*jshint boss:true */
@@ -2121,13 +2181,6 @@ console.warn(newChild);
                                 // so we know can compare future comparision.
                                 instance._scripts || (instance._scripts=[]);
                                 instance._scripts[instance._scripts.length] = scriptContent;
-            /*jshint -W083 */
-                                async(function() {
-console.warn('going to remove');
-console.warn(newChild);
-                                    instance._removeChild(newChild);
-                                });
-            /*jshint +W083 */
                             }
                         }
                         else {
@@ -2159,6 +2212,7 @@ console.warn(newChild);
             }
             instance.vChildNodes = newVChildNodes;
             needNormalize && instance._normalize();
+            cleanupStyle && instance._cleanupStyle();
             return instance;
         },
 

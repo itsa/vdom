@@ -150,16 +150,18 @@ module.exports = function (window) {
             zIndex: true
         },
         // CSS_PROPS_TO_CALCULATE.transform is set later on by the vendor specific transform-property
-        htmlToVFragments = function(html, nameSpace) {
-            var vnodes = htmlToVNodes(html, vNodeProto, nameSpace),
+        htmlToVFragments = function(html, nameSpace, allowScripts) {
+            var vnodes = htmlToVNodes(html, vNodeProto, nameSpace, null, null, allowScripts),
                 len = vnodes.length,
+                _cleanupStyle = false,
                 vnode, i, bkpAttrs, bkpVChildNodes, scriptContent, _scripts, _scriptVNodes, scriptVNode;
 
             for (i=0; i<len; i++) {
                 vnode = vnodes[i];
                 if (vnode.nodeType===1) {
+                    (vnode.tag==='STYLE') && (_cleanupStyle=true);
                     if (vnode.tag==='SCRIPT') {
-                        scriptContent = vnode.vChildNodes[0].text;
+                        scriptContent = (vnode.attrs && vnode.attrs.src) ? vnode.attrs.src : vnode.vChildNodes[0].text;
                         // check if the parent has this script set:
                         // parent didn't had the script set: we will process
                         // but we need to remove the node once it is set
@@ -179,19 +181,17 @@ module.exports = function (window) {
                         scriptVNode.vParent = vnode;
                         vnode.vChildNodes = [scriptVNode];
                     }
-                    else {
-                        // same tag --> only update what is needed
-                        bkpAttrs = vnode.attrs;
-                        bkpVChildNodes = vnode.vChildNodes;
+                    // same tag --> only update what is needed
+                    bkpAttrs = vnode.attrs;
+                    bkpVChildNodes = vnode.vChildNodes;
 
-                        // reset, to force creation of inner domNodes:
-                        vnode.attrs = {};
-                        vnode.vChildNodes = [];
+                    // reset, to force creation of inner domNodes:
+                    vnode.attrs = {};
+                    vnode.vChildNodes = [];
 
-                        // next: sync the vnodes:
-                        vnode._setAttrs(bkpAttrs);
-                        vnode._setChildNodes(bkpVChildNodes);
-                    }
+                    // next: sync the vnodes:
+                    vnode._setAttrs(bkpAttrs);
+                    vnode._setChildNodes(bkpVChildNodes);
                 }
                 else {
                     vnode.domNode.nodeValue = vnode.text;
@@ -201,7 +201,8 @@ module.exports = function (window) {
                 isFragment: true,
                 vnodes: vnodes,
                 _scripts: _scripts,
-                _scriptVNodes: _scriptVNodes
+                _scriptVNodes: _scriptVNodes,
+                _cleanupStyle: _cleanupStyle
             };
         },
         toCamelCase = function(input) {
@@ -981,10 +982,11 @@ module.exports = function (window) {
         * @param [escape] {Boolean} whether to insert `escaped` content, leading it into only text inserted
         * @param [refElement] {Element} reference Element where the content should be appended
         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+        * @param [allowScripts=false] {Boolean} whether scripts are allowed --> these should be defined with `xscript` instead of `script`
         * @return {Element} the created Element (or the last when multiple)
         * @since 0.0.1
         */
-        ElementPrototype.append = function(content, escape, refElement, silent) {
+        ElementPrototype.append = function(content, escape, refElement, silent, allowScripts) {
             var instance = this,
                 vnode = instance.vnode,
                 prevSuppress = DOCUMENT._suppressMutationEvents || false,
@@ -999,7 +1001,7 @@ module.exports = function (window) {
                 vRefElement = refElement.vnode.vNext;
                 refElement = vRefElement && vRefElement.domNode;
             }
-            (typeof content===STRING) && (content=htmlToVFragments(content, vnode.ns));
+            (typeof content===STRING) && (content=htmlToVFragments(content, vnode.ns, allowScripts));
             if (content.isFragment) {
                 vnodes = content.vnodes;
                 len = vnodes.length;
@@ -1015,14 +1017,11 @@ module.exports = function (window) {
                         scriptcontent = _scripts[i];
                         if (!vnode._scripts.contains(scriptcontent)) {
                             vnode._scripts[vnode._scripts.length] = scriptcontent;
-/*jshint -W083 */
-                            async(function() {
-                                vnode._removeChild(content._scriptVNodes[i]);
-                            });
-/*jshint +W083 */
                         }
                     }
                 }
+                // in case a style-tag was added, we need to cleanup double definitions:
+                content._cleanupStyle && vnode._cleanupStyle();
             }
             else if (Array.isArray(content)) {
                 len = content.length;
@@ -2223,10 +2222,11 @@ module.exports = function (window) {
         * @param [escape] {Boolean} whether to insert `escaped` content, leading it into only text inserted
         * @param [refElement] {Element} reference Element where the content should be prepended
         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+        * @param [allowScripts=false] {Boolean} whether scripts are allowed --> these should be defined with `xscript` instead of `script`
         * @return {Element} the created Element (or the last when multiple)
         * @since 0.0.1
         */
-        ElementPrototype.prepend = function(content, escape, refElement, silent) {
+        ElementPrototype.prepend = function(content, escape, refElement, silent, allowScripts) {
             var instance = this,
                 vnode = instance.vnode,
                 prevSuppress = DOCUMENT._suppressMutationEvents || false,
@@ -2248,7 +2248,7 @@ module.exports = function (window) {
                     }
                 }
             }
-            (typeof content===STRING) && (content=htmlToVFragments(content, vnode.ns));
+            (typeof content===STRING) && (content=htmlToVFragments(content, vnode.ns, allowScripts));
             if (content.isFragment) {
                 vnodes = content.vnodes;
                 len = vnodes.length;
@@ -2265,14 +2265,11 @@ module.exports = function (window) {
                         scriptcontent = _scripts[i];
                         if (!vnode._scripts.contains(scriptcontent)) {
                             vnode._scripts[vnode._scripts.length] = scriptcontent;
-/*jshint -W083 */
-                            async(function() {
-                                vnode._removeChild(content._scriptVNodes[i]);
-                            });
-/*jshint +W083 */
                         }
                     }
                 }
+                // in case a style-tag was added, we need to cleanup double definitions:
+                content._cleanupStyle && vnode._cleanupStyle();
             }
             else if (Array.isArray(content)) {
                 len = content.length;
@@ -3149,14 +3146,15 @@ module.exports = function (window) {
          * @method setHTML
          * @param val {String} the new value to be set
          * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+         * @param [allowScripts=false] {Boolean} whether scripts are allowed --> these should be defined with `xscript` instead of `script`
          * @chainable
          * @since 0.0.1
          */
-        ElementPrototype.setHTML = function(val, silent) {
+        ElementPrototype.setHTML = function(val, silent, allowScripts) {
             var instance = this,
                 prevSuppress = DOCUMENT._suppressMutationEvents || false;
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(true);
-            instance.vnode.innerHTML = val;
+            instance.vnode.setHTML(val, null, allowScripts);
             silent && DOCUMENT.suppressMutationEvents && DOCUMENT.suppressMutationEvents(prevSuppress);
             return instance;
         };

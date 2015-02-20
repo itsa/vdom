@@ -1,4 +1,4 @@
-/*global describe, it, afterEach  */
+/*global describe, it, before, after, afterEach */
 /*jshint unused:false */
 (function (window) {
 
@@ -18,35 +18,124 @@
 
     describe('Inspecting script-elements', function () {
 
-        // Code to execute after every test.
-        afterEach(function() {
-            delete body.vnode._scripts;
-        });
-/*
-        it('inserting scriptnode executed', function () {
-            window.a = 0;
-            var node = body.append('<xscript>window.a++;</xscript>');
-            expect(window.a).to.be.equal(1);
-            delete window.a;
-        });
-*/
-        it('inserting scriptnode being removed', function (done) {
-            var node = body.append('<xscript>// test</xscript>');
-            laterSilent(function() {
-                expect(node.inDOM()).to.be.false;
-                done();
-            } ,500);
-        });
-/*
-        it('inserting scriptnode stored data at _scripts', function () {
-            var node = body.append('<xscript>//test &nbsp;</xscript>');
-            expect(body.vnode._scripts).to.be.equal(['//test &nbsp;']);
+        before(function() {
+            body.append('<div id="s-cont" style="opacity: 0;"></div>');
         });
 
-        it('multiple inserting scriptnode executed once and removed', function () {
-            // expect(vnode.attrs).to.be.eql({id: 'divone', 'class': 'red blue', 'data-x': 'somedata'});
+        after(function() {
+            body.getElement('#s-cont').remove();
         });
-*/
+
+        afterEach(function() {
+            delete body.vnode._scripts;
+            body.getElement('#s-cont').empty();
+        });
+
+        it('inserting scriptnode executed', function () {
+            var node = body.append('<xscript>window.document.body.getElement("#s-cont").append("<div></div>");</xscript>', null, null, null, true);
+            expect(body.getElement('#s-cont').getAll('div').length).to.be.equal(1);
+            node.remove();
+        });
+
+        it('inserting scriptnode stored data at _scripts', function () {
+            var node = body.append('<xscript>//test &nbsp;</xscript>', null, null, null, true);
+            expect(body.vnode._scripts[0]).to.be.equal('//test &nbsp;');
+        });
+
+        it('multiple inserting scriptnode executed once', function () {
+            var node1 = body.append('<xscript>window.document.body.getElement("#s-cont").append("<div></div>");</xscript>', null, null, null, true);
+            body.append('<xscript>window.document.body.getElement("#s-cont").append("<div></div>");</xscript>', null, null, null, true); // will return `undefined` --> no domnode gets inserted
+            expect(body.getElement('#s-cont').getAll('div').length).to.be.equal(1);
+            node1.remove();
+        });
+
+        it('replacing the same scriptnode executed once', function () {
+            var node1 = body.append('<div style="opacity: 0;"></div>');
+            node1.setHTML('<xscript>window.document.body.getElement("#s-cont").append("<div></div>");</xscript>', null, true);
+            node1.setHTML('<xscript>window.document.body.getElement("#s-cont").append("<div></div>");</xscript>', null, true);
+            expect(body.getElement('#s-cont').getAll('div').length).to.be.equal(1);
+            node1.remove();
+        });
+
     });
+
+    //===============================================================
+
+    describe('Inspecting child script-elements', function () {
+
+        before(function() {
+            body.append('<div id="s-cont" style="opacity: 0;"></div>');
+        });
+
+        after(function() {
+            body.getElement('#s-cont').remove();
+        });
+
+        afterEach(function() {
+            delete body.vnode._scripts;
+            body.getElement('#s-cont').empty();
+        });
+
+        it('inserting scriptnode executed', function () {
+            var node = body.append('<div><xscript>window.document.body.getElement("#s-cont").append("<div></div>");</xscript></div>', null, null, null, true);
+            expect(body.getElement('#s-cont').getAll('div').length).to.be.equal(1);
+            node.remove();
+        });
+
+        it('inserting scriptnode stored data at _scripts', function () {
+            var node = body.append('<div id="s-div"><xscript>//test &nbsp;</xscript></div>', null, null, null, true);
+            expect(body.getElement('#s-div').vnode._scripts[0]).to.be.equal('//test &nbsp;');
+        });
+
+        it('multiple inserting scriptnode executed once', function () {
+            var node1 = body.append('<div><xscript>window.document.body.getElement("#s-cont").append("<div></div>");</xscript></div>', null, null, null, true);
+            node1.append('<xscript>window.document.body.getElement("#s-cont").append("<div></div>");</xscript>', null, null, null, true);  // will return `undefined` --> no domnode gets inserted
+            expect(body.getElement('#s-cont').getAll('div').length).to.be.equal(1);
+            node1.remove();
+        });
+
+    });
+    //===============================================================
+
+    describe('Inspecting script-elements when no scripts are allowed', function () {
+
+        before(function() {
+            body.append('<div id="s-cont" style="opacity: 0;"></div>');
+        });
+
+        after(function() {
+            body.getElement('#s-cont').remove();
+        });
+
+        afterEach(function() {
+            delete body.vnode._scripts;
+            body.getElement('#s-cont').empty();
+        });
+
+        it('appending', function () {
+            var node = body.append('<div style="opacity: 0;"></div>');
+            node.append('<xscript>window.document.body.getElement("#s-cont").append("<div></div>");</xscript>');
+            expect(body.getElement('#s-cont').getAll('div').length).to.be.equal(0);
+            node.remove();
+        });
+
+
+        it('prepending', function () {
+            var node = body.append('<div style="opacity: 0;"></div>');
+            node.prepend('<xscript>window.document.body.getElement("#s-cont").append("<div></div>");</xscript>');
+            expect(body.getElement('#s-cont').getAll('div').length).to.be.equal(0);
+            node.remove();
+        });
+
+        it('setHTML', function () {
+            var node = body.append('<div style="opacity: 0;"></div>');
+            node.setHTML('<xscript>window.document.body.getElement("#s-cont").append("<div></div>");</xscript>');
+            expect(body.getElement('#s-cont').getAll('div').length).to.be.equal(0);
+            node.remove();
+        });
+
+    });
+
+
 
 }(global.window || require('node-win')));
