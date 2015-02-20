@@ -2,7 +2,8 @@
 
 require('js-ext/lib/object.js');
 
-var createHashMap = require('js-ext/extra/hashmap.js').createMap;
+var createHashMap = require('js-ext/extra/hashmap.js').createMap,
+    laterSilent = require('utils/lib/timers.js').laterSilent;
 
 module.exports = function (window) {
 
@@ -32,6 +33,12 @@ module.exports = function (window) {
             // now reset:
             vnode._setAttr('style', rightStyle);
         });
+        // cleanup duplicated `style` elements - if any
+        // this can be done async with a small delay: no one will notice
+        laterSilent(function() {
+            var head = DOCUMENT.getElement('head');
+            head.vnode._cleanupStyle();
+        }, 500);
     }
     else {
         // if no HTML, then return an empty Plugin-object
