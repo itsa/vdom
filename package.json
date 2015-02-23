@@ -28,7 +28,8 @@
         "node": "*"
     },
     "directories": {
-        "partials": "./partials"
+        "partials": "./partials",
+        "css": "./css"
     },
     "dependencies": {
         "polyfill": "itsa/polyfill",

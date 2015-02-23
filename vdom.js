@@ -13,16 +13,13 @@ module.exports = function (window) {
         return window._ITSAmodules.VDOM; // VDOM was already created
     }
 
-    var DOCUMENT = window.document, vdom;
+    var DOCUMENT = window.document;
 
     if (DOCUMENT.doctype.name==='html') {
         require('./partials/extend-element.js')(window);
         require('./partials/extend-document.js')(window);
         // now parsing and virtualize the complete DOM:
         require('./partials/node-parser.js')(window)(DOCUMENT.documentElement);
-        vdom = {
-            Plugins: require('./partials/element-plugin.js')(window)
-        };
         // if there is any Element with inline `transform` that is not compatible with the current browser:
         // we can revert it into the right `transform`, because the vdom knows the right transform-name:
         DOCUMENT.getAll('[style*="transform:"]').forEach(function(node) {
@@ -40,12 +37,6 @@ module.exports = function (window) {
             head.vnode._cleanupStyle();
         }, 500);
     }
-    else {
-        // if no HTML, then return an empty Plugin-object
-        vdom = {Plugins: {}};
-    }
 
-    window._ITSAmodules.VDOM = vdom;
-
-    return vdom;
+    window._ITSAmodules.VDOM = true;
 };
