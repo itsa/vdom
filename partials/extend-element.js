@@ -1070,6 +1070,15 @@ module.exports = function (window) {
                         targetVNode._data.merge(srcVNode._data);
                     }
                 },
+                unrenderPlugins = function(targetVNode) {
+                    targetVNode.attrs && targetVNode.attrs.each(function(value, key) {
+                        var plugin;
+                        if (key.substr(0, 7)==='plugin-') {
+                            plugin = key.substr(7);
+                            targetVNode.domNode.removeAttr(plugin+'-ready');
+                        }
+                    });
+                },
                 cloneDeepData = function(srcVNode, targetVNode) {
                     var srcVChildren = srcVNode.vChildren,
                         targetVChildren = targetVNode.vChildren,
@@ -1085,7 +1094,12 @@ module.exports = function (window) {
             cloned.vnode = domNodeToVNode(cloned);
             cloneData(vnode, cloned.vnode);
             // if deep, then we need to merge _data of all deeper nodes
-            deep && vnode.hasVChildren() && cloneDeepData(vnode, cloned.vnode);
+            if (deep) {
+                vnode.hasVChildren() && cloneDeepData(vnode, cloned.vnode);
+            }
+            else {
+                unrenderPlugins(cloned.vnode);
+            }
             return cloned;
         };
 
