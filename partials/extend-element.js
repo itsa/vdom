@@ -1063,6 +1063,7 @@ module.exports = function (window) {
         ElementPrototype.cloneNode = function(deep) {
             var instance = this,
                 vnode = instance.vnode,
+                plugins = [],
                 cloned = instance._cloneNode(deep),
                 cloneData = function(srcVNode, targetVNode) {
                     if (srcVNode._data) {
@@ -1070,12 +1071,19 @@ module.exports = function (window) {
                         targetVNode._data.merge(srcVNode._data);
                     }
                 },
-                unrenderPlugins = function(targetVNode) {
+                updatePlugins = function(srcVNode, targetVNode) {
                     targetVNode.attrs && targetVNode.attrs.each(function(value, key) {
-                        var plugin;
+                        var pluginName;
                         if (key.substr(0, 7)==='plugin-') {
-                            plugin = key.substr(7);
-                            targetVNode.domNode.removeAttr(plugin+'-ready');
+                            pluginName = key.substr(7);
+                            // remove and reset the plugin with shallowcloned modeldata
+                            // needs to be scheduled --> when deep cloned the full node needs t be build up first
+                            // otherwise we could get doube rendered nodes.
+                            plugins[plugins.length] = {
+                                domNode: targetVNode.domNode,
+                                pluginName: pluginName,
+                                model: srcVNode.domNode.plugin[pluginName].model.shallowClone()
+                            };
                         }
                     });
                 },
@@ -1088,17 +1096,22 @@ module.exports = function (window) {
                         childSrcVNode = srcVChildren[i];
                         childTargetVNode = targetVChildren[i];
                         cloneData(childSrcVNode, childTargetVNode);
+                        updatePlugins(childSrcVNode, childTargetVNode);
                         childSrcVNode.hasVChildren() && cloneDeepData(childSrcVNode, childTargetVNode);
                     }
-                };
+                },
+                i, len, PluginClass, pluginDef;
             cloned.vnode = domNodeToVNode(cloned);
             cloneData(vnode, cloned.vnode);
+            updatePlugins(vnode, cloned.vnode);
             // if deep, then we need to merge _data of all deeper nodes
-            if (deep) {
-                vnode.hasVChildren() && cloneDeepData(vnode, cloned.vnode);
-            }
-            else {
-                unrenderPlugins(cloned.vnode);
+            deep && vnode.hasVChildren() && cloneDeepData(vnode, cloned.vnode);
+            len = plugins.length;
+            for (i=0; i<len; i++) {
+                pluginDef = plugins[i];
+                PluginClass = window._ITSAPlugins[pluginDef.pluginName];
+                pluginDef.domNode.unplug(PluginClass);
+                pluginDef.domNode.plug(PluginClass, null, pluginDef.model);
             }
             return cloned;
         };
@@ -4152,11 +4165,15 @@ module.exports = function (window) {
                         vnode.text = node.nodeValue;
                     }
                     else {
-                        // remove the childNodes that are no longer there:
+                        // remove the childNodes that are no longer there,
+                        // but ONLY when they are not in the dom --> nodes might get
+                        // replaced inside other nodes, which leads into 'remove'-observer,
+                        // yet we still need them
                         len = removedChildNodes.length;
                         for (i=len-1; i>=0; i--) {
-                            childVNode = removedChildNodes[i].vnode;
-                            childVNode && childVNode._destroy();
+                            childDomNode = removedChildNodes[i];
+                            childVNode = childDomNode.vnode;
+                            childVNode && (!childDomNode.inDOM || !childDomNode.inDOM()) && childVNode._destroy();
                         }
                        // add the new childNodes:
                         len = addedChildNodes.length;
