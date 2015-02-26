@@ -60,11 +60,12 @@ module.exports = function (window) {
      * @method contains
      * @param otherElement {Element}
      * @param [insideItags=false] {Boolean} no deepsearch in iTags --> by default, these elements should be hidden
+     * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
      * @return {Boolean} whether the Element is inside the dom.
      * @since 0.0.1
      */
-    DOCUMENT.contains = function(otherElement, insideItags) {
-        return DOCUMENT.documentElement.contains(otherElement, insideItags);
+    DOCUMENT.contains = function(otherElement, insideItags, inspectProtectedNodes) {
+        return DOCUMENT.documentElement.contains(otherElement, insideItags, inspectProtectedNodes);
     };
 
     /**

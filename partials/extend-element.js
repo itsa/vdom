@@ -1140,7 +1140,7 @@ module.exports = function (window) {
             if (instance===otherElement) {
                 return 0;
             }
-            if (!DOCUMENT.contains(instance) || !DOCUMENT.contains(otherElement)) {
+            if (!DOCUMENT.contains(instance, null, true) || !DOCUMENT.contains(otherElement, null, true)) {
                 return 1;
             }
             else if (instance.contains(otherElement)) {
