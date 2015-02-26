@@ -1832,7 +1832,9 @@ module.exports = function (window) {
                 attributeNameSplitted, ns;
 
             if (instance.isItag && !force && !suppressItagRender && ((instance._unchangableAttrs && instance._unchangableAttrs[attributeName]) || ((attributeName.length===2) && (attributeName.toLowerCase()==='is')))) {
-                console.warn('Not allowed to set the attribute '+attributeName);
+                if (prevVal!=value) {
+                    console.warn('Not allowed to set the attribute '+attributeName);
+                }
                 return instance;
             }
             // don't check by !== --> value isn't parsed into a String yet
