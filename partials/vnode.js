@@ -986,14 +986,17 @@ module.exports = function (window) {
          *
          * @method getHTML
          * @param [exclude] {Array|HTMLElement} an array of HTMLElements - or just 1 - to be excluded
+         * @param [includeSystemNodes=false] {Boolean} whether system-nodes and i-tag inner-content should be returned. By default, they stay hidden.
          * @return {String|undefined} the innerHTML without the elements specified, or `undefined` when not an HTMLElement
          * @since 0.0.1
          */
-        getHTML: function(exclude) {
+        getHTML: function(exclude, includeSystemNodes) {
             var instance = this,
                 html, vChildNodes, len, i, vChildNode;
             if (instance.nodeType===1) {
-                Array.isArray(exclude) || (exclude=[exclude]);
+                if (exclude) {
+                    Array.isArray(exclude) || (exclude=[exclude]);
+                }
                 html = '';
                 vChildNodes = instance.vChildNodes;
                 len = vChildNodes ? vChildNodes.length : 0;
@@ -1001,7 +1004,7 @@ module.exports = function (window) {
                     vChildNode = vChildNodes[i];
                     switch (vChildNode.nodeType) {
                         case 1:
-                            exclude.contains(vChildNode.domNode) || vChildNode._systemNode || (html+=vChildNode.outerHTML);
+                            (exclude && exclude.contains(vChildNode.domNode)) || (!includeSystemNodes && vChildNode._systemNode) || (html+=vChildNode.getOuterHTML(exclude, includeSystemNodes));
                             break;
                         case 3:
                             html += vChildNode.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -1009,6 +1012,37 @@ module.exports = function (window) {
                         case 8:
                             html += '<!--' + vChildNode.text.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '-->';
                     }
+                }
+            }
+            return html;
+        },
+
+        /**
+         * Gets the outerHTML of the vnode representing the dom-node.
+         * You may exclude HTMLElement (node-type=1) by specifying `exclude`.
+         *
+         * @method getOuterHTML
+         * @param [exclude] {Array|HTMLElement} an array of HTMLElements - or just 1 - to be excluded
+         * @param [includeSystemNodes=false] {Boolean} whether system-nodes and i-tag inner-content should be returned. By default, they stay hidden.
+         * @return {String} the outerHTML
+         * @since 0.0.1
+         */
+        getOuterHTML: function(exclude, includeSystemNodes) {
+            var instance = this,
+                html,
+                attrs = instance.attrs;
+            if (instance.nodeType===1) {
+                if (instance.nodeType!==1) {
+                    return instance.textContent;
+                }
+                html = '<' + instance.tag.toLowerCase();
+                attrs.each(function(value, key) {
+                    html += ' '+key+'="'+value+'"';
+                });
+                instance.isVoid && (html += '/');
+                html += '>';
+                if (!instance.isVoid) {
+                    html += ((!includeSystemNodes && instance.isItag) ? '' : instance.getHTML(exclude, includeSystemNodes)) + '</' + instance.tag.toLowerCase() + '>';
                 }
             }
             return html;
@@ -2366,24 +2400,7 @@ module.exports = function (window) {
          */
         outerHTML: {
             get: function() {
-                var instance = this,
-                    html,
-                    attrs = instance.attrs;
-                if (instance.nodeType===1) {
-                    if (instance.nodeType!==1) {
-                        return instance.textContent;
-                    }
-                    html = '<' + instance.tag.toLowerCase();
-                    attrs.each(function(value, key) {
-                        html += ' '+key+'="'+value+'"';
-                    });
-                    instance.isVoid && (html += '/');
-                    html += '>';
-                    if (!instance.isVoid) {
-                        html += (instance.isItag ? '' : instance.innerHTML) + '</' + instance.tag.toLowerCase() + '>';
-                    }
-                }
-                return html;
+                return this.getOuterHTML();
             },
             set: function(v) {
                 var instance = this,

@@ -22,56 +22,20 @@
         VENDOR_TRANSFORM_PROPERTY = generateVendorCSSProp(TRANSFORM),
         VENDOR_TRANSITION_PROPERTY = require('polyfill/extra/transition.js')(window),
         async = require('utils/lib/timers.js').async,
-        DOCUMENT = window.document,
         SUPPORT_INLINE_PSEUDO_STYLES = window.document._supportInlinePseudoStyles,
-        node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub, nodeSub3SubText, container, containerSub1, containerSub2, containerSub3, cssnode, bodyNode,
-        divnode1, divnode2, buttonnode, buttonnode2, buttonnode3, buttonnode4;
+        node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub, nodeSub3SubText, container, containerSub1, containerSub2, containerSub3, cssnode;
 
     chai.use(require('chai-as-promised'));
 
-    describe('Methods', function () {
-        this.timeout(5000);
-
-        // bodyNode looks like this:
-        /*
-        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;">
-            <div id="sub1" class="green yellow"></div>
-            <div id="sub2" class="green yellow"></div>
-            <div id="sub3">
-                <div id="sub3sub" class="green yellow"></div>
-                extra text
-            </div>
-        </div>
-        */
-
+    describe('Mutation Observer', function () {
         // Code to execute before every test.
         beforeEach(function() {
             node = window.document.createElement('div');
             node.id = 'ITSA';
-            node.className = 'red blue';
             node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
-                nodeSub1 = window.document.createElement('div');
-                nodeSub1.id = 'sub1';
-                nodeSub1.className = 'green yellow';
-                node.appendChild(nodeSub1);
-
-                nodeSub2 = window.document.createElement('div');
-                nodeSub2.className = 'green yellow';
-                nodeSub2.id = 'sub2';
-                node.appendChild(nodeSub2);
-
-                nodeSub3 = window.document.createElement('div');
-                nodeSub3.id = 'sub3';
-                node.appendChild(nodeSub3);
-
-                    nodeSub3Sub = window.document.createElement('div');
-                    nodeSub3Sub.className = 'green yellow';
-                    nodeSub3Sub.id = 'sub3sub';
-                    nodeSub3.appendChild(nodeSub3Sub);
-
-                    nodeSub3SubText = window.document.createTextNode('extra text');
-                    nodeSub3.appendChild(nodeSub3SubText);
-
+            node.appendChild(window.document.createElement('div'));
+            node.appendChild(window.document.createTextNode('some content'));
+            node.appendChild(window.document.createComment('some comment'));
             window.document.body.appendChild(node);
         });
 
@@ -79,30 +43,20 @@
         afterEach(function() {
             window.document.body.removeChild(node);
         });
-        /*
-        <div id="ITSA" class="red blue" style="position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;">
-            <div id="sub1" class="green yellow"></div>
-            <div id="sub2" class="green yellow"></div>
-            <div id="sub3">
-                <div id="sub3sub" class="green yellow"></div>
-                extra text
-            </div>
-        </div>
-        */
 
-        it('getElement', function () {
-            // check another issue that went wrong:
-            var el = window.document.body.append('<div style="opacity:0;"><span id="check-element" class="red" data-x="2"></span></div>');
-            var spannode = window.document.getElement('#check-element');
-            expect(el.getElement('.red[data-x]')).to.be.equal(spannode);
-            expect(el.getElement('.red[data-x="2"]')).to.be.equal(spannode);
-            expect(el.getElement('[data-x].red')).to.be.equal(spannode);
-            expect(el.getElement('[data-x="2"].red')).to.be.equal(spannode);
-            el.remove();
+        it('processing removed Element', function (done) {
+            // need to async --> because that will make node._nosync return to `false`.
+            async(function() {
+                node._removeChild(node.childNodes[0]);
+            }, 0);
+            setTimeout(function() {
+                expect(node.childNodes.length).to.be.eql(2);
+                expect(node.vnode.vChildNodes.length).to.be.eql(2);
+                done();
+            }, 500);
         });
 
     });
-
 
 
 }(global.window || require('node-win')));
