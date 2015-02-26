@@ -4160,7 +4160,7 @@ module.exports = function (window) {
                     attribute = mutation.attributeName,
                     addedChildNodes = mutation.addedNodes,
                     removedChildNodes = mutation.removedNodes,
-                    i, len, childDomNode, childVNode, index, vchildnode, inDom;
+                    i, len, childDomNode, childVNode, index, vchildnode;
                 if (vnode && !vnode._nosync) {
                     if (type==='attributes') {
                         vnode.reloadAttr(attribute);
