@@ -957,7 +957,7 @@ module.exports = function (window) {
          * @method addSystemElement
          * @param content {Element|ElementArray|String} content to append
          * @param [escape] {Boolean} whether to insert `escaped` content, leading it into only text inserted
-         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+         * @param [silent=true] {Boolean} prevent node-mutation events by the Event-module to emit --> defaults TRUE
          * @return {Element} the created Element (or the last when multiple)
          */
         ElementPrototype.addSystemElement = function(content, escape, silent) {
@@ -965,11 +965,13 @@ module.exports = function (window) {
                 vChildNodes = instance.vnode.vChildNodes,
                 len = vChildNodes.length,
                 systemElement, refElement, i;
+            (typeof silent === 'boolean') || (silent=true);
             for (i=0; (i<len) && !refElement; i++) {
                 vChildNodes[i]._systemNode || (refElement=vChildNodes[i].domNode);
             }
             systemElement = refElement ? instance.prepend(content, escape, refElement, silent) : instance.append(content, escape, refElement, silent);
             systemElement.vnode._systemNode = true;
+            systemElement.setAttr('is', 'system-node', true);
             return systemElement;
         };
 
@@ -1570,7 +1572,7 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         ElementPrototype.getElement = function(cssSelector, inspectProtectedNodes) {
-            return ((cssSelector[0]==='#') && (cssSelector.indexOf(' ')===-1)) ? this.getElementById(cssSelector.substr(1)) : this.querySelector(cssSelector, inspectProtectedNodes);
+            return ((cssSelector[0]==='#') && (cssSelector.indexOf(' ')===-1)) ? this.getElementById(cssSelector.substr(1), inspectProtectedNodes) : this.querySelector(cssSelector, inspectProtectedNodes);
         };
 
         /**

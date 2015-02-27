@@ -87,6 +87,8 @@ module.exports = function (window) {
                 extractStyle.attrStyle && (vnode.attrs.style=extractStyle.attrStyle);
                 vnode.styles = extractStyle.styles;
 
+                (vnode.attrs.is==='system-node') && (vnode._systemNode=true);
+
                 if (voidElements[tag]) {
                     vnode.isVoid = true;
                 }
