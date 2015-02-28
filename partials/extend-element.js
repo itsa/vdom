@@ -1084,7 +1084,7 @@ module.exports = function (window) {
                             plugins[plugins.length] = {
                                 domNode: targetVNode.domNode,
                                 pluginName: pluginName,
-                                model: srcVNode.domNode.plugin[pluginName].model.shallowClone()
+                                model: srcVNode.domNode._plugin[pluginName].model.shallowClone()
                             };
                         }
                     });
