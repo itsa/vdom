@@ -2398,6 +2398,9 @@ module.exports = function (window) {
                             if (vChildNode._systemNode || (vChildNode.isItag && vChildNode.domNode.contentHidden)) {
                                 noDeep = true;
                             }
+                            else {
+                                noDeep = false;
+                            }
                         }
                         else {
                             noDeep = false;
@@ -2453,6 +2456,9 @@ module.exports = function (window) {
                     if (!inspectProtectedNodes) {
                         if (vChildNode._systemNode || (vChildNode.isItag && vChildNode.domNode.contentHidden)) {
                             noDeep = true;
+                        }
+                        else {
+                            noDeep = false;
                         }
                     }
                     else {

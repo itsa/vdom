@@ -51,6 +51,10 @@
     opacity: 0 !important;
 }
 
+.itsa-no-display {
+    display: none; !important;
+}
+
 .itsa-block {
     display: block !important;
 }
