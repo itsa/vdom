@@ -1359,16 +1359,23 @@ module.exports = function (window) {
                 removal = [],
                 vChildren = instance.vChildren,
                 len = vChildren.length,
-                vChild, i, styleContent;
+                vChild, i, styleContent, vChildInner;
             for (i=0; i<len; i++) {
                 vChild = vChildren[i];
                 if (vChild.tag==='STYLE') {
-                    styleContent = vChild.vChildNodes[0].text;
-                    if (compare.contains(styleContent)) {
-                        removal[removal.length] = vChild;
+                    vChildInner = vChild.vChildNodes[0];
+                    if (vChildInner) {
+                        styleContent = vChildInner.text;
+                        if (compare.contains(styleContent)) {
+                            removal[removal.length] = vChild;
+                        }
+                        else {
+                            compare[compare.length] = styleContent;
+                        }
                     }
                     else {
-                        compare[compare.length] = styleContent;
+                        // empty style-tag
+                        removal[removal.length] = vChild;
                     }
                 }
             }
