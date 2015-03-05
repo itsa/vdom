@@ -44,8 +44,8 @@ module.exports = function (window) {
         nodeids = NS.nodeids,
         htmlToVNodes = require('./html-parser.js')(window),
         timers = require('utils/lib/timers.js'),
-        async = timers.asyncSilent,
-        later = timers.laterSilent,
+        async = timers.async,
+        later = timers.later,
 /*jshint proto:true */
         PROTO_SUPPORTED = !!Object.__proto__,
 /*jshint proto:false */
