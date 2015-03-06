@@ -10,8 +10,8 @@
         should = require('chai').should(),
         DOCUMENT = window.document,
         body = window.document.body,
-        laterSilent = require('utils/lib/timers.js').laterSilent,
-        asyncSilent = require('utils/lib/timers.js').asyncSilent,
+        later = require('utils/lib/timers.js').later,
+        async = require('utils/lib/timers.js').async,
         domNodeToVNode = require("../partials/node-parser.js")(window);
 
     //===============================================================
