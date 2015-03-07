@@ -934,7 +934,7 @@ module.exports = function (window) {
             while (otherVNode && (otherVNode!==instance)) {
                 otherVNode = otherVNode.vParent;
                 if (otherVNode && noProtectedSearch && (otherVNode._systemNode || (otherVNode.isItag && otherVNode.domNode.contentHidden))) {
-                    return false;
+                    return (otherVNode===instance);
                 }
             }
             return (otherVNode===instance);
