@@ -1212,7 +1212,7 @@ module.exports = function (window) {
          *
          * @method contains
          * @param otherElement {Element}
-         * @param [excludeItself] {Boolean} to exclude itsefl as a hit
+         * @param [excludeItself=false] {Boolean} to exclude itself as a hit
          * @param [inspectProtectedNodes=false] {Boolean} no deepsearch in protected Nodes or iTags --> by default, these elements should be hidden
          * @return {Boolean} whether this Element contains OR equals otherElement.
          */
