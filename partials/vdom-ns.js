@@ -73,7 +73,11 @@ var createHashMap = require('js-ext/extra/hashmap.js').createMap,
         LINK: true,
         META: true,
         PARAM: true,
-        EMBED: true
+        EMBED: true,
+        SOURCE: true,
+        TRACK: true,
+        WBR: true,
+        KEYGEN: true
     }),
 
     // Block Elements - HTML 4.01
