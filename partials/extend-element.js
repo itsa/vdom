@@ -1951,7 +1951,7 @@ module.exports = function (window) {
         * @since 0.0.1
         */
         ElementPrototype.hasFocusInside = function() {
-            return this.contains(DOCUMENT.activeElement, true);
+            return this.contains(DOCUMENT.activeElement, true, true);
         };
 
        /**
