@@ -2102,7 +2102,7 @@ module.exports = function (window) {
             }
             else {
                 // selector should be an Element
-                return ((selector!==instance) && selector.contains(instance)) ? selector : false;
+                return ((selector!==instance) && selector.contains(instance, false, true)) ? selector : false;
             }
         };
 
