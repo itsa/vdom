@@ -228,7 +228,7 @@ module.exports = function (window) {
                     }
 
                     // just to be sure there won't be a `script`-tag passed inside the argument (something modern browsers never let happen):
-                    (tag==='SCRIPT') && (tag==='XSCRIPT');
+                    (tag==='SCRIPT') && (tag='XSCRIPT');
 
                     // the string-parser expects </xscript> for `script`-tags
                     if ((tag==='XSCRIPT') && allowScripts) {
