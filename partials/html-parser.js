@@ -89,7 +89,8 @@ module.exports = function (window) {
         }),
         STARTTAG_OR_ATTR_VALUE_ENDS_CHARACTERS = createHashMap({
             ' ': true,
-            '>': true
+            '>': true,
+            '/': true
         }),
         ATTRUBUTE_NAME_ENDS_CHARACTER = createHashMap({
             ' ': true,
