@@ -42,6 +42,36 @@
 
     describe('HTML to vnodes parser', function () {
 
+        it('Single void-node', function () {
+            var vnodes = htmlToVNodes('<br>', vNodeProto),
+                vnode;
+            expect(vnodes.length).to.be.eql(1);
+            vnode = vnodes[0];
+            expect(vnode.nodeType).to.be.eql(1);
+            expect(vnode.tag).to.be.eql('BR');
+            expect(vnode.isVoid).to.be.true;
+        });
+
+        it('Single void-node with slash', function () {
+            var vnodes = htmlToVNodes('<br/>', vNodeProto),
+                vnode;
+            expect(vnodes.length).to.be.eql(1);
+            vnode = vnodes[0];
+            expect(vnode.nodeType).to.be.eql(1);
+            expect(vnode.tag).to.be.eql('BR');
+            expect(vnode.isVoid).to.be.true;
+        });
+
+        it('Single void-node with space and slash', function () {
+            var vnodes = htmlToVNodes('<br />', vNodeProto),
+                vnode;
+            expect(vnodes.length).to.be.eql(1);
+            vnode = vnodes[0];
+            expect(vnode.nodeType).to.be.eql(1);
+            expect(vnode.tag).to.be.eql('BR');
+            expect(vnode.isVoid).to.be.true;
+        });
+
         it('Single node', function () {
             var vnodes = htmlToVNodes(html1, vNodeProto),
                 vnode, childvnode;
