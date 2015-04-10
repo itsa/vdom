@@ -1373,10 +1373,7 @@ module.exports = function (window) {
                             compare[compare.length] = styleContent;
                         }
                     }
-                    else {
-                        // empty style-tag
-                        removal[removal.length] = vChild;
-                    }
+                    // empty style tags will be remained --> they might have been set to fill later on
                 }
             }
             removal.forEach(function(vnode) {
