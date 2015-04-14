@@ -4062,6 +4062,22 @@ module.exports = function (window) {
         Object.defineProperties(ElementPrototype, {
 
            /**
+            * Gets the bottom y-position (in the DOCUMENT) of the element in pixels.
+            * DOCUMENT-related: regardless of the window's scroll-position.
+            *
+            * @property bottom
+            * @since 0.0.1
+            */
+            bottom: {
+                get: function() {
+                    return this.top + this.height;
+                },
+                set: function(pixelsBottom) {
+                    this.top = pixelsBottom - this.height;
+                }
+            },
+
+           /**
             * Gets or set the height of the element in pixels. Included are padding and border, not any margins.
             * By setting the argument `overflow` you get the total height, included the invisible overflow.
             *
@@ -4100,7 +4116,23 @@ module.exports = function (window) {
                     return Math.round(this.getBoundingClientRect().left + window.getScrollLeft());
                 },
                 set: function(pixelsLeft) {
-                    return this.setXY(pixelsLeft, null, null, true);
+                    this.setXY(pixelsLeft, null, null, true);
+                }
+            },
+
+           /**
+            * Gets the right-position (in the DOCUMENT) of the element in pixels.
+            * DOCUMENT-related: regardless of the window's scroll-position.
+            *
+            * @property right
+            * @since 0.0.1
+            */
+            right: {
+                get: function() {
+                    return this.left + this.width;
+                },
+                set: function(pixelsRight) {
+                    this.left = pixelsRight - this.width;
                 }
             },
 
@@ -4116,7 +4148,7 @@ module.exports = function (window) {
                     return Math.round(this.getBoundingClientRect().top + window.getScrollTop());
                 },
                 set: function(pixelsTop) {
-                    return this.setXY(null, pixelsTop, null, true);
+                    this.setXY(null, pixelsTop, null, true);
                 }
             },
 
