@@ -2145,6 +2145,34 @@ module.exports = function (window) {
          * @return {Boolean}
          * @since 0.0.1
          */
+        ElementPrototype.isEmpty = function(inspectSystemNodes) {
+            var vnode = this.vnode,
+                vChildNodes = vnode.vChildNodes,
+                i, len;
+            if (!inspectSystemNodes) {
+                if (vnode.isItag && vnode.domNode.contentHidden) {
+                    return true;
+                }
+                // else:
+                len = vChildNodes.length;
+                for (i=0; i<len; i++) {
+                    if (!vChildNodes[i]._systemNode) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            // else:
+            return (vChildNodes.length===0);
+        };
+
+        /**
+         * Whether the element is an Itag-element
+         *
+         * @method isItag
+         * @return {Boolean}
+         * @since 0.0.1
+         */
         ElementPrototype.isItag = function() {
             return this.vnode.isItag;
         };
