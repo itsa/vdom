@@ -2764,6 +2764,9 @@ module.exports = function (window) {
             cssProperties = getVendorCSS(cssProperties);
             len = cssProperties.length;
             vnodeStyles = vnode.styles;
+            if (!vnodeStyles) {
+                return;
+            }
             for (i=0; i<len; i++) {
                 item = cssProperties[i];
                 if (typeof item==='string') {
