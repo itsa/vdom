@@ -207,7 +207,7 @@ module.exports = function (window) {
          */
         PSEUDO_REQUIRED_CHILDREN = createHashMap(),
         _matchesSelectorItem, _matchesOneSelector, _findElementSibling, vNodeProto, _markRemoved, _tryReplaceChild,
-        _splitSelector, _findNodeSibling, _matchNthChild, _batchEmit, _emitDestroyChildren, _tryRemoveDomNode;
+        _splitSelector, _findNodeSibling, _matchNthChild, _batchEmit, _emitDestroyChildren, _tryRemoveDomNode, _emitChildnodes;
         PSEUDO_REQUIRED_CHILDREN[PSEUDO_FIRST_CHILD] = true;
         PSEUDO_REQUIRED_CHILDREN[PSEUDO_FIRST_OF_TYPE] = true;
         PSEUDO_REQUIRED_CHILDREN[PSEUDO_LAST_CHILD] = true;
@@ -218,6 +218,26 @@ module.exports = function (window) {
         PSEUDO_REQUIRED_CHILDREN[PSEUDO_NTH_OF_TYPE] = true;
         PSEUDO_REQUIRED_CHILDREN[PSEUDO_ONLY_OF_TYPE] = true;
         PSEUDO_REQUIRED_CHILDREN[PSEUDO_ONLY_CHILD] = true;
+
+   /**
+    * Emits a specific event for all its childnodes on behalf of a parent vnode
+    *
+    * @method _emitChildnodes
+    * @param VNode {Object} the vnode that emits its children
+    * @param event {String} the type of even to emit
+    * @protected
+    * @private
+    * @since 0.0.1
+    */
+    _emitChildnodes = function(VNode, event) {
+        var vChildNodes = VNode.vChildNodes,
+            len = vChildNodes.length,
+            i, vChild;
+        for (i=0; i<len; i++) {
+            vChild = vChildNodes[i];
+            (vChild.nodeType===1) && vChild._emit(event);
+        }
+    };
 
    /**
     * Searches for the next -or previous- node-sibling (nodeType of 1, 3 or 8).
@@ -1279,6 +1299,7 @@ module.exports = function (window) {
                 }
                 if (VNode.nodeType===1) {
                     VNode._emit(EV_INSERTED);
+                    _emitChildnodes(VNode, EV_INSERTED);
                 }
                 return domNode;
             }
@@ -1582,6 +1603,7 @@ module.exports = function (window) {
                     (newVNode.nodeType===3) && instance._normalize();
                     if (newVNode.nodeType===1) {
                         newVNode._emit(EV_INSERTED);
+                        _emitChildnodes(newVNode, EV_INSERTED);
                     }
                     return domNode;
                 }
