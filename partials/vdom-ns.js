@@ -155,16 +155,6 @@ module.exports = function (window) {
     });
 
     /**
-     * A hash with all node'ids (of all the domnodes that have an id). The value is a reference to an VElement.
-     *
-     * @property nodeids
-     * @default {}
-     * @type Object
-     * @since 0.0.1
-     */
-    NS.nodeids || (NS.nodeids=createHashMap());
-
-    /**
      * A hash with all encountered non-void Elements
      *
      * @property nonVoidElements

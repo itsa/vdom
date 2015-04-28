@@ -14,7 +14,6 @@
         expect = chai.expect,
         should = chai.should(),
         NS = require('../partials/vdom-ns.js')(window),
-        nodeids = NS.nodeids,
         TRANSFORM = 'transform',
         VENDOR_CSS = require('polyfill/extra/vendorCSS.js')(window),
         generateVendorCSSProp = VENDOR_CSS.generator,
@@ -1505,7 +1504,6 @@
         });
 
         it('remove', function () {
-            expect(nodeids.sub2).to.be.eql(nodeSub2);
             nodeSub2.remove();
             expect(node.childNodes.length).to.be.eql(2);
             expect(node.vnode.vChildNodes.length).to.be.eql(2);
@@ -1513,7 +1511,6 @@
             expect(node.childNodes[1]).to.be.eql(nodeSub3);
             expect(node.vnode.vChildNodes[0].domNode).to.be.eql(nodeSub1);
             expect(node.vnode.vChildNodes[1].domNode).to.be.eql(nodeSub3);
-            expect(nodeids.sub2).to.be.eql(nodeSub2); // should still exist: will be removed after 60 sec
             expect(nodeSub2.vnode.destroyed).to.be.true;
             expect(nodeSub2.vnode.removedFromDOM).to.be.true;
         });
@@ -1533,8 +1530,6 @@
             expect(node.vnode.vChildNodes[0].vChildNodes.length).to.be.eql(2);
             expect(node.vnode.vChildNodes[0].vChildNodes[0]).to.be.eql(nodeSub3Sub.vnode);
             expect(node.vnode.vChildNodes[0].vChildNodes[1]).to.be.eql(nodeSub3SubText.vnode);
-
-            expect(nodeids.sub3).to.be.eql(nodeSub3);
         });
 
         it('removeAttr', function () {
@@ -1556,7 +1551,6 @@
         });
 
         it('removeChild', function () {
-            expect(nodeids.sub2).to.be.eql(nodeSub2);
             node.removeChild(nodeSub2);
             expect(node.childNodes.length).to.be.eql(2);
             expect(node.vnode.vChildNodes.length).to.be.eql(2);
@@ -1564,7 +1558,6 @@
             expect(node.childNodes[1]).to.be.eql(nodeSub3);
             expect(node.vnode.vChildNodes[0].domNode).to.be.eql(nodeSub1);
             expect(node.vnode.vChildNodes[1].domNode).to.be.eql(nodeSub3);
-            expect(nodeids.sub2).to.be.eql(nodeSub2); // should still exist: will be removed after 60 sec
             expect(nodeSub2.vnode.destroyed).to.be.true;
             expect(nodeSub2.vnode.removedFromDOM).to.be.true;
         });
@@ -1630,7 +1623,6 @@
             expect(nodeSub2.id).to.be.eql('');
             expect(nodeSub2.vnode.attrs.id===undefined).to.be.true;
             expect(nodeSub2.getId()===undefined).to.be.true;
-            expect(nodeids.sub2===undefined).to.be.true;
         });
 
         it('removeInlineStyle', function () {
@@ -2019,14 +2011,10 @@
             expect(node.id).to.be.eql('ITSA');
             expect(node.vnode.id).to.be.eql('ITSA');
             expect(node.vnode.attrs.id).to.be.eql('ITSA');
-            expect(nodeids.ITSA).to.be.eql(node);
-            expect(nodeids.ITSA2===undefined).to.be.true;
             node.setId('ITSA2');
             expect(node.id).to.be.eql('ITSA2');
             expect(node.vnode.id).to.be.eql('ITSA2');
             expect(node.vnode.attrs.id).to.be.eql('ITSA2');
-            expect(nodeids.ITSA===undefined).to.be.true;
-            expect(nodeids.ITSA2).to.be.eql(node);
         });
 
         it('setInlineStyle', function () {
@@ -2258,13 +2246,9 @@
         });
 
         it('setText', function () {
-            expect(nodeids.sub3).to.be.eql(nodeSub3);
-            expect(nodeids.sub3sub).to.be.eql(nodeSub3Sub);
             nodeSub3.setText('ok <b>here we go</b>');
             expect(nodeSub3.outerHTML).to.be.eql('<div id="sub3">ok &lt;b&gt;here we go&lt;/b&gt;</div>');
             expect(nodeSub3.vnode.vChildNodes.length).to.be.eql(1);
-            expect(nodeids.sub3).to.be.eql(nodeSub3);
-            expect(nodeids.sub3sub===undefined).to.be.true;
             nodeSub3.setText('');
             expect(nodeSub3.outerHTML).to.be.eql('<div id="sub3"></div>');
             expect(nodeSub3.vnode.vChildNodes.length).to.be.eql(0);
@@ -3308,8 +3292,6 @@
                 expect(node.id).to.be.eql('ITSA1');
                 expect(node.vnode.id).to.be.eql('ITSA1');
                 expect(node.vnode.attrs.id).to.be.eql('ITSA1');
-                expect(nodeids.ITSA===undefined).to.be.true;
-                expect(nodeids.ITSA1).to.be.eql(node);
                 done();
             }, 500);
         });
@@ -3323,7 +3305,6 @@
                 expect(node.id).to.be.eql('');
                 expect(node.vnode.id===undefined).to.be.true;
                 expect(node.vnode.attrs.id===undefined).to.be.true;
-                expect(nodeids.ITSA===undefined).to.be.true;
                 done();
             }, 500);
         });
