@@ -131,7 +131,6 @@ module.exports = function (window) {
                 // vnode.text = (nodeType===3) ? escapeEntities(domNode.nodeValue) : domNode.nodeValue;
             }
             // store vnode's id:
-            vnode.storeId();
             return vnode;
         };
 
