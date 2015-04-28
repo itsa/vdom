@@ -108,40 +108,6 @@ module.exports = function (window) {
     };
 
     /**
-     * Returns the an Array with all itag-Elements
-     *
-     * @method getItags
-     * @return {Array}
-     *
-     */
-    DOCUMENT.getItags = function() {
-        var instance = this,
-            findChildren;
-        // i-tag elements can only exists when the window.ITAGS are defined (by itags.core)
-        if (!window.ITAGS) {
-            return [];
-        }
-        if (instance._itagList) {
-            return instance._itagList;
-        }
-        // when not returned: it would be the first time --> we setup the current list
-        // the quickest way is by going through the vdom and inspect the tagNames ourselves:
-        findChildren = function(vnode) {
-            var vChildren = vnode.vChildren,
-                len = vChildren.length,
-                i, vChild;
-            for (i=0; i<len; i++) {
-                vChild = vChildren[i];
-                vChild.isItag && (DOCUMENT._itagList[DOCUMENT._itagList.length]=vChild.domNode);
-                findChildren(vChild);
-            }
-        };
-        Object.protectedProp(instance, '_itagList', []);
-        findChildren(instance.getElement('body').vnode);
-        return instance._itagList;
-    };
-
-    /**
      * Returns the first Element that matches the CSS-selectors. You can pass one, or multiple CSS-selectors. When passed multiple,
      * they need to be separated by a `comma`.
      *
