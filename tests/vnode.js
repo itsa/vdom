@@ -11,7 +11,6 @@
         DOCUMENT = window.document,
         domNodeToVNode = require("../partials/node-parser.js")(window),
         NS = require('../partials/vdom-ns.js')(window),
-        nodeids = NS.nodeids,
         nodesMap = NS.nodesMap,
         node1, node2, node3, node4, node5, node6, node7, node6_1, node7_1, node7_2, node6_1_1, node6_1_2, node6_1_3, node6_1_1_1, node6_1_2_1,
         vnode, vnodeB, nodeB, nodeB2, nodeB3, nodeB4, nodeB5, nodeB6,
@@ -638,17 +637,6 @@
             expect(vnode.lastOfVChildren('ul')===undefined).to.be.eql(true);
             expect(vnode.vChildNodes[4].vChildNodes[0].lastOfVChildren()).to.be.eql(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[2]);
             expect(vnode.vChildNodes[4].vChildNodes[0].lastOfVChildren('li')).to.be.eql(vnode.vChildNodes[4].vChildNodes[0].vChildNodes[2]);
-        });
-
-        it('storeId', function () {
-            var domNode = vnode.domNode;
-            expect(nodeids[vnode.id]).to.be.eql(vnode.domNode);
-
-            delete nodeids[vnode.id];
-            expect(nodeids[vnode.id]===undefined).to.be.true;
-
-            vnode.storeId();
-            expect(nodeids[vnode.id]).to.be.eql(vnode.domNode);
         });
 
     });

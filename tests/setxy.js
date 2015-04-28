@@ -13,7 +13,6 @@
         should = require('chai').should(),
         plugins = require("../vdom.js")(window).Plugins,
         NS = require('../partials/vdom-ns.js')(window),
-        nodeids = NS.nodeids,
         async = require('utils/lib/timers.js').async,
         node, nodeSub1, nodeSub2;
 

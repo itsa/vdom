@@ -11,7 +11,6 @@
         DOCUMENT = window.document,
         domNodeToVNode = require("../partials/node-parser.js")(window),
         NS = require('../partials/vdom-ns.js')(window),
-        nodeids = NS.nodeids,
         nodesMap = NS.nodesMap,
         node1, node2, node3, node4, node5, node6, node7, node6_1, node7_1, node7_2, node6_1_1, node6_1_2, node6_1_3, node6_1_1_1, node6_1_2_1,
         vnode, vnodeB, nodeB, nodeB2, nodeB3, nodeB4, nodeB5, nodeB6,
