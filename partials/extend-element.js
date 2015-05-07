@@ -1072,7 +1072,7 @@ module.exports = function (window) {
                     }
                 },
                 updatePlugins = function(srcVNode, targetVNode) {
-                    targetVNode.attrs && targetVNode.attrs.each(function(value, key) {
+                    targetVNode && targetVNode.attrs && targetVNode.attrs.each(function(value, key) {
                         var pluginName;
                         if (key.substr(0, 7)==='plugin-') {
                             pluginName = key.substr(7);
@@ -3849,7 +3849,6 @@ module.exports = function (window) {
         *        <ul>
         *            <li>cancel() {Promise}</li>
         *            <li>freeze() {Promise}</li>
-        *            <li>unfreeze()</li>
         *            <li>finish() {Promise}</li>
         *        </ul>
         *        These handles resolve with the `elapsed-time` as first argument of the callbackFn
