@@ -6,7 +6,6 @@ var createHashMap = require('js-ext/extra/hashmap.js').createMap,
     later = require('utils/lib/timers.js').later;
 
 module.exports = function (window) {
-
     window._ITSAmodules || Object.protectedProp(window, '_ITSAmodules', createHashMap());
 
     if (window._ITSAmodules.VDOM) {
@@ -15,7 +14,7 @@ module.exports = function (window) {
 
     var DOCUMENT = window.document;
 
-    if (DOCUMENT.doctype.name==='html') {
+    if (DOCUMENT.doctype.name.toLowerCase()==='html') {
         require('./partials/extend-element.js')(window);
         require('./partials/extend-document.js')(window);
         // now parsing and virtualize the complete DOM:
