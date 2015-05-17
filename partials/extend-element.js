@@ -1930,11 +1930,12 @@ module.exports = function (window) {
         * Indicates whether Element currently has the focus.
         *
         * @method hasFocus
+        * @param [inside] whether focus may also lie on a descendent inside
         * @return {Boolean}
         * @since 0.0.1
         */
-        ElementPrototype.hasFocus = function() {
-            return (DOCUMENT.activeElement===this);
+        ElementPrototype.hasFocus = function(inside) {
+            return (DOCUMENT.activeElement===this) || (inside ? this.contains(DOCUMENT.activeElement, true, true) : false);
         };
 
        /**
