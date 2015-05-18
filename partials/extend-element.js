@@ -20,7 +20,6 @@ require('js-ext/lib/object.js');
 require('js-ext/lib/string.js');
 require('js-ext/lib/promise.js');
 require('polyfill');
-require('polyfill/lib/mutationobserver.js');
 
 var createHashMap = require('js-ext/extra/hashmap.js').createMap;
 
@@ -858,6 +857,10 @@ module.exports = function (window) {
     CSS_PROPS_TO_CALCULATE[generateVendorCSSProp(TRANSFORM+'-origin')] = true;
     CSS_PROPS_TO_CALCULATE[generateVendorCSSProp('perspective')] = true;
 
+    // backup native _contains --> mutationobserver needs it
+    // cautious: IE has this property ONLY on HTMLElement (not on Element)
+    window.HTMLElement.prototype._contains = window.HTMLElement.prototype.contains;
+
     (function(ElementPrototype) {
 
         /**
@@ -1089,16 +1092,18 @@ module.exports = function (window) {
                     });
                 },
                 cloneDeepData = function(srcVNode, targetVNode) {
-                    var srcVChildren = srcVNode.vChildren,
-                        targetVChildren = targetVNode.vChildren,
-                        len = srcVChildren.length,
-                        i, childSrcVNode, childTargetVNode;
-                    for (i=0; i<len; i++) {
-                        childSrcVNode = srcVChildren[i];
-                        childTargetVNode = targetVChildren[i];
-                        cloneData(childSrcVNode, childTargetVNode);
-                        updatePlugins(childSrcVNode, childTargetVNode);
-                        childSrcVNode.hasVChildren() && cloneDeepData(childSrcVNode, childTargetVNode);
+                    var srcVChildren, targetVChildren, len, i, childSrcVNode, childTargetVNode;
+                    if (srcVNode && targetVNode) {
+                        srcVChildren = srcVNode.vChildren;
+                        targetVChildren = targetVNode.vChildren;
+                        len = srcVChildren.length;
+                        for (i=0; i<len; i++) {
+                            childSrcVNode = srcVChildren[i];
+                            childTargetVNode = targetVChildren[i];
+                            cloneData(childSrcVNode, childTargetVNode);
+                            updatePlugins(childSrcVNode, childTargetVNode);
+                            childSrcVNode.hasVChildren() && cloneDeepData(childSrcVNode, childTargetVNode);
+                        }
                     }
                 },
                 i, len, PluginClass, pluginDef;
@@ -1204,7 +1209,6 @@ module.exports = function (window) {
             }
         };
 
-        ElementPrototype._contains = ElementPrototype.contains; // backup native _contains --> mutationobserver needs it
         /**
          * Indicating whether this Element contains OR equals otherElement. If you need only to be sure the other Element lies inside,
          * but not equals itself, set `excludeItself` true.
@@ -4218,8 +4222,8 @@ module.exports = function (window) {
             };
         (new window.MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
-
-                var node = mutation.target,
+                var isPolyfill = this.isPolyfill, // IE polyfill which happens by interval --> therefor only to be used to remove nodes
+                    node = mutation.target,
                     vnode = node.vnode,
                     type = mutation.type,
                     attribute = mutation.attributeName,
@@ -4228,16 +4232,17 @@ module.exports = function (window) {
                     i, len, childDomNode, childVNode, index, vchildnode;
                 if (vnode && !vnode._nosync) {
                     if (type==='attributes') {
-                        vnode.reloadAttr(attribute);
+                        isPolyfill || vnode.reloadAttr(attribute);
                     }
                     else if (type==='characterData') {
-                        vnode.text = node.nodeValue;
+                        isPolyfill || (vnode.text=node.nodeValue);
                     }
                     else {
                         // remove the childNodes that are no longer there,
                         // but ONLY when they are not in the dom --> nodes might get
                         // replaced inside other nodes, which leads into 'remove'-observer,
                         // yet we still need them
+                        if (!isPolyfill) {
                         len = removedChildNodes.length;
                         for (i=len-1; i>=0; i--) {
                             childDomNode = removedChildNodes[i];
@@ -4245,36 +4250,19 @@ module.exports = function (window) {
                             // need to cheack with native `_contains` --> the vdom its `contains` won't work for it isn't updated yet:
                             childVNode && !DOCUMENT.documentElement._contains(childDomNode) && childVNode._destroy();
                         }
-                       // add the new childNodes:
-                        len = addedChildNodes.length;
-                        for (i=0; i<len; i++) {
-                            childDomNode = addedChildNodes[i];
-                            // find its index in the true DOM:
-                            index = node.childNodes.indexOf(childDomNode);
-                            // create the vnode:
-                            vchildnode = domNodeToVNode(childDomNode);
-//======================================================================================================
-// TODO: remove this block of code: we shouldn;t be needing it
-// that is: when the alert never rises (which I expect it doesn't)
-
-
-// prevent double definitions (for whatever reason):
-// check if there is a vChild with the same domNode and remove it:
-var vChildNodes = vnode.vChildNodes;
-var len2 = vChildNodes ? vChildNodes.length : 0;
-var j;
-for (j=0; j<len2; j++) {
-    var checkChildVNode = vChildNodes[j];
-    if (checkChildVNode.domNode===node) {
-        checkChildVNode._destroy();
-        alert('double deleted');
-        break;
-    }
-}
-// END OF removable block
-//======================================================================================================
-                            // add the vnode:
-                            vchildnode._moveToParent(vnode, index);
+                        }
+                        if (!isPolyfill) {
+                            // add the new childNodes:
+                            len = addedChildNodes.length;
+                            for (i=0; i<len; i++) {
+                                childDomNode = addedChildNodes[i];
+                                // find its index in the true DOM:
+                                index = node.childNodes.indexOf(childDomNode);
+                                // create the vnode:
+                                vchildnode = domNodeToVNode(childDomNode);
+                                // add the vnode:
+                                vchildnode._moveToParent(vnode, index);
+                            }
                         }
                     }
                 }
@@ -4282,7 +4270,12 @@ for (j=0; j<len2; j++) {
         })).observe(DOCUMENT, observerConfig);
     };
 
-    setupObserver();
+    // only if mutationobserver exists natively, we use it
+    // 'setupObserver' is only needed to register domchanges that are not done through the library
+    // any IE-polyfill will fail, because IE9 has a bug to register childnodes for the first time
+    // and polyfills that use polling will interfer wrongly with the library's MVC (plugins and itags)
+    // So.... IE9 and IE10 are doomed again. But not when dom-manipulation is done by this library.
+    window.MutationObserver && setupObserver();
 
 };
 
