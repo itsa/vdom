@@ -40,6 +40,7 @@ module.exports = function (window) {
         htmlToVNodes = require('./html-parser.js')(window),
         vNodeProto = require('./vnode.js')(window),
         RUNNING_ON_NODE = (typeof global !== 'undefined') && (global.window!==window),
+        mutationsAreObserved = false,
         TRANSITION = 'transition',
         TRANSFORM = 'transform',
         BROWSERS_SUPPORT_PSEUDO_TRANS = false, // set true as soon as they do
@@ -4220,10 +4221,12 @@ module.exports = function (window) {
                 characterData: true,
                 childList : true
             };
+        if (mutationsAreObserved) {
+            return;
+        }
         (new window.MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
-                var isPolyfill = this.isPolyfill, // IE polyfill which happens by interval --> therefor only to be used to remove nodes
-                    node = mutation.target,
+                var node = mutation.target,
                     vnode = node.vnode,
                     type = mutation.type,
                     attribute = mutation.attributeName,
@@ -4232,17 +4235,16 @@ module.exports = function (window) {
                     i, len, childDomNode, childVNode, index, vchildnode;
                 if (vnode && !vnode._nosync) {
                     if (type==='attributes') {
-                        isPolyfill || vnode.reloadAttr(attribute);
+                        vnode.reloadAttr(attribute);
                     }
                     else if (type==='characterData') {
-                        isPolyfill || (vnode.text=node.nodeValue);
+                        vnode.text = node.nodeValue;
                     }
                     else {
                         // remove the childNodes that are no longer there,
                         // but ONLY when they are not in the dom --> nodes might get
                         // replaced inside other nodes, which leads into 'remove'-observer,
                         // yet we still need them
-                        if (!isPolyfill) {
                         len = removedChildNodes.length;
                         for (i=len-1; i>=0; i--) {
                             childDomNode = removedChildNodes[i];
@@ -4250,32 +4252,47 @@ module.exports = function (window) {
                             // need to cheack with native `_contains` --> the vdom its `contains` won't work for it isn't updated yet:
                             childVNode && !DOCUMENT.documentElement._contains(childDomNode) && childVNode._destroy();
                         }
-                        }
-                        if (!isPolyfill) {
-                            // add the new childNodes:
-                            len = addedChildNodes.length;
-                            for (i=0; i<len; i++) {
-                                childDomNode = addedChildNodes[i];
-                                // find its index in the true DOM:
-                                index = node.childNodes.indexOf(childDomNode);
-                                // create the vnode:
-                                vchildnode = domNodeToVNode(childDomNode);
-                                // add the vnode:
-                                vchildnode._moveToParent(vnode, index);
-                            }
+                        // add the new childNodes:
+                        len = addedChildNodes.length;
+                        for (i=0; i<len; i++) {
+                            childDomNode = addedChildNodes[i];
+                            // find its index in the true DOM:
+                            index = node.childNodes.indexOf(childDomNode);
+                            // create the vnode:
+                            vchildnode = domNodeToVNode(childDomNode);
+                            // add the vnode:
+                            vchildnode._moveToParent(vnode, index);
                         }
                     }
                 }
             });
         })).observe(DOCUMENT, observerConfig);
+        mutationsAreObserved = true;
     };
 
-    // only if mutationobserver exists natively, we use it
-    // 'setupObserver' is only needed to register domchanges that are not done through the library
-    // any IE-polyfill will fail, because IE9 has a bug to register childnodes for the first time
-    // and polyfills that use polling will interfer wrongly with the library's MVC (plugins and itags)
-    // So.... IE9 and IE10 are doomed again. But not when dom-manipulation is done by this library.
-    window.MutationObserver && setupObserver();
+
+    // Decided NOT to use MutationObserver by default. It would lead to undeeded ballast.
+    // It would be needed when developers manipulate the dom other than through this module,
+    // but because it is strongly advisable not to
+
+    /**
+     * Activates MutationObserver: only needed when manipulating dom-elements by other means than through
+     * this framework. It causes the vdom to be correctly being updated.
+     *
+     * Only works for modern browsers and >IE10
+     *
+     * @method setupMutationObserver
+     * @for document
+     * @since 0.0.5
+     */
+    window.document.setupMutationObserver = function() {
+        // only if mutationobserver exists natively, we use it
+        // 'setupObserver' is only needed to register domchanges that are not done through the library
+        // any IE-polyfill will fail, because IE9 has a bug to register childnodes for the first time
+        // and polyfills that use polling will interfer wrongly with the library's MVC (plugins and itags)
+        // So.... IE9 and IE10 are doomed again. But not when dom-manipulation is done by this library.
+        window.MutationObserver && setupObserver();
+    };
 
 };
 
