@@ -24,6 +24,9 @@
         SUPPORT_INLINE_PSEUDO_STYLES = window.document._supportInlinePseudoStyles,
         node, nodeSub1, nodeSub2, nodeSub3, nodeSub3Sub, nodeSub3SubText, container, containerSub1, containerSub2, containerSub3, cssnode;
 
+
+    window.document.setupMutationObserver();
+
     chai.use(require('chai-as-promised'));
 
     describe('Properties', function () {
@@ -3255,158 +3258,159 @@
 
     });
 
-    describe('Mutation Observer', function () {
-        // Code to execute before every test.
-        beforeEach(function() {
-            node = window.document.createElement('div');
-            node.id = 'ITSA';
-            node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
-            node.appendChild(window.document.createElement('div'));
-            node.appendChild(window.document.createTextNode('some content'));
-            node.appendChild(window.document.createComment('some comment'));
-            window.document.body.appendChild(node);
+    if (window.MutationObserver) {
+        describe('Mutation Observer', function () {
+            // Code to execute before every test.
+            beforeEach(function() {
+                node = window.document.createElement('div');
+                node.id = 'ITSA';
+                node.setAttribute('style', 'position: absolute; z-index: -1; left: 10px; top: 30px; height: 75px; width: 150px;');
+                node.appendChild(window.document.createElement('div'));
+                node.appendChild(window.document.createTextNode('some content'));
+                node.appendChild(window.document.createComment('some comment'));
+                window.document.body.appendChild(node);
+            });
+
+            // Code to execute after every test.
+            afterEach(function() {
+                window.document.body.removeChild(node);
+            });
+
+            it('processing new attribute', function (done) {
+                // need to async --> because that will make node._nosync return to `false`.
+                async(function() {
+                    node._setAttribute('data-x', '10');
+                }, 0);
+                setTimeout(function() {
+                    expect(node.getAttr('data-x')).to.be.eql('10');
+                    done();
+                }, 500);
+            });
+
+            it('processing attribute-change', function (done) {
+                // need to async --> because that will make node._nosync return to `false`.
+                async(function() {
+                    node._setAttribute('id', 'ITSA1');
+                }, 0);
+                setTimeout(function() {
+                    expect(node.id).to.be.eql('ITSA1');
+                    expect(node.vnode.id).to.be.eql('ITSA1');
+                    expect(node.vnode.attrs.id).to.be.eql('ITSA1');
+                    done();
+                }, 500);
+            });
+
+            it('processing removed attribute', function (done) {
+                // need to async --> because that will make node._nosync return to `false`.
+                async(function() {
+                    node._removeAttribute('id');
+                }, 0);
+                setTimeout(function() {
+                    expect(node.id).to.be.eql('');
+                    expect(node.vnode.id===undefined).to.be.true;
+                    expect(node.vnode.attrs.id===undefined).to.be.true;
+                    done();
+                }, 500);
+            });
+
+            it('processing new Element', function (done) {
+                // need to async --> because that will make node._nosync return to `false`.
+                async(function() {
+                    node._appendChild(window.document.createElement('div'));
+                }, 0);
+                setTimeout(function() {
+                    expect(node.childNodes.length).to.be.eql(4);
+                    expect(node.vnode.vChildNodes.length).to.be.eql(4);
+                    done();
+                }, 500);
+            });
+
+            it('processing removed Element', function (done) {
+                // need to async --> because that will make node._nosync return to `false`.
+                async(function() {
+                    node._removeChild(node.childNodes[0]);
+                }, 0);
+                setTimeout(function() {
+                    expect(node.childNodes.length).to.be.eql(2);
+                    // expect(node.vnode.vChildNodes.length).to.be.eql(2);
+                    done();
+                }, 500);
+            });
+
+            it('processing new TextNode', function (done) {
+                // need to async --> because that will make node._nosync return to `false`.
+                async(function() {
+                    node._appendChild(window.document.createTextNode('new content'));
+                }, 0);
+                setTimeout(function() {
+                    expect(node.childNodes.length).to.be.eql(4);
+                    expect(node.vnode.vChildNodes.length).to.be.eql(4);
+                    done();
+                }, 500);
+            });
+
+            it('processing TextNode-change', function (done) {
+                // need to async --> because that will make node._nosync return to `false`.
+                async(function() {
+                    node.childNodes[1].nodeValue = 'itsa new content';
+                }, 0);
+                setTimeout(function() {
+                    expect(node.childNodes[1].nodeValue).to.be.eql('itsa new content');
+                    expect(node.vnode.vChildNodes[1].text).to.be.eql('itsa new content');
+                    done();
+                }, 500);
+            });
+
+            it('processing removed TextNode', function (done) {
+                // need to async --> because that will make node._nosync return to `false`.
+                async(function() {
+                    node._removeChild(node.childNodes[1]);
+                }, 0);
+                setTimeout(function() {
+                    expect(node.childNodes.length).to.be.eql(2);
+                    expect(node.vnode.vChildNodes.length).to.be.eql(2);
+                    done();
+                }, 500);
+            });
+
+            it('processing new CommentNode', function (done) {
+                // need to async --> because that will make node._nosync return to `false`.
+                async(function() {
+                    node._appendChild(window.document.createComment('new comment'));
+                }, 0);
+                setTimeout(function() {
+                    expect(node.childNodes.length).to.be.eql(4);
+                    expect(node.vnode.vChildNodes.length).to.be.eql(4);
+                    done();
+                }, 500);
+            });
+
+            it('processing CommentNode-change', function (done) {
+                // need to async --> because that will make node._nosync return to `false`.
+                async(function() {
+                    node.childNodes[2].nodeValue = 'itsa new comment';
+                }, 0);
+                setTimeout(function() {
+                    expect(node.childNodes[2].nodeValue).to.be.eql('itsa new comment');
+                    expect(node.vnode.vChildNodes[2].text).to.be.eql('itsa new comment');
+                    done();
+                }, 500);
+            });
+
+            it('processing removed CommentNode', function (done) {
+                // need to async --> because that will make node._nosync return to `false`.
+                async(function() {
+                    node._removeChild(node.childNodes[2]);
+                }, 0);
+                setTimeout(function() {
+                    expect(node.childNodes.length).to.be.eql(2);
+                    expect(node.vnode.vChildNodes.length).to.be.eql(2);
+                    done();
+                }, 500);
+            });
+
         });
-
-        // Code to execute after every test.
-        afterEach(function() {
-            window.document.body.removeChild(node);
-        });
-
-        it('processing new attribute', function (done) {
-            // need to async --> because that will make node._nosync return to `false`.
-            async(function() {
-                node._setAttribute('data-x', '10');
-            }, 0);
-            setTimeout(function() {
-                expect(node.getAttr('data-x')).to.be.eql('10');
-                done();
-            }, 500);
-        });
-
-        it('processing attribute-change', function (done) {
-            // need to async --> because that will make node._nosync return to `false`.
-            async(function() {
-                node._setAttribute('id', 'ITSA1');
-            }, 0);
-            setTimeout(function() {
-                expect(node.id).to.be.eql('ITSA1');
-                expect(node.vnode.id).to.be.eql('ITSA1');
-                expect(node.vnode.attrs.id).to.be.eql('ITSA1');
-                done();
-            }, 500);
-        });
-
-        it('processing removed attribute', function (done) {
-            // need to async --> because that will make node._nosync return to `false`.
-            async(function() {
-                node._removeAttribute('id');
-            }, 0);
-            setTimeout(function() {
-                expect(node.id).to.be.eql('');
-                expect(node.vnode.id===undefined).to.be.true;
-                expect(node.vnode.attrs.id===undefined).to.be.true;
-                done();
-            }, 500);
-        });
-
-        it('processing new Element', function (done) {
-            // need to async --> because that will make node._nosync return to `false`.
-            async(function() {
-                node._appendChild(window.document.createElement('div'));
-            }, 0);
-            setTimeout(function() {
-                expect(node.childNodes.length).to.be.eql(4);
-                expect(node.vnode.vChildNodes.length).to.be.eql(4);
-                done();
-            }, 500);
-        });
-
-        it('processing removed Element', function (done) {
-            // need to async --> because that will make node._nosync return to `false`.
-            async(function() {
-                node._removeChild(node.childNodes[0]);
-            }, 0);
-            setTimeout(function() {
-                expect(node.childNodes.length).to.be.eql(2);
-                // expect(node.vnode.vChildNodes.length).to.be.eql(2);
-                done();
-            }, 500);
-        });
-
-        it('processing new TextNode', function (done) {
-            // need to async --> because that will make node._nosync return to `false`.
-            async(function() {
-                node._appendChild(window.document.createTextNode('new content'));
-            }, 0);
-            setTimeout(function() {
-                expect(node.childNodes.length).to.be.eql(4);
-                expect(node.vnode.vChildNodes.length).to.be.eql(4);
-                done();
-            }, 500);
-        });
-
-        it('processing TextNode-change', function (done) {
-            // need to async --> because that will make node._nosync return to `false`.
-            async(function() {
-                node.childNodes[1].nodeValue = 'itsa new content';
-            }, 0);
-            setTimeout(function() {
-                expect(node.childNodes[1].nodeValue).to.be.eql('itsa new content');
-                expect(node.vnode.vChildNodes[1].text).to.be.eql('itsa new content');
-                done();
-            }, 500);
-        });
-
-        it('processing removed TextNode', function (done) {
-            // need to async --> because that will make node._nosync return to `false`.
-            async(function() {
-                node._removeChild(node.childNodes[1]);
-            }, 0);
-            setTimeout(function() {
-                expect(node.childNodes.length).to.be.eql(2);
-                expect(node.vnode.vChildNodes.length).to.be.eql(2);
-                done();
-            }, 500);
-        });
-
-        it('processing new CommentNode', function (done) {
-            // need to async --> because that will make node._nosync return to `false`.
-            async(function() {
-                node._appendChild(window.document.createComment('new comment'));
-            }, 0);
-            setTimeout(function() {
-                expect(node.childNodes.length).to.be.eql(4);
-                expect(node.vnode.vChildNodes.length).to.be.eql(4);
-                done();
-            }, 500);
-        });
-
-        it('processing CommentNode-change', function (done) {
-            // need to async --> because that will make node._nosync return to `false`.
-            async(function() {
-                node.childNodes[2].nodeValue = 'itsa new comment';
-            }, 0);
-            setTimeout(function() {
-                expect(node.childNodes[2].nodeValue).to.be.eql('itsa new comment');
-                expect(node.vnode.vChildNodes[2].text).to.be.eql('itsa new comment');
-                done();
-            }, 500);
-        });
-
-        it('processing removed CommentNode', function (done) {
-            // need to async --> because that will make node._nosync return to `false`.
-            async(function() {
-                node._removeChild(node.childNodes[2]);
-            }, 0);
-            setTimeout(function() {
-                expect(node.childNodes.length).to.be.eql(2);
-                expect(node.vnode.vChildNodes.length).to.be.eql(2);
-                done();
-            }, 500);
-        });
-
-    });
-
+    }
 
     describe('Promise return values with style transitions', function () {
 
