@@ -112,7 +112,9 @@ module.exports = function (window) {
                 insideTagDefinition, insideComment, innerText, endTagCount, stringMarker, attributeisString, attribute, attributeValue, nestedComments,
                 len, j, character, character2, vnode, tag, isBeginTag, isEndTag, scriptVNode, extractClass, extractStyle, tagdefinition, is;
 
-            htmlString || (htmlString='');
+            if (typeof htmlString!=='string') {
+                htmlString = (htmlString===undefined) ? '' : String(htmlString);
+            }
             len = htmlString.length;
 
             while (i<len) {
@@ -243,11 +245,12 @@ module.exports = function (window) {
                             tagdefinition = tag + '#' + is;
                         }
                     }
-
-                    vnode.domNode = vnode.ns ? DOCUMENT.createElementNS(vnode.ns, tagdefinition) : DOCUMENT.createElement(tagdefinition, suppressItagRender, allowScripts);
+                    // cautious: DOCUMENT.createElement(tagdefinition, undefined) will render differently than DOCUMENT.createElement(tagdefinition) -->
+                    // it will set the attribute `is="undefined".
+                    // therefore the second conditional:
+                    vnode.domNode = vnode.ns ? DOCUMENT.createElementNS(vnode.ns, tagdefinition) : (suppressItagRender ? DOCUMENT.createElement(tagdefinition, suppressItagRender) : DOCUMENT.createElement(tagdefinition));
                     // create circular reference:
                     vnode.domNode._vnode = vnode;
-
                     vnodes[vnodes.length] = vnode;
                     // reset vnode to force create a new one
                     vnode = null;
