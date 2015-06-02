@@ -4131,7 +4131,6 @@ module.exports = function (window) {
 
            /**
             * Gets or set the height of the element in pixels. Included are padding and border, not any margins.
-            * By setting the argument `overflow` you get the total height, included the invisible overflow.
             *
             * The getter is calculating through `offsetHeight`, the setter will set inline css-style for the height.
             *
@@ -4143,7 +4142,9 @@ module.exports = function (window) {
             */
             height: {
                 get: function() {
-                    return this.offsetHeight;
+                    // also: not all browsers support the property 'offsetHeight' of the svg-element
+                    // therefore the backup to getStyle('height');
+                    return this.offsetHeight || parseInt(this.getStyle('height'), 10) || 0;
                 },
                 set: function(val) {
                     var instance = this,
@@ -4153,6 +4154,60 @@ module.exports = function (window) {
                     dif = (instance.offsetHeight-val);
                     (dif!==0) && (instance.setInlineStyle(HEIGHT, (val - dif) + PX));
                     instance.removeClass(INVISIBLE);
+                }
+            },
+
+           /**
+            * Gets or set the innerHeight of the element in pixels. Excluded the borders.
+            * Included are padding.
+            *
+            * The getter is calculating through `offsetHeight`, the setter will set inline css-style for the height.
+            *
+            * Values are numbers without unity.
+            *
+            * @property innerWidth
+            * @type {Number}
+            * @since 0.0.1
+            */
+            innerHeight: {
+                get: function() {
+                    var instance = this,
+                        borderTop = parseInt(instance.getStyle('border-top-width'), 10) || 0,
+                        borderBottom = parseInt(instance.getStyle('border-bottom-width'), 10) || 0;
+                    return instance.height - borderTop - borderBottom;
+                },
+                set: function(val) {
+                    var instance = this,
+                        borderTop = parseInt(instance.getStyle('border-top-width'), 10) || 0,
+                        borderBottom = parseInt(instance.getStyle('border-bottom-width'), 10) || 0;
+                    instance.height = val + borderTop + borderBottom;
+                }
+            },
+
+           /**
+            * Gets or set the innerHeight of the element in pixels. Excluded the borders.
+            * Included are padding.
+            *
+            * The getter is calculating through `offsetHeight`, the setter will set inline css-style for the height.
+            *
+            * Values are numbers without unity.
+            *
+            * @property innerWidth
+            * @type {Number}
+            * @since 0.0.1
+            */
+            innerWidth: {
+                get: function() {
+                    var instance = this,
+                        borderLeft = parseInt(instance.getStyle('border-left-width'), 10) || 0,
+                        borderRight = parseInt(instance.getStyle('border-right-width'), 10) || 0;
+                    return instance.height - borderLeft - borderRight;
+                },
+                set: function(val) {
+                    var instance = this,
+                        borderLeft = parseInt(instance.getStyle('border-left-width'), 10) || 0,
+                        borderRight = parseInt(instance.getStyle('border-right-width'), 10) || 0;
+                    instance.height = val + borderLeft + borderRight;
                 }
             },
 
@@ -4206,7 +4261,6 @@ module.exports = function (window) {
 
            /**
             * Gets or set the width of the element in pixels. Included are padding and border, not any margins.
-            * By setting the argument `overflow` you get the total width, included the invisible overflow.
             *
             * The getter is calculating through `offsetHeight`, the setter will set inline css-style for the width.
             *
@@ -4218,7 +4272,9 @@ module.exports = function (window) {
             */
             width: {
                 get: function() {
-                    return this.offsetWidth;
+                    // also: not all browsers support the property 'offsetWidth' of the svg-element
+                    // therefore the backup to getStyle('width');
+                    return this.offsetWidth || parseInt(this.getStyle('width'), 10) || 0;
                 },
                 set: function(val) {
                     var instance = this,
