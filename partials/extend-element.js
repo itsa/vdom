@@ -4201,13 +4201,13 @@ module.exports = function (window) {
                     var instance = this,
                         borderLeft = parseInt(instance.getStyle('border-left-width'), 10) || 0,
                         borderRight = parseInt(instance.getStyle('border-right-width'), 10) || 0;
-                    return instance.height - borderLeft - borderRight;
+                    return instance.width - borderLeft - borderRight;
                 },
                 set: function(val) {
                     var instance = this,
                         borderLeft = parseInt(instance.getStyle('border-left-width'), 10) || 0,
                         borderRight = parseInt(instance.getStyle('border-right-width'), 10) || 0;
-                    instance.height = val + borderLeft + borderRight;
+                    instance.width = val + borderLeft + borderRight;
                 }
             },
 
