@@ -4144,7 +4144,8 @@ module.exports = function (window) {
                 get: function() {
                     // also: not all browsers support the property 'offsetHeight' of the svg-element
                     // therefore the backup to getStyle('height');
-                    return this.offsetHeight || parseInt(this.getStyle('height'), 10) || 0;
+                    var height = this.offsetHeight;
+                    return (typeof height==='number') ? height : (parseInt(this.getStyle('height'), 10) || 0);
                 },
                 set: function(val) {
                     var instance = this,
@@ -4274,7 +4275,8 @@ module.exports = function (window) {
                 get: function() {
                     // also: not all browsers support the property 'offsetWidth' of the svg-element
                     // therefore the backup to getStyle('width');
-                    return this.offsetWidth || parseInt(this.getStyle('width'), 10) || 0;
+                    var width = this.offsetWidth;
+                    return (typeof width==='number') ? width : (parseInt(this.getStyle('width'), 10) || 0);
                 },
                 set: function(val) {
                     var instance = this,
