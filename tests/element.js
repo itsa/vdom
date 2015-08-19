@@ -1940,6 +1940,40 @@
             window.document.body.removeChild(cont3);
         });
 
+        it('toggleAttr', function () {
+            var cont = window.document.createElement('div');
+
+            cont.setAttr('data-x', '10');
+            window.document.body.appendChild(cont);
+
+            expect(cont.hasAttr('data-x')).to.be.true;
+            cont.toggleAttr('data-x');
+            expect(cont.hasAttr('data-x')).to.be.false;
+
+            cont.toggleAttr('data-x'); // won't activate, because no value:
+            expect(cont.hasAttr('data-x')).to.be.false;
+
+            cont.toggleAttr('data-x', 'on');
+            expect(cont.hasAttr('data-x')).to.be.true;
+
+            cont.toggleAttr('data-x', 'on');
+            expect(cont.hasAttr('data-x')).to.be.false;
+
+            cont.toggleAttr('data-x', 'on', true);
+            expect(cont.hasAttr('data-x')).to.be.true;
+
+            cont.toggleAttr('data-x', 'on', true);
+            expect(cont.hasAttr('data-x')).to.be.true;
+
+            cont.toggleAttr('data-x', 'on', false);
+            expect(cont.hasAttr('data-x')).to.be.false;
+
+            cont.toggleAttr('data-x', 'on', false);
+            expect(cont.hasAttr('data-x')).to.be.false;
+
+            window.document.body.removeChild(cont);
+        });
+
         it('setAttribute', function () {
             var cont = window.document.createElement('div'),
                 n = cont.setAttribute('style', 'position:absolute; left:10px; top: 30px; height: 75px; width: 150px;');
