@@ -4068,6 +4068,28 @@ module.exports = function (window) {
         };
 
        /**
+         * Toggles the attribute on the Element with the specified value (giving it the value, or removes the attribute)
+         *
+         * @method toggleAttr
+         * @param attributeName {String}
+         * @param value {Any} the value that belongs to `key`
+         * @param forceState {Boolean} to force toggling into this specific state
+         * @param [silent=false] {Boolean} prevent node-mutation events by the Event-module to emit
+         * @chainable
+         * @since 0.0.1
+        */
+        ElementPrototype.toggleAttr = function(attributeName, value, forceState, silent) {
+            var instance = this,
+                condition = (typeof forceState==='boolean') ? forceState : !instance.hasAttr(attributeName);
+            if (condition) {
+                return instance.setAttr(attributeName, value, silent);
+            }
+            else {
+                return instance.removeAttr(attributeName, silent);
+            }
+        };
+
+       /**
         * Toggles the className of the Element.
         *
         * @method toggleClass
@@ -4286,6 +4308,82 @@ module.exports = function (window) {
         });
 
     }(window.Element.prototype));
+
+
+    (function(HTMLButtonElementPrototype) {
+        /**
+         * Disables the button
+         *
+         * @for HTMLButtonElement
+         * @method disable
+         * @chainable
+        */
+        HTMLButtonElementPrototype.disable = function() {
+            var instance = this;
+            instance.setAttr('disabled', 'true');
+            return instance;
+        };
+
+        /**
+         * Enables the button
+         *
+         * @method enable
+         * @chainable
+        */
+        HTMLButtonElementPrototype.enable = function() {
+            var instance = this;
+            instance.removeAttr('disabled');
+            return instance;
+        };
+
+        /**
+         * Toggles the `disabled`-state of the button
+         *
+         * @method toggle
+         * @param [forcedState] {boolean} to force a specific state
+         * @chainable
+        */
+        HTMLButtonElementPrototype.toggle = function(forcedState) {
+            var instance = this;
+            instance.toggleAttr('disabled', 'true', forcedState);
+            return instance;
+        };
+    }(window.HTMLButtonElement.prototype));
+
+
+    (function(HTMLInputElementPrototype) {
+        /**
+         * Shows the pop-up of an `input` element of the type `file`.
+         *
+         * @for HTMLInputElement
+         * @method showFileSelect
+         * @chainable
+        */
+        HTMLInputElementPrototype.showFileSelect = function() {
+            var instance = this,
+                type = instance.getAttr('type');
+            type && (type.toLowerCase()==='file') && instance.click();
+            return instance;
+        };
+
+        /**
+         * Hides the pop-up and empties the files-list of an `input` element of the type `file`.
+         *
+         * @method resetFileSelect
+         * @chainable
+        */
+        HTMLInputElementPrototype.resetFileSelect = function() {
+            var instance = this,
+                type = instance.getAttr('type');
+            if (type && (type.toLowerCase()==='file')) {
+                // force the fileselector-popup up to disappear and become empty:
+                instance.setAttr('type', 'text');
+                instance.value = '';
+                instance.setAttr('type', 'file');
+            }
+            return instance;
+        };
+    }(window.HTMLInputElement.prototype));
 
 
     // Modify SVGElement:
