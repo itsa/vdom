@@ -1850,10 +1850,25 @@ module.exports = function (window) {
                     attributeNameSplitted = attributeName.split(':');
                     ns = attributeNameSplitted[0];
                     attributeName = attributeNameSplitted[1];
-                    domNode._setAttributeNS(xmlNS[ns.toUpperCase()] || ns, attributeName, value);
+                    try {
+                        domNode._setAttributeNS(xmlNS[ns.toUpperCase()] || ns, attributeName, value);
+                    }
+                    catch(err) {
+                        console.warn(err);
+                        console.warn('namespace: '+(xmlNS[ns.toUpperCase()] || ns));
+                        console.warn('attribute: '+attributeName);
+                        console.warn('value: '+value);
+                    }
                 }
                 else {
-                    domNode._setAttribute(attributeName, value);
+                    try {
+                        domNode._setAttribute(attributeName, value);
+                    }
+                    catch(err) {
+                        console.warn(err);
+                        console.warn('attribute: '+attributeName);
+                        console.warn('value: '+value);
+                    }
                 }
             }
             return instance;
